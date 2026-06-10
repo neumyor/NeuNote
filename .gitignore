@@ -18,6 +18,11 @@ logs/jobs/
 logs/debug/
 logs/ingest_log.md
 logs/update_log.md
+backend/logs/chat_sessions/
+backend/logs/jobs/
+backend/logs/debug/
+backend/logs/ingest_log.md
+backend/logs/update_log.md
 
 # large binary files
 originals/papers/

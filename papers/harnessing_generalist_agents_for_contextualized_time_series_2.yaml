@@ -1,0 +1,156 @@
+id: harnessing_generalist_agents_for_contextualized_time_series_2
+title: Harnessing Generalist Agents for Contextualized Time Series
+authors:
+- Zihao Li
+- Kaifeng Jin
+- Yuanchen Bei
+- Jiaru Zou
+- Avaneesh Kumar
+- Xuying Ning
+- Yanjun Zhao
+- Mengting Ai
+- Baoyu Jing
+- Hanghang Tong
+- Jingrui He
+year: 2026
+venue: ''
+doi: ''
+arxiv_id: '2606.05404'
+source_pdf: originals/papers/2606_05404v1.pdf
+pages: 38
+tags:
+- agent
+- benchmark
+- forecasting
+- harness
+- llm
+- time_series
+- tool_use
+status: profiled
+confidence: medium
+reading_status: unread
+priority: normal
+needs_review: false
+abstract: Time series are often embedded in rich contexts that are essential for holistic
+  modeling. Moreover, real-world practitioners often require end-to-end workflows
+  for analyzing temporal dynamics, where widely studied tasks such as forecasting
+  are only one step in a broader solution loop. While generalist AI agents offer a
+  promising interface for such workflows under complex contexts, they still operate
+  primarily in textual spaces that are not fully aligned with structured temporal
+  signals. In this work, we introduce TIMECLAW, an agentic harness framework for time
+  series that equips generalist LLM agents with the time-series-native runtime support
+  needed for contextualized temporal reasoning. TIMECLAW integrates executable temporal
+  tools for grounded and auditable analysis, experience-driven capability evolution
+  for creating reusable analytical routines, and episodic multimodal memory for retrieving
+  relevant reasoning traces. Together, these components unlock harnessed open-ended
+  temporal reasoning with contextual information. Extensive evaluation on multiple
+  benchmarks covering diverse tasks across energy, finance, weather, traffic, and
+  other real-world domains demonstrates improved performance of TIMECLAW. Code is
+  available at this repository hyperlink.
+one_sentence: This paper introduces TIMECLAW, an agentic harness framework that equips
+  generalist LLM agents with time-series-native runtime support for contextualized
+  temporal reasoning.
+problem: Directly using LLMs for time-series reasoning suffers from datatype misalignment
+  (numerical temporal signals are distorted when serialized into text tokens) and
+  agentic-process misalignment (workflows are designed for text-centric information
+  processing, not for native temporal operations).
+contributions:
+- Identify the limitations of directly using LLMs for time-series reasoning, showing
+  that textualizing temporal signals induces datatype and agentic-process misalignments.
+- Introduce TIMECLAW, a time-series-native agentic harness that integrates executable
+  tools, experience-driven capability evolution, and episodic multimodal memory.
+- Conduct extensive experiments across diverse real-world domains, demonstrating the
+  effectiveness of TIMECLAW for end-to-end reasoning over contextualized time series.
+method:
+- 'Executable temporal tools: provide typed interfaces for accessing and analyzing
+  time-series objects at numerical precision, producing grounded and auditable analytical
+  evidence.'
+- 'Experience-driven capability evolution: abstracts recurring analytical sub-procedures
+  into self-contained executable tools that are added to the tool set if they exceed
+  a held-out success rate threshold.'
+- 'Episodic multimodal memory: stores past reasoning traces and retrieves relevant
+  experience through complementary textual and temporal modalities (multimodal fingerprints).'
+experiments:
+- Extensive evaluation on multiple benchmarks covering diverse tasks across energy,
+  finance, weather, traffic, and other real-world domains.
+- Comparison with baselines showing TIMECLAW consistently improves end-to-end performance
+  while maintaining token efficiency.
+- Ablation studies validating the contribution of each harness component (executable
+  tools, capability evolution, multimodal memory).
+limitations:
+- 'Datatype misalignment: numerical temporal signals are distorted when serialized
+  into text tokens, leading to numerical-token distance mismatch, decimal place-value
+  distortion, and long-context temporal information dilution.'
+- 'Agentic-process misalignment: workflows are designed for text-centric processing,
+  not for native temporal operations; next-token objective mismatch with next-value
+  prediction.'
+- Additional limitations detailed in Appendix A include next-token versus next-value
+  objective mismatch and the burden of long numerical sequences on context windows.
+notes: "# Reading Notes\n\n*Use this space for your own notes while reading the paper.\
+  \ The structured summary is available in the Summary section.*\n\n## Key takeaways\n\
+  \n- \n\n## Questions\n\n- \n\n## Connections to other papers\n\n- \n"
+review_notes: []
+agent_reviews:
+- time: '2026-06-10T06:33:53.064769+00:00'
+  model: deepseek-v4-flash
+  notes:
+  - 'authors: [] → [''Zihao Li'', ''Kaifeng Jin'', ''Yuanchen Bei'', ''Jiaru Zou'',
+    ''Av...'
+  - 'year: None → 2026'
+  - 'arxiv_id:  → 2606.05404'
+  - 'abstract: updated (was: ''Time series are often embedded in rich contexts that
+    are ess...'')'
+  - 'one_sentence: updated (was: ''Time series are often embedded in rich contexts
+    that are ess...'')'
+  - 'problem: updated (was: ''However, the generality of LLMs alone does not provide
+    the s...'')'
+  - 'contributions: replaced 0 items → 3 items'
+  - 'method: replaced 5 items → 3 items'
+  - 'experiments: replaced 5 items → 3 items'
+  - 'limitations: replaced 4 items → 3 items'
+  - 'tags: added [''tool_use'']'
+  - 'Filled authors from PDF: Zihao Li, Kaifeng Jin, Yuanchen Bei, Jiaru Zou, Avaneesh
+    Kumar, Xuying Ning, Yanjun Zhao, Mengting Ai, Baoyu Jing, Hanghang Tong, Jingrui
+    He.'
+  - Set year to 2026 based on arXiv ID '2606.05404'.
+  - Set arxiv_id to '2606.05404'.
+  - Replaced truncated abstract with full abstract from PDF.
+  - Generated one_sentence summary of core contribution.
+  - Updated problem statement to reflect the two key misalignments identified in the
+    paper.
+  - Filled contributions using the three bullet points from Section 1.
+  - 'Filled method with the three components of TIMECLAW: executable temporal tools,
+    experience-driven capability evolution, episodic multimodal memory.'
+  - Filled experiments with summary of evaluation and ablation studies mentioned in
+    abstract and Section 1.
+  - Filled limitations with the two misalignments and additional issues referenced
+    in Appendix A.
+  - Added 'tool_use' tag because the method centers on executable temporal tools;
+    kept existing tags as they accurately describe the paper.
+created_at: '2026-06-10T06:33:24.676350+00:00'
+updated_at: '2026-06-10T06:33:58.585321+00:00'
+agent_reviewed_at: '2026-06-10T06:33:53.064772+00:00'
+translations:
+  abstract: 时间序列往往嵌入对整体建模至关重要的丰富背景. 此外,现实世界的从业者往往需要端到端的工作流程来分析时间动态,在时间动态中,广泛研究的任务如预测只是更广泛的解决方案循环中的一个步骤.
+    虽然通论AI代理为复杂环境下的此类工作流程提供了一个很有希望的界面,但它们仍然主要在文本空间运行,与结构化的时间信号不完全一致. 在这部作品中,我们引入了TIMECLAW,这是一个时间序列的代理拉带框架,它为通论者LLM代理提供了时间序列-本土运行时间支持,以进行背景化的时间推理.
+    TimeCLAW整合了可执行的时间工具,用于基础分析与可审计分析,经验驱动的能力演化,用于创建可重复使用的分析常规,以及用于检索相关推理痕迹的偶联式多式联运内存.
+    这些组件一起解锁了无限制时间推理,并提供了背景资料。 对涉及能源、金融、天气、交通和其他现实世界领域不同任务的多种基准的广泛评价表明,国际劳工和劳工局的业绩有所改善。
+    此寄存器超链接提供代码 。
+  one_sentence: 本文介绍了TIMECLAW,这是一个代理化的拉带框架,它为通论者LLM代理提供了时间序列-内在运行时间支持,用于背景化的时间推理.
+  problem: 直接使用LLMS来进行时间序列推理有数据类型错配(序列化成文本符号时数字时间信号被扭曲)和代理程序错配(工作流程是为文本中心信息处理设计,而不是为本土时间操作设计).
+  contributions:
+  - 识别直接使用LLMS进行时间序列推理的局限性,显示文本化的时间信号诱导数据类型和代理进程错配.
+  - 引入TIMECLAW,是一种时间序列-内在的代理化拉带,融合了可执行工具,经验驱动的能力演化,以及典型的多式联运记忆.
+  - 在不同的现实世界领域进行广泛的实验,展示ICALAW对端到端推理的有效性,而不是背景化的时间序列.
+  method:
+  - 可执行时间工具:提供按数字精度访问和分析时间序列对象的打字界面,生成有根据且可审计的分析证据.
+  - 经验驱动能力演化:将经常性分析子程序归纳为自成一体的可执行工具,如果这些工具超过被搁置的成功率阈值,则将其添加到设定的工具中.
+  - Episodic多式联运存储器:存储过去的推理痕迹,并通过互补的文字和时间模式(多式联运指纹)检索相关经验.
+  experiments:
+  - 广泛评价涵盖能源、金融、天气、交通和其他现实世界领域不同任务的多种基准。
+  - 与基线的比较表明,ICALAW在保持象征性效率的同时,不断提高端对端性能.
+  - 校验每个牵引组件的贡献的研究(可执行工具、能力演变、多式联运内存)。
+  limitations:
+  - 数据类型错位:数字时间信号在序列化成文本符时被扭曲,导致数字-托肯距离不匹配,小数位值扭曲,以及长文本时间信息稀释.
+  - 代理进程错配:工作流程是为文字中心处理而设计,而不是为本土时间操作而设计的;下位目标与下位值预测不匹配.
+  - 附录A中详述的其他限制包括下切位与下切值客观不匹配以及上下文窗口上长数字序列的负担.

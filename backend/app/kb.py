@@ -803,6 +803,120 @@ def retrieve_context(root: Path, query: str, limit: int = 8) -> list[dict[str, s
     return results
 
 
+# ── duplicate detection ───────────────────────────────────────────────
+
+def _normalize_title(title: str) -> set[str]:
+    """Normalize title to a set of lowercase alphanumeric words for comparison."""
+    return set(re.findall(r"[a-z0-9]+", title.lower()))
+
+
+def _jaccard(set_a: set[str], set_b: set[str]) -> float:
+    if not set_a or not set_b:
+        return 0.0
+    return len(set_a & set_b) / len(set_a | set_b)
+
+
+def find_duplicates(root: Path) -> list[dict[str, Any]]:
+    """Detect potential duplicate papers using deterministic rules.
+
+    Rules (in priority order):
+    1. Same DOI (non-empty) → confirmed duplicate
+    2. Same arXiv ID (non-empty) → confirmed duplicate
+    3. Title Jaccard similarity ≥ 0.65 → potential duplicate
+
+    Returns a list of duplicate groups, each containing the papers in the group
+    and a 'keep_id' pointing to the recommended paper to retain (most recently updated).
+    """
+    papers = list_papers(root)
+    n = len(papers)
+    if n < 2:
+        return []
+
+    # Build index maps
+    doi_map: dict[str, list[int]] = {}
+    arxiv_map: dict[str, list[int]] = {}
+    for i, p in enumerate(papers):
+        doi = (p.get("doi") or "").strip().lower()
+        arxiv = (p.get("arxiv_id") or "").strip().lower()
+        if doi:
+            doi_map.setdefault(doi, []).append(i)
+        if arxiv:
+            arxiv_map.setdefault(arxiv, []).append(i)
+
+    # Union-Find for clustering
+    parent = list(range(n))
+
+    def find(x: int) -> int:
+        while parent[x] != x:
+            parent[x] = parent[parent[x]]
+            x = parent[x]
+        return x
+
+    def union(a: int, b: int) -> None:
+        ra, rb = find(a), find(b)
+        if ra != rb:
+            parent[rb] = ra
+
+    # Rule 1 & 2: exact identifier matches
+    for idx_map in (doi_map, arxiv_map):
+        for indices in idx_map.values():
+            if len(indices) > 1:
+                for j in range(1, len(indices)):
+                    union(indices[0], indices[j])
+
+    # Rule 3: title similarity
+    title_words = [_normalize_title(p.get("title") or "") for p in papers]
+    for i in range(n):
+        for j in range(i + 1, n):
+            if find(i) == find(j):
+                continue
+            sim = _jaccard(title_words[i], title_words[j])
+            if sim >= 0.65:
+                union(i, j)
+
+    # Build groups
+    groups_map: dict[int, list[int]] = {}
+    for i in range(n):
+        root_idx = find(i)
+        groups_map.setdefault(root_idx, []).append(i)
+
+    result: list[dict[str, Any]] = []
+    for indices in groups_map.values():
+        if len(indices) < 2:
+            continue
+        group_papers = [papers[i] for i in indices]
+        # Find keep_id: most recently updated paper
+        best = max(group_papers, key=lambda p: p.get("updated_at") or "")
+        duplicate_count = len(group_papers) - 1
+        result.append({
+            "papers": group_papers,
+            "keep_id": best["id"],
+            "duplicate_count": duplicate_count,
+        })
+
+    # Sort by number of duplicates descending
+    result.sort(key=lambda g: g["duplicate_count"], reverse=True)
+    return result
+
+
+def cleanup_duplicates(root: Path) -> dict[str, Any]:
+    """Delete all duplicate papers, keeping only the newest in each group."""
+    groups = find_duplicates(root)
+    deleted_ids: list[str] = []
+    for group in groups:
+        keep_id = group["keep_id"]
+        for paper in group["papers"]:
+            if paper["id"] == keep_id:
+                continue
+            delete_paper(root, paper["id"])
+            deleted_ids.append(paper["id"])
+    return {
+        "groups_processed": len(groups),
+        "deleted_count": len(deleted_ids),
+        "deleted_ids": deleted_ids,
+    }
+
+
 # ── stats ─────────────────────────────────────────────────────────────
 
 def library_stats(root: Path) -> dict[str, Any]:
@@ -811,11 +925,14 @@ def library_stats(root: Path) -> dict[str, Any]:
     for p in papers:
         for t in p.get("tags", []):
             tags.add(t)
+    duplicates = find_duplicates(root)
     return {
         "papers": len(papers),
         "needs_review": sum(1 for p in papers if p.get("needs_review")),
         "profiled": sum(1 for p in papers if p.get("status") == "profiled"),
         "tags": len(tags),
+        "duplicate_groups": len(duplicates),
+        "duplicate_papers": sum(g["duplicate_count"] for g in duplicates),
     }
 
 

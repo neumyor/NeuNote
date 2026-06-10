@@ -17,12 +17,14 @@ from .agent_chat import run_agent_answer_sync
 from .kb import (
     append_session_message,
     cancel_job,
+    cleanup_duplicates,
     create_job,
     create_session,
     delete_job,
     delete_paper,
     enrich_paper,
     ensure_kb,
+    find_duplicates,
     ingest_pdf,
     library_stats,
     list_jobs,
@@ -45,7 +47,7 @@ from .translate import translate_paper_summary
 APP_CONFIG = Path(".kb_app_config.yaml")
 DEFAULT_ROOT = Path(os.environ.get("KB_DEFAULT_ROOT", Path.cwd())).resolve()
 
-app = FastAPI(title="Paper KB")
+app = FastAPI(title="NeuNote")
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -326,6 +328,24 @@ def api_delete_job(job_id: str, root: str | None = None) -> dict[str, Any]:
         pass
     delete_job(kb_root, job_id)
     return {"root": str(kb_root), "deleted": job_id, "jobs": list_jobs(kb_root)}
+
+
+# ── duplicates ────────────────────────────────────────────────────────
+
+@app.get("/api/duplicates")
+def api_get_duplicates(root: str | None = None) -> dict[str, Any]:
+    """Return groups of potential duplicate papers."""
+    kb_root = resolve_root(root)
+    groups = find_duplicates(kb_root)
+    return {"root": str(kb_root), "groups": groups}
+
+
+@app.post("/api/duplicates/cleanup")
+def api_cleanup_duplicates(root: str | None = None) -> dict[str, Any]:
+    """Delete all duplicate papers, keeping only the newest in each group."""
+    kb_root = resolve_root(root)
+    result = cleanup_duplicates(kb_root)
+    return {"root": str(kb_root), **result}
 
 
 # ── translation ───────────────────────────────────────────────────────

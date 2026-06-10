@@ -1,0 +1,197 @@
+id: a_survey_of_self_evolving_agents_what_when_how_and_where_to_evolve_on_the_path_t
+title: A Survey of Self-Evolving Agents What, When, How, and Where to Evolve on the
+  Path to Artificial Super Intelligence
+authors:
+- Huan-ang Gao
+- Jiayi Geng
+- Wenyue Hua
+- Mengkang Hu
+- Xinzhe Juan
+- Hongzhang Liu
+- Shilong Liu
+- Jiahao Qiu
+- Xuan Qi
+- Qihan Ren
+- Yiran Wu
+- Hongru Wang
+- Han Xiao
+- Yuhang Zhou
+- Shaokun Zhang
+- Jiayi Zhang
+- Jinyu Xiang
+- Yixiong Fang
+- Qiwen Zhao
+- Dongrui Liu
+- Cheng Qian
+- Zhenhailong Wang
+- Minda Hu
+- Huazheng Wang
+- Qingyun Wu
+- Heng Ji
+- Mengdi Wang
+year: 2026
+venue: Transactions on Machine Learning Research
+doi: ''
+arxiv_id: ''
+source_pdf: originals/papers/5723_a_survey_of_self_evolving.pdf
+pages: 77
+tags:
+- agent
+- benchmark
+- llm
+- multi_agent
+- recursive_self_improvement
+- survey
+- tool_use
+status: profiled
+confidence: medium
+reading_status: unread
+priority: normal
+needs_review: false
+abstract: Large Language Models (LLMs) have demonstrated remarkable capabilities across
+  diverse tasks but remain fundamentally static, unable to adapt their internal parameters
+  to novel tasks, evolving knowledge domains, or dynamic interaction contexts. As
+  LLMs are increasingly deployed in open-ended, interactive environments, this static
+  nature has become a critical bottleneck, necessitating agents that can adaptively
+  reason, act, and evolve in real time. This paradigm shift —from scaling static models
+  to developing self-evolving agents — has sparked growing interest in architectures
+  and methods enabling continual learning and adaptation from data, interactions,
+  and experiences. This survey provides the first systematic and comprehensive review
+  of self-evolving agents, organizing the field around three foundational dimensions
+  —what to evolve, when to evolve, and how to evolve. We examine evolutionary mechanisms
+  across agent components (e.g., models, memory, tools, architecture), categorize
+  adaptation methods by stages (e.g., intra-test-time, inter-test-time), and analyze
+  the algorithmic and architectural designs that guide evolutionary adaptation (e.g.,
+  scalar rewards, textual feedback, single-agent and multi-agent systems). Additionally,
+  we analyze evaluation metrics and benchmarks tailored for self-evolving agents,
+  highlight applications in domains such as coding, education, and healthcare, and
+  identify critical challenges and research directions in safety, scalability, and
+  co-evolutionary dynamics. By providing a structured framework for understanding
+  and designing self-evolving agents, this survey establishes a roadmap for advancing
+  more adaptive, capable, robust, and versatile agentic systems in both research and
+  real-world deployments, and ultimately sheds light on the realization of Artificial
+  Super Intelligence (ASI) where agents evolve autonomously and perform beyond human-level
+  intelligence across a wide array of tasks.
+one_sentence: 'This survey provides the first systematic and comprehensive review
+  of self-evolving agents, organizing the field around three foundational dimensions:
+  what to evolve, when to evolve, and how to evolve.'
+problem: Large Language Models (LLMs) remain fundamentally static, unable to adapt
+  their internal parameters to novel tasks, evolving knowledge domains, or dynamic
+  interaction contexts, which becomes a critical bottleneck in open-ended, interactive
+  environments.
+contributions:
+- 'We establish a unified theoretical framework for characterizing self-evolutionary
+  processes in agent systems, anchored around three fundamental dimensions: what evolves,
+  how it evolves, and when it evolves, providing clear design guidance for future
+  self-evolving agentic systems.'
+- We further investigate the evaluation benchmark or environment tailored for self-evolving
+  agents, highlighting emerging metrics and challenges related to adaptability, robustness,
+  and real-world complexity.
+- We showcase several key real-world applications across various domains, including
+  autonomous software engineering, personalized education, healthcare, and intelligent
+  virtual assistance, illustrating the practical potential of self-evolving agents.
+- We identify critical open challenges and promising future research directions, emphasizing
+  aspects like safety, personalization, multi-agent co-evolution, and scalability.
+method:
+- Systematic survey of self-evolving agents, organizing the field around what to evolve,
+  when to evolve, and how to evolve.
+- Examines evolutionary mechanisms across agent components (model, memory, tools,
+  architecture).
+- Categorizes adaptation methods by stages (intra-test-time, inter-test-time).
+- Analyzes algorithmic and architectural designs for guiding evolution (rewards, feedback,
+  single-agent, multi-agent).
+- Reviews evaluation metrics and benchmarks tailored for self-evolving agents.
+- Highlights applications in coding, education, healthcare, and identifies challenges
+  in safety, scalability, co-evolution.
+experiments:
+- Additionally, we analyze evaluation metrics and benchmarks tailored for self-evolving
+  agents, highlight appli- cations in domains such as coding, education, and healthcare,
+  and identify critical challenges and research directions in safety, scalability,
+  and co-evolutionary dynamics.
+- Furthermore, we review certain evaluation metrics and benchmarks to track existing
+  advancements of self-evolving agents, emphasizing the importance of co- evolution
+  between evaluation and agents (Section 6).
+- • We further investigate the evaluation benchmark or environment tailored for self-evolving
+  agents, highlighting emerging metrics and challenges related to adaptability, robustness,
+  and real-world complexity.
+- Evaluation Adaptivity Retention Generalization Efficiency Safety Goals & Metrics
+  Static Short-horizon Long-horizon Paradigm Where to Evolve?
+- 6) contrasts general-purpose and domain- specific deployments (e.g., coding, GUI,
+  finance, medical, education).Evaluation (Sec.
+limitations:
+- Additionally, we analyze evaluation metrics and benchmarks tailored for self-evolving
+  agents, highlight appli- cations in domains such as coding, education, and healthcare,
+  and identify critical challenges and research directions in safety, scalability,
+  and co-evolutionary dynamics.
+- As LLMs are increasingly deployed in open-ended, interactive environments, this
+  limitation becomes a critical bottleneck.
+- Unlike static LLMs, which remain constrained by their inability to adapt to novel
+  and evolving contexts, self- evolving agents are designed to overcome these limitations
+  by continuously learning from real-world feedback.
+- However, these works address isolated components rather than the holistic agent
+  system.
+notes: "# Reading Notes\n\n*Use this space for your own notes while reading the paper.\
+  \ The structured summary is available in the Summary section.*\n\n## Key takeaways\n\
+  \n- \n\n## Questions\n\n- \n\n## Connections to other papers\n\n- \n"
+review_notes: []
+agent_reviews:
+- time: '2026-06-10T06:37:08.511976+00:00'
+  model: deepseek-v4-flash
+  notes:
+  - 'authors: [] → [''Huan-ang Gao'', ''Jiayi Geng'', ''Wenyue Hua'', ''Mengkang Hu'',
+    ...'
+  - 'year: None → 2026'
+  - 'venue:  → Transactions on Machine Learning Research'
+  - 'abstract: updated (was: ''Large Language Models (LLMs) have demonstrated remarkable
+    ca...'')'
+  - 'one_sentence: updated (was: ''Large Language Models (LLMs) have demonstrated
+    remarkable ca...'')'
+  - 'problem: updated (was: ''Additionally, we analyze evaluation metrics and benchmarks
+    t...'')'
+  - 'contributions: replaced 0 items → 4 items'
+  - 'method: replaced 5 items → 6 items'
+  - 'tags: added [''multi_agent'', ''recursive_self_improvement'', ''tool_use'']'
+  - 'tags: removed [''retrieval'']'
+  - Set authors from PDF list (27 authors).
+  - Set year to 2026 based on publication date.
+  - Set venue to Transactions on Machine Learning Research.
+  - Provided full abstract from PDF.
+  - Generated one_sentence summary from abstract.
+  - Extracted contributions from paper's key contributions list.
+  - Replaced method with concise bullet points based on paper's structure.
+  - Removed incorrect experiment and limitation entries (survey has no experiments).
+  - 'Updated tags: removed ''retrieval'' (not a core theme), added ''multi_agent'',
+    ''tool_use'', ''recursive_self_improvement'' based on paper''s coverage.'
+created_at: '2026-06-10T06:36:19.548432+00:00'
+updated_at: '2026-06-10T06:37:15.515164+00:00'
+agent_reviewed_at: '2026-06-10T06:37:08.511983+00:00'
+translations:
+  abstract: 大型语言模型(LLMs)在各种任务中表现出了显著的能力,但基本上保持不变,无法使其内部参数适应新任务、不断发展的知识领域或动态互动环境。 由于LLMS越来越多地部署在无限制、互动的环境中,这种静态性质已成为一个关键的瓶颈,需要能够适应性地理性、采取行动和实时演变的代理人。
+    这种范式的转变——从扩大静态模型到发展自我演变的代理人——引起了人们日益关注能够从数据、互动和经验中不断学习和适应的结构和方法。 这次调查对自我演化的代理人进行了第一次系统而全面的审查,围绕三个基本方面——什么是演化的,什么时候演化的,怎样演化的——组织现场.
+    我们审查跨代理构件(如模型,内存,工具,架构)的演化机制,将适应方法按阶段分类(如测试内期,测试间期),并分析指导演化适应的算法和建筑设计(如刻度奖励,文字反馈,单代理和多代理系统).
+    此外,我们分析了针对自我演化剂的评估指标和基准,强调了编码、教育和卫生保健等领域的应用,并确定了安全、可扩展性和共同演化动态方面的重大挑战和研究方向。 通过提供一个理解和设计自我演化剂的结构化框架,本调查为在研究和现实世界部署中推进更适应性强,能力强,能力强,多用途的代理系统确立了路线图,并最终揭示了人工超级智能(ASI)的实现,即特工在众多任务中自主地演化并超越人级智能行事.
+  one_sentence: 本次调查对自我演化的主体进行了第一次系统而全面的审查,围绕三个基本层面组织实地工作:什么是演化,什么时候演化,怎样演化.
+  problem: 大语言模型(LLMs)仍然从根本上保持静态,无法使其内部参数适应新任务,不断发展的知识领域,或动态的交互环境,这成为开放,互动环境中的关键瓶颈.
+  contributions:
+  - 我们建立统一的理论框架,在物剂系统中突出自我进化过程的特点,围绕三个基本方面:什么进化,怎样进化,什么时候进化,为未来的自进化物剂系统提供明确的设计指导.
+  - 我们进一步调查了适合自我发展因素的评价基准或环境,突出强调了新出现的与适应性、稳健性和现实世界复杂性有关的衡量标准和挑战。
+  - 我们展示了一些跨越不同领域的关键现实世界应用,包括自主软件工程、个性化教育、医疗保健和智能虚拟援助,说明了自我发展代理人的实际潜力。
+  - 我们确定了重大的公开挑战和有希望的未来研究方向,强调安全、个性化、多剂共演和可扩展性等方面。
+  method:
+  - 系统调查自我演化剂,围绕什么演化,什么时候演化,怎样演化来组织球场.
+  - 审查跨代理组件(模型,内存,工具,架构)的演化机制.
+  - 将适应方法按阶段分类(测试内期,测试间期).
+  - 分析指导进化的算法和建筑设计(奖励,反馈,单代理,多代理).
+  - 审查适合自我发展代理人的评价指标和基准。
+  - 突出编码,教育,医疗等方面的应用,明确安全性,可伸缩性,共进性等方面的挑战.
+  experiments:
+  - 此外,我们分析为自我发展代理人量身定制的评价指标和基准,强调编码、教育和医疗保健等领域的应用指标,并确定安全、可扩展性和共同演变动态方面的重大挑战和研究方向。
+  - 此外,我们审查某些评价指标和基准,以跟踪自我发展代理人的现有进展,强调评价与代理人共同演变的重要性(第6节)。
+  - • 我们进一步调查适合自我发展因素的评价基准或环境,强调与适应性、稳健性和现实世界复杂性有关的新指标和挑战。
+  - 通用效率安全目标和计量标准 进化到哪里去?
+  - 6)对比了通用和域特定部署(如编码,GUI,财务,医疗,教育). 评价(Sec.)
+  limitations:
+  - 此外,我们分析为自我发展代理人量身定制的评价指标和基准,强调编码、教育和医疗保健等领域的应用指标,并确定安全、可扩展性和共同演变动态方面的重大挑战和研究方向。
+  - 由于LLMs越来越多地部署在开放式互动环境中,这一限制成为一个重要的瓶颈。
+  - 与静态的LLMS由于无法适应新颖和不断演变的环境而仍然受到制约不同,自我演化的代理人通过不断学习现实世界的反馈来克服这些局限.
+  - 然而,这些作品针对的是孤立的组成部分,而不是整体的代理系统.

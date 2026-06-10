@@ -209,7 +209,7 @@ async def run_agent_answer(root: Path, question: str,
             return _tool_error(str(exc))
 
     server = create_sdk_mcp_server(
-        name="paper_kb",
+        name="neunote",
         version="1.0.0",
         tools=[kb_list, kb_read, kb_write, kb_extract_pdf_text],
     )
@@ -248,17 +248,17 @@ Workflow:
         env=env,
         permission_mode="default",
         allowed_tools=[
-            "mcp__paper_kb__kb_list",
-            "mcp__paper_kb__kb_read",
-            "mcp__paper_kb__kb_write",
-            "mcp__paper_kb__kb_extract_pdf_text",
+            "mcp__neunote__kb_list",
+            "mcp__neunote__kb_read",
+            "mcp__neunote__kb_write",
+            "mcp__neunote__kb_extract_pdf_text",
         ],
         disallowed_tools=["Read", "Write", "Edit", "MultiEdit", "Bash", "Grep", "Glob", "LS", "WebFetch", "WebSearch"],
-        mcp_servers={"paper_kb": server},
+        mcp_servers={"neunote": server},
         extra_args={"debug-to-stderr": None},
         debug_stderr=stderr_temp,
         system_prompt=(
-            "You are a paper knowledge-base agent. Use only the paper_kb tools. "
+            "You are a paper knowledge-base agent. Use only the neunote tools. "
             "Never claim you read a PDF unless you called kb_extract_pdf_text. "
             "Prefer paper YAML files before PDF extraction. "
             "Only write paper updates when correcting verified errors; never modify originals/papers."

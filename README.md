@@ -1,4 +1,4 @@
-# Readinglist
+# NeuNote（知记）
 
 Local literature-library manager with a Python FastAPI backend and a Bun + TypeScript frontend.
 

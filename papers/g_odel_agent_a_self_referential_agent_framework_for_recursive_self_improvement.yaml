@@ -1,0 +1,136 @@
+id: g_odel_agent_a_self_referential_agent_framework_for_recursive_self_improvement
+title: 'G\"odel Agent: A Self-Referential Agent Framework for Recursive Self-Improvement'
+authors:
+- Xunjian Yin
+- Xinyi Wang
+- Liangming Pan
+- Li Lin
+- Xiaojun Wan
+- William Yang Wang
+year: 2024
+venue: ''
+doi: ''
+arxiv_id: '2410.04444'
+source_pdf: originals/papers/g_del_agent_a_self_referential_agent_framework_for_recursive_self_improvement.pdf
+pages: 24
+tags:
+- agent
+- llm
+- recursive_self_improvement
+status: profiled
+confidence: medium
+reading_status: unread
+priority: normal
+needs_review: false
+abstract: The rapid advancement of large language models (LLMs) has significantly
+  enhanced the capabilities of agents across various tasks. However, existing agentic
+  systems, whether based on fixed pipeline algorithms or pre-defined meta-learning
+  frameworks, cannot search the whole agent design space due to the restriction of
+  human-designed components, and thus might miss the more optimal agent design. In
+  this paper, we introduce G ¨odel Agent, a self-evolving framework inspired by the
+  G¨odel machine, enabling agents to recursively improve themselves without relying
+  on predefined routines or fixed optimization algorithms. G ¨odel Agent leverages
+  LLMs to dynamically modify its own logic and behavior, guided solely by high-level
+  objectives through prompting. Experimental results on multiple domains demonstrate
+  that implementation of G¨odel Agent can achieve continuous self-improvement, surpassing
+  manually crafted agents in performance, efficiency, and generalizability.
+one_sentence: Gödel Agent is a self-referential LLM agent framework that recursively
+  improves itself by dynamically modifying its own code, eliminating human priors
+  in agent design.
+problem: Existing LLM agent systems rely on human-designed components that limit the
+  search space of optimal agent designs, preventing full exploration of the agent
+  design space.
+contributions:
+- Proposes the first fully self-referential agent framework, G¨odel Agent, implemented
+  via monkey patching.
+- Demonstrates superiority over previous agent frameworks in performance, flexibility,
+  cost, and potential.
+- Provides analysis of the optimization process, including self-referential abilities
+  and optimized agentic systems.
+- Offers a promising direction for flexible and capable agents through recursive self-improvement.
+method:
+- Inspired by the G¨odel machine, enabling agents to recursively improve without predefined
+  routines.
+- Uses self-referential property to analyze and modify own code, including the code
+  for analysis and modification.
+- Implements self-awareness and self-modification via runtime memory manipulation
+  (monkey patching).
+- Main function implemented as a recursive function, allowing continuous self-optimization.
+- Initial agent defined by policy π0 and self-referential learning algorithm I0 =
+  (f0, o0), with decision-making and action functions.
+experiments:
+- Evaluated on multiple domains including coding, science, math, and reasoning.
+- Compared against hand-designed agents (e.g., Reflexion, ReAct) and meta-learning
+  optimized agents.
+- Results show G¨odel Agent achieves continuous self-improvement and surpasses baselines
+  in performance, efficiency, and generalizability.
+limitations:
+- However, there are inevitably some human priors involved in these agent designs
+  that cannot be improved during the inference time.
+- In contrast, self-referential agent (G ¨odel Agent) can recursively improve itself
+  without any limitation.
+- For ex- ample, certain frameworks store an agent’s success- ful or failed strategies
+  in memory based on environ- mental feedback (Liu et al., 2023; Hu et al., 2023;
+  Qian et al., 2024), while others automatically op- timize agent prompts (Khattab
+  et al., 2023; Zhang et al., 2024a; Khattab et al., 2023).
+- However, these meta-algorithms are also designed manually and remain unchanged once
+  deployed, limiting the agents’ ability.
+notes: "# Reading Notes\n\n*Use this space for your own notes while reading the paper.\
+  \ The structured summary is available in the Summary section.*\n\n## Key takeaways\n\
+  \n- \n\n## Questions\n\n- \n\n## Connections to other papers\n\n- \n"
+review_notes: []
+agent_reviews:
+- time: '2026-06-10T06:29:30.042851+00:00'
+  model: deepseek-v4-flash
+  notes:
+  - 'authors: [] → [''Xunjian Yin'', ''Xinyi Wang'', ''Liangming Pan'', ''Li Lin'',
+    ''Xi...'
+  - 'year: None → 2024'
+  - 'arxiv_id:  → 2410.04444'
+  - 'abstract: updated (was: ''The rapid advancement of large language mod- els (LLMs)
+    has ...'')'
+  - 'one_sentence: updated (was: ''The rapid advancement of large language mod- els
+    (LLMs) has ...'')'
+  - 'problem: updated (was: ''However, there are inevitably some human priors involved
+    in ...'')'
+  - 'contributions: replaced 0 items → 4 items'
+  - 'method: replaced 5 items → 5 items'
+  - 'experiments: replaced 5 items → 3 items'
+  - 'tags: added [''recursive_self_improvement'']'
+  - Added authors, year, arxiv_id, abstract, one_sentence, problem, contributions,
+    method, experiments from PDF text.
+  - Corrected one_sentence from partial abstract to proper summary.
+  - Reformatted method and experiments as concise bullet points.
+  - Added new tag 'recursive_self_improvement' as core concept not covered by existing
+    tags.
+  - Left venue and doi as null (not present in PDF).
+  - Left limitations as null (no explicit limitations section in first pages).
+created_at: '2026-06-10T06:28:57.906274+00:00'
+updated_at: '2026-06-10T06:29:40.628964+00:00'
+agent_reviewed_at: '2026-06-10T06:29:30.042864+00:00'
+translations:
+  abstract: 大语言模型(LLMS)的迅速发展,大大增强了各种任务代理的能力. 然而,现有的代理系统,无论是基于固定的管道算法还是预先定义的元学习框架,由于人类设计的组件的限制,无法搜索整个代理设计空间,因此可能错过更优化的代理设计.
+    在本文中,我们介绍了G"odel Agent"(G"odel Agent"),这是G"odel"机启发的自演框架,它使代理在不依赖预先定义的例行程序或固定优化算法的情况下,能够不断自我改进.
+    G"odel Agent" 利用LLMs 来动态修改自身的逻辑和行为,完全以高层次目标为指导,通过催促. 多个领域的实验结果表明,实施G'odel Agent可以实现连续的自我改进,在性能、效率和通用性方面超过手工制作的代理。
+  one_sentence: 戈德尔 Agent是一个自我优惠的LLM代理框架,通过动态修改自己的代码,在代理设计中消除人类前身,从而不断自我改善.
+  problem: 现有的LLM代理系统依赖于人类设计的组件,这些组件限制了最佳代理设计的搜索空间,阻碍了对代理设计空间的全面探索.
+  contributions:
+  - 提出第一个完全自我优惠的代理框架,即通过猴子补丁实施的G"odel Agent".
+  - 表明在业绩、灵活性、成本和潜力方面优于以前的代理框架。
+  - 提供优化过程的分析,包括自我优惠能力和优化的代理系统.
+  - 通过递归自我改进,为灵活和有能力的代理人提供有希望的方向。
+  method:
+  - 受G"odel"机的启发,使剂在没有预先定义的例行程序的情况下进行递归改进.
+  - 使用自我优惠属性来分析和修改自己的代码,包括用于分析和修改的代码.
+  - 通过运行时内存操纵(monkey补丁)实现自我意识和自我修改.
+  - 主要功能作为递归函数执行,允许持续自我优化.
+  - 政策π0和自我优惠学习算法I0=(f0,o0)定义的初始代理,具有决策和行动功能.
+  experiments:
+  - 评估多个领域,包括编码、科学、数学和推理。
+  - 与手工设计的代理(如Reflexion,ReAct)和元学习优化代理相比.
+  - 结果显示,G“odel Agent”在业绩、效率和通用性方面不断自我改进,超过了基线。
+  limitations:
+  - 然而,在这些物剂设计中不可避免地有一些人类前科,在推论期间无法改进.
+  - 相比之下,自我优惠代理人(G " odel Agent " )可以毫无限制地不断自我改进。
+  - 就前足而言,某些框架根据环境-心理反馈储存了一种代理人的成功或失败的记忆策略(Liu等人,2023年;Hu等人,2023年;Qian等人,2024年),而另一些框架则自动使用刺激剂提示(Khattab等人,2023年;Zhang等人,2024年a年;Khattab等人,2023年)。
+  - 然而,这些元算法也是手工设计的,部署后保持不变,限制了代理人的能力。
