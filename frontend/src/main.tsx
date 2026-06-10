@@ -524,7 +524,7 @@ function AppNav({ page, setPage, paperCount, jobCount }: { page: Page; setPage: 
   return (
     <header className="app-nav">
       <button className="brand-button" onClick={() => setPage("dashboard")}>
-        <Archive size={20} />
+        <img src="/neunote-icon.svg" alt="" width={28} height={28} className="brand-mark" />
         <span><strong>NeuNote</strong><small>{paperCount} entries archived</small></span>
       </button>
       <nav>

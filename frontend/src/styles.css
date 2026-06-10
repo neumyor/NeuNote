@@ -277,6 +277,13 @@ svg.lucide,
   transform: none;
 }
 
+.brand-button .brand-mark {
+  display: block;
+  flex: 0 0 auto;
+  border-radius: 6px;
+  object-fit: cover;
+}
+
 .brand-button strong {
   display: block;
   font-size: 18px;
