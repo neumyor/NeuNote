@@ -416,7 +416,7 @@ function App() {
         {page === "dashboard" && (
           <DashboardPage
             stats={stats} papers={papers} tagCounts={tagCounts}
-            authorCounts={authorCounts} dailyActivity={dailyActivity}
+            authorCounts={authorCounts}
             openProfile={openProfile} uploadPapers={uploadPapers}
             busy={busy} uploadProgress={uploadProgress}
           />
@@ -486,7 +486,6 @@ function DashboardPage(props: {
   stats: Stats; papers: Paper[];
   tagCounts: [string, number][];
   authorCounts: [string, number][];
-  dailyActivity: Map<string, number>;
   openProfile: (id: string) => void;
   uploadPapers: (e: React.ChangeEvent<HTMLInputElement>) => void;
   busy: string; uploadProgress: string;
@@ -514,10 +513,6 @@ function DashboardPage(props: {
         <div className="panel chart-panel">
           <h2>Top Authors</h2>
           <AuthorChart authorCounts={props.authorCounts} />
-        </div>
-        <div className="panel chart-panel chart-wide">
-          <h2>Activity</h2>
-          <ActivityHeatmap dailyActivity={props.dailyActivity} />
         </div>
       </section>
     </div>
@@ -570,70 +565,6 @@ function AuthorChart({ authorCounts }: { authorCounts: [string, number][] }) {
   );
 }
 
-// ── Activity Heatmap ─────────────────────────────────────────────────
-
-function ActivityHeatmap({ dailyActivity }: { dailyActivity: Map<string, number> }) {
-  const today = new Date();
-  const weeks = 20;
-  const days: { date: string; count: number }[] = [];
-  for (let w = weeks - 1; w >= 0; w--) {
-    for (let d = 6; d >= 0; d--) {
-      const dt = new Date(today);
-      dt.setDate(dt.getDate() - (w * 7 + (6 - d)));
-      days.push({ date: dt.toISOString().slice(0, 10), count: dailyActivity.get(dt.toISOString().slice(0, 10)) ?? 0 });
-    }
-  }
-  const maxCount = Math.max(1, ...days.map((d) => d.count));
-  const color = (count: number) => {
-    if (count === 0) return "var(--rail)";
-    const p = count / maxCount;
-    if (p < 0.25) return "#bfd6c2";
-    if (p < 0.5) return "#7baa82";
-    if (p < 0.75) return "#4d7a56";
-    return "#1f3328";
-  };
-  const dayLabels = ["", "Mon", "", "Wed", "", "Fri", ""];
-
-  return (
-    <div className="heatmap-wrap">
-      <div className="heatmap-inner">
-        <div className="heatmap-y-labels">
-          {dayLabels.map((l, i) => <span key={i}>{l}</span>)}
-        </div>
-        <div className="heatmap-cells">
-          {Array.from({ length: weeks }, (_, w) => (
-            <div className="heatmap-week" key={w}>
-              {Array.from({ length: 7 }, (_, d) => {
-                const day = days[w * 7 + d];
-                const dt = new Date(day.date + "T00:00:00");
-                const showMonth = dt.getDate() <= 7;
-                return (
-                  <div className="heatmap-cell-wrap" key={d}>
-                    <div
-                      className="heatmap-cell"
-                      style={{ background: color(day.count) }}
-                      title={`${day.date}: ${day.count} updates`}
-                    />
-                    {showMonth && d === 0 && (
-                      <span className="heatmap-month">{dt.toLocaleString("en", { month: "short" })}</span>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          ))}
-        </div>
-      </div>
-      <div className="heatmap-legend">
-        <span>Less</span>
-        {[0, 1, 2, 3, 4].map((i) => (
-          <div key={i} className="legend-cell" style={{ background: i === 0 ? "var(--rail)" : color((i / 4) * maxCount) }} />
-        ))}
-        <span>More</span>
-      </div>
-    </div>
-  );
-}
 
 // ── Upload ───────────────────────────────────────────────────────────
 

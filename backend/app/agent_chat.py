@@ -360,7 +360,7 @@ Rules:
 - The one_sentence should be a single sentence summary of the core contribution.
 - For title: only provide it when the current title is clearly wrong (e.g. it looks \
   like a PDF filename slug, contains garbled text, or is a section heading). \
-  Do NOT change a title that is merely imperfectly formatted.
+  Do NOT change a title that is merely imperfectly formatted.\n  The corrected title must be in Title Case (capitalize first letter of each\n  major word), never ALL CAPS. For example "MY PAPER TITLE" → "My Paper Title".
 - For tags: review the current tags and the known-tags list provided in the prompt.\
   Keep tags that still apply, remove any that don't, and add NEW tags only when the\
   paper clearly covers a topic not represented by any existing tag. Be conservative:\

@@ -1058,3 +1058,115 @@ textarea { resize: vertical; }
     padding: 18px 14px 34px;
   }
 }
+
+/* ═══════════════════════════════════════════════════════════════════
+   REDUCED MOTION
+   ═══════════════════════════════════════════════════════════════════ */
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   ICONS — Vintage Print weight & color
+   ═══════════════════════════════════════════════════════════════════ */
+
+svg.lucide,
+[class*="lucide"] {
+  stroke-width: 1.5 !important;
+  color: inherit;
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   DYNAMIC PAPER TEXTURE
+   ═══════════════════════════════════════════════════════════════════ */
+
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  pointer-events: none;
+  opacity: 0.06;
+  background:
+    repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 2px,
+      rgba(107, 70, 40, 0.07) 2px,
+      rgba(107, 70, 40, 0.07) 3px
+    ),
+    repeating-linear-gradient(
+      90deg,
+      transparent,
+      transparent 3px,
+      rgba(80, 60, 40, 0.05) 3px,
+      rgba(80, 60, 40, 0.05) 4px
+    );
+  animation: paperDrift 38s linear infinite;
+}
+
+@keyframes paperDrift {
+  0%   { background-position: 0 0, 0 0; }
+  100% { background-position: 0 40px, 22px 0; }
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   VINTAGE MICRO-ANIMATIONS
+   ═══════════════════════════════════════════════════════════════════ */
+
+/* ── panel entrance ── */
+
+.panel,
+.metric {
+  animation: panelIn 260ms ease-out both;
+}
+
+@keyframes panelIn {
+  from { opacity: 0; transform: translateY(5px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.metric:nth-child(1) { animation-delay: 0ms; }
+.metric:nth-child(2) { animation-delay: 40ms; }
+.metric:nth-child(3) { animation-delay: 80ms; }
+.metric:nth-child(4) { animation-delay: 120ms; }
+
+/* ── ink-press active state ── */
+
+button:active:not(:disabled) {
+  transform: translateY(1px);
+  transition: transform 60ms ease;
+}
+
+/* ── table row hover (library) ── */
+
+.paper-table tbody tr {
+  transition: background 140ms ease;
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   ACTIVITY HEATMAP — vintage-print tune-up
+   ═══════════════════════════════════════════════════════════════════ */
+
+.heatmap-wrap {
+  font-family: var(--font-ui);
+}
+
+.heatmap-cell {
+  border: 1px solid rgba(196, 183, 163, 0.25);
+}
+
+.heatmap-month {
+  color: var(--ink-muted);
+  font-size: 9px;
+  letter-spacing: 0.05em;
+}
+
+.chart-panel h2 {
+  font-family: var(--serif);
+}
