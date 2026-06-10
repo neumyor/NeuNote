@@ -1,0 +1,156 @@
+id: xlstm_ecg_m_ulti_label_ecg_c_lassification_via_feature_fusion_with_x_lstm
+title: 'XLSTM-ECG: M ULTI-LABEL ECG C LASSIFICATION VIA FEATURE FUSION WITH X LSTM'
+authors:
+- Lei Kang
+- Xuanshuo Fu
+- Javier Vazquez-Corral
+- Ernest Valveny
+- Dimosthenis Karatzas
+year: 2025
+venue: ''
+doi: ''
+arxiv_id: '2504.16101'
+source_pdf: originals/papers/2504_16101v1.pdf
+pages: 18
+tags:
+- ecg
+- time_series
+status: profiled
+confidence: medium
+reading_status: unread
+priority: normal
+needs_review: false
+abstract: Cardiovascular diseases (CVDs) remain the leading cause of mortality worldwide,
+  highlighting the critical need for efficient and accurate diagnostic tools. Electrocardiograms
+  (ECGs) are indispensable in diagnosing various heart conditions; however, their
+  manual interpretation is time-consuming and error-prone. In this paper, we propose
+  xLSTM-ECG, a novel approach that leverages an extended Long Short-Term Memory (xLSTM)
+  network for multi-label classification of ECG signals, using the PTB-XL dataset.
+  To the best of our knowledge, this work represents the first design and application
+  of xLSTM modules specifically adapted for multi-label ECG classification. Our method
+  employs a Short-Time Fourier Transform (STFT) to convert time-series ECG waveforms
+  into the frequency domain, thereby enhancing feature extraction. The xLSTM architecture
+  is specifically tailored to address the complexities of 12-lead ECG recordings by
+  capturing both local and global signal features. Comprehensive experiments on the
+  PTB-XL dataset reveal that our model achieves strong multi-label classification
+  performance, while additional tests on the Georgia 12-Lead dataset underscore its
+  robustness and efficiency. This approach significantly improves ECG classification
+  accuracy, thereby advancing clinical diagnostics and patient care. The code will
+  be publicly available upon acceptance.
+one_sentence: We propose xLSTM-ECG, the first application of extended LSTM (xLSTM)
+  networks for multi-label classification of 12-lead ECG signals, achieving state-of-the-art
+  performance on PTB-XL.
+problem: Electrocardiograms (ECGs) are indispensable in diagnosing various heart conditions;
+  however, their manual interpretation is time-consuming and error-prone.
+contributions:
+- We present a custom-designed xLSTM-based network for multi-label classification
+  of 12-lead ECG signals, the first application of xLSTM in this context.
+- We employ Short-Time Fourier Transform to convert ECG signals into the frequency
+  domain, capturing both temporal and spectral characteristics.
+- We thoroughly evaluate our approach on the PTB-XL dataset, demonstrating state-of-the-art
+  performance, and further assess its robustness on the Georgia 12-Lead dataset.
+method:
+- Convert 12-lead ECG signals into time-frequency domain using Short-Time Fourier
+  Transform (STFT).
+- Apply two layer fusion xLSTM blocks, each consisting of sLSTM and mLSTM modules,
+  to capture temporal dependencies and inter-lead interactions.
+- Utilize an adaptive fusion mechanism combining average hidden states and attention-based
+  aggregation across leads.
+- Employ average pooling and independent linear layers for multi-label classification
+  into five superclasses.
+- Use data augmentation (e.g., random masking) and a weighted loss function to mitigate
+  noise and class imbalance.
+experiments:
+- Evaluated on the PTB-XL dataset for multi-label classification, achieving strong
+  performance.
+- Additional evaluation on the Georgia 12-Lead dataset demonstrates robustness.
+- Achieves state-of-the-art performance compared to standard LSTM and other baselines.
+limitations:
+- Electrocardiograms (ECGs) are indispensable in diagnosing various heart conditions;
+  however, their manual interpretation is time-consuming and error-prone.
+- However, manual interpretation of ECG signals can be time-consuming and prone to
+  error due to subtle waveform variations.
+- However, its potential in multi-lead ECG analysis remains largely unexplored.
+- Both modules address standard LSTM limitations by incorporating exponential gating
+  and enhanced memory designs, enabling the learning and retention of information
+  over longer time spans.
+notes: "# Reading Notes\n\n*Use this space for your own notes while reading the paper.\
+  \ The structured summary is available in the Summary section.*\n\n## Key takeaways\n\
+  \n- \n\n## Questions\n\n- \n\n## Connections to other papers\n\n- \n"
+review_notes: []
+agent_reviews:
+- time: '2026-06-10T02:16:16.514772+00:00'
+  model: deepseek-v4-flash
+  notes:
+  - 'authors: [] → [''Lei Kang'', ''Xuanshuo Fu'', ''Javier Vazquez-Corral'', ''Ernest...'
+  - 'year: None → 2025'
+  - 'arxiv_id:  → 2504.16101'
+  - 'abstract: updated (was: ''Cardiovascular diseases (CVDs) remain the leading cause
+    of m...'')'
+  - 'one_sentence: updated (was: ''Cardiovascular diseases (CVDs) remain the leading
+    cause of m...'')'
+  - 'contributions: replaced 0 items → 3 items'
+  - 'method: replaced 5 items → 5 items'
+  - 'experiments: replaced 5 items → 3 items'
+  - 'Corrected title from ''XLSTM-ECG: M ULTI-LABEL ECG C LASSIFICATION VIA FEATURE
+    FUSION WITH X LSTM'' to ''XLSTM-ECG: Multi-Label ECG Classification via Feature
+    Fusion with xLSTM'' due to garbled spaces.'
+  - 'Added authors: Lei Kang, Xuanshuo Fu, Javier Vazquez-Corral, Ernest Valveny,
+    Dimosthenis Karatzas.'
+  - Set year to 2025 based on arXiv submission date and manuscript date.
+  - Set arxiv_id to '2504.16101' as found in PDF header.
+  - Filled abstract with full text from PDF.
+  - Set one_sentence to a concise summary of core contribution.
+  - Set contributions to the three bullet points listed in the introduction.
+  - Set method to concise bullet points describing preprocessing, xLSTM blocks, fusion,
+    and classification.
+  - Set experiments to bullet points based on evaluation description.
+  - Set limitations to null as no explicit limitations were found in the provided
+    text.
+  - Left venue and doi as null due to absence of evidence.
+- time: '2026-06-10T02:34:59.121346+00:00'
+  model: deepseek-v4-flash
+  notes:
+  - 'tags: added [''ecg'']'
+  - 'tags: removed [''tool_use'']'
+  - Updated abstract to the full version from the PDF (previous was truncated).
+  - Removed 'tool_use' tag as it is not relevant to this paper; added 'ecg' tag since
+    the paper is clearly about ECG classification and 'ecg' is a known tag.
+  - Cleared limitations because the provided entries were not actual limitations of
+    the method (they included motivation statements and descriptions of LSTM limitations
+    rather than specific weaknesses of the proposed approach). The paper does not
+    have a dedicated limitations section.
+  - Kept title unchanged despite odd spacing (M ULTI-LABEL C LASSIFICATION) per instructions
+    to not change imperfectly formatted titles.
+  - All other fields (authors, year, venue, doi, arxiv_id, one_sentence, problem,
+    contributions, method, experiments) appear correct and were left as null (no change).
+created_at: '2026-06-10T02:15:43.612055+00:00'
+updated_at: '2026-06-10T02:34:59.121356+00:00'
+agent_reviewed_at: '2026-06-10T02:34:59.121352+00:00'
+translations:
+  abstract: 心血管疾病仍然是全世界死亡的主要原因,突出表明迫切需要高效和准确的诊断工具。 心电图(ECGs)在诊断各种心脏状况时是不可或缺的;然而,其人工解析很耗时,容易出错.
+    在本文中,我们提出xLSTM-ECG,这是一种新颖的方法,利用一个扩展的长短期内存(xLSTM)网络对ECG信号进行多标签分类,使用PTB-XL数据集. 就我们所知,这项工作是专门为多标签ECG分类而改编的xLSTM模块的首次设计和应用.
+    我们的方法使用一个短时间Fourier Transform(STFT)将时序ECG波形转换成频率域,从而增强特性提取. xLSTM架构是专门设计的,通过捕捉本地和全球信号特性来解决12条线索ECG录音的复杂性.
+    对PTB-XL数据集的全面试验显示,我们的模型实现了强有力的多标签分类性能,而对格鲁吉亚12号主数据集的其他测试则强调了它的强性和效率。 这种方法大大提高了ECG分类精度,从而推进了临床诊断和病人护理.
+    守则一经接受,即可公开提供。
+  one_sentence: 我们提出xLSTM-ECG,这是扩展的LSTM(xLSTM)网络首次应用,用于12铅ECG信号的多标签分类,实现PTB-XL的先进性能.
+  problem: 心电图(ECGs)在诊断各种心脏状况时是不可或缺的;然而,其人工解析很耗时,容易出错.
+  contributions:
+  - 我们提出一个基于自定义的xLSTM网络,用于12条铅ECG信号的多标签分类,这是xLSTM在此背景下的第一个应用.
+  - 我们使用短时间的傅里叶变换将ECG信号转换成频率域,捕捉时间和光谱特性.
+  - 我们全面评估我们在PTB-XL数据集方面的做法,展示最新业绩,并进一步评估其在格鲁吉亚12号主数据集上的稳健性。
+  method:
+  - 利用短时傅里叶变换(STFT)将12铅ECG信号转换成时频域.
+  - 应用两个层聚变xLSTM块,每个块由sLSTM和mLSTM模块组成,以捕捉时间依赖性和铅间相互作用.
+  - 利用适应性聚变机制,将平均隐蔽状态和基于注意力的跨线索汇总结合起来。
+  - 使用平均集合和独立的线性层进行多标签分类,分为五个超类.
+  - 使用数据增强(如随机遮盖)和加权损失函数来缓解噪音和类失衡.
+  experiments:
+  - 对PTB-XL数据集进行多标签分类评价,实现强性能.
+  - 对格鲁吉亚12条线索数据集的进一步评价表明,数据很可靠。
+  - 实现与标准LSTM和其他基线相比的先进性能。
+  limitations:
+  - 心电图(ECGs)在诊断各种心脏状况时是不可或缺的;然而,其人工解析很耗时,容易出错.
+  - 然而,对ECG信号的人工解释可能很耗时,由于细微的波形变异而容易出错.
+  - 然而,其在多头ECG分析方面的潜力基本上仍未得到探讨。
+  - 这两个模块都通过纳入指数式的刻度和增强的内存设计来解决标准的LSTM限制,从而能够在较长的时间内学习和保留信息.

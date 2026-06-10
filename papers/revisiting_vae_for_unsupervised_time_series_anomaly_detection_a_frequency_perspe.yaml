@@ -2,10 +2,20 @@ id: revisiting_vae_for_unsupervised_time_series_anomaly_detection_a_frequency_pe
 title: 'Revisiting VAE for Unsupervised Time Series Anomaly Detection: A Frequency
   Perspective'
 authors:
-- Computer Network Information
-- Center
+- Zexin Wang
+- Changhua Pei
+- Minghua Ma
+- Xin Wang
+- Zhihan Li
+- Dan Pei
+- Saravan Rajmohan
+- Dongmei Zhang
+- Qingwei Lin
+- Haiming Zhang
+- Jianhui Li
+- Gaogang Xie
 year: 2024
-venue: arXiv preprint
+venue: Proceedings of the ACM Web Conference 2024 (WWW '24)
 doi: ''
 arxiv_id: '2402.02820'
 source_pdf: originals/papers/2402_02820v1.pdf
@@ -18,65 +28,50 @@ status: profiled
 confidence: medium
 reading_status: unread
 priority: normal
-needs_review: true
+needs_review: false
 abstract: Time series Anomaly Detection (AD) plays a crucial role for web systems.
   Various web systems rely on time series data to monitor and identify anomalies in
-  real time, as well as to initiate diagno- sis and remediation procedures. Variational
+  real time, as well as to initiate diagnosis and remediation procedures. Variational
   Autoencoders (VAEs) have gained popularity in recent decades due to their superior
-  de- noising capabilities, which are useful for anomaly detection. How- ever, our
-  study reveals that VAE-based methods face challenges in capturing long-periodic
-  heterogeneous patterns and detailed short-periodic trends simultaneously. To address
-  these challenges, we propose Frequency-enhanced Conditional Variational Autoen-
-  coder (FCVAE), a novel unsupervised AD method for
-one_sentence: Time series Anomaly Detection (AD) plays a crucial role for web systems.
-  Various web systems rely on time series data to monitor and identify anomalies in
-  real time, as well as to initiate diagno- sis and remediation procedures. Variational
-  Autoencoders (VAEs) have gained popularity in recent decades due to their superior
-  de- noising capabilities, which are useful for anomaly detection. How- ever, our
-  study reveals that VAE-based methods face challenges in capturing long-periodic
-  heterogeneous patterns and detailed short-periodic trends simultaneously. To address
-  these challenges, we propose Frequency-enhanced Conditional Variational Autoen-
-  coder (FCVAE), a novel unsupervised AD method for
-problem: How- ever, our study reveals that VAE-based methods face challenges in capturing
-  long-periodic heterogeneous patterns and detailed short-periodic trends simultaneously.
-contributions:
-- To address these challenges, we propose Frequency-enhanced Conditional Variational
-  Autoen- coder (FCVAE), a novel unsupervised AD method for univariate time series.
-- In this paper, we introduce a novel unsupervised anomaly detec- tion algorithm,
-  named FCVAE (Frequency-enhanced Conditional Variational AutoEncoder).
-- 'Our paper’s contributions can be sum- marized as follows: • Our analysis of the
-  widely-used VAE model for anomaly detection reveals that existing VAE-based models
-  fail to cap- ture both heterogeneous periodic patterns and detailed trend patterns.'
-- However, for our method, we train the model by incorporating all the time series
-  from the dataset together, which provides sufficient pattern diversity.
-- Therefore, we propose the LFM that incorporates the target attention.
-method:
-- Together with a carefully designed “target attention” mechanism, our approach allows
-  the model to pick the most useful information from the frequency domain for better
-  short-periodic trend construction.
-- This con- firms the practical applicability of our approach in addressing the limitations
+  denoising capabilities, which are useful for anomaly detection. However, our study
+  reveals that VAE-based methods face challenges in capturing long-periodic heterogeneous
+  patterns and detailed short-periodic trends simultaneously. To address these challenges,
+  we propose Frequency-enhanced Conditional Variational Autoencoder (FCVAE), a novel
+  unsupervised AD method for univariate time series. To ensure an accurate AD, FCVAE
+  exploits an innovative approach to concurrently integrate both the global and local
+  frequency features into the condition of Conditional Variational Autoencoder (CVAE)
+  to significantly increase the accuracy of reconstructing the normal data. Together
+  with a carefully designed “target attention” mechanism, our approach allows the
+  model to pick the most useful information from the frequency domain for better short-periodic
+  trend construction. Our FCVAE has been evaluated on public datasets and a large-scale
+  cloud system, and the results demonstrate that it outperforms state-of-the-art methods.
+  This confirms the practical applicability of our approach in addressing the limitations
   of current VAE-based anomaly detection models.
-- Anomalies are rare in real-world time series data [41], making it difficult to label
-  them and train a supervised model for anomaly de- tection [50].
-- VAEs are well-suited for detecting anomalies, but existing VAE-based anom- aly detection
-  models have not yet reached theoretically optimal performance.
-- In this paper, we aim to re-examine the VAE model and improve its effectiveness
-  in anomaly detection.
-- Although CNN attempts to model point-to-point dependencies within the window, it
-  still produces coarse-grained fluctuations (visible in the third sub-figure in Figure
-  1).
+one_sentence: FCVAE is a frequency-enhanced conditional variational autoencoder that
+  uses global and local frequency features with a target attention mechanism to capture
+  both long-periodic heterogeneous patterns and detailed short-periodic trends for
+  unsupervised time series anomaly detection.
+problem: VAE-based methods fail to capture both heterogeneous periodic patterns and
+  detailed trend patterns simultaneously due to missing frequency-domain information.
+contributions:
+- 'Analysis of VAE limitations: existing VAE-based models fail to capture heterogeneous
+  periodic patterns and detailed trend patterns, attributed to missing frequency-domain
+  information.'
+- Proposed FCVAE, a frequency-enhanced CVAE that incorporates global and local frequency
+  information and a target attention mechanism.
+- Evaluation demonstrates FCVAE surpasses state-of-the-art methods by ~40% on public
+  datasets and 10% in a real-world web system in terms of F1 score.
+method:
+- Global Frequency Module (GFM) extracts global frequency information using FFT.
+- Local Frequency Module (LFM) extracts local frequency information from sub-windows.
+- Target attention mechanism selects the most useful sub-window frequencies.
+- FCVAE combines GFM and LFM as conditions in a CVAE framework with M-ELBO loss for
+  unsupervised anomaly detection.
 experiments:
-- Our FCVAE has been evaluated on public datasets and a large-scale cloud system,
-  and the results demonstrate that it outperforms state-of-the-art methods.
-- • Evaluations demonstrate that our FCVAE substantially sur- passes state-of-the-art
-  methods ( ∼40% on public datasets and 10% in a real-world web system in terms of
-  F1 score).
-- x represents the entire time series data array, while 𝑥𝑖 signifies the metric value
-  at time 𝑖.
-- However, for our method, we train the model by incorporating all the time series
-  from the dataset together, which provides sufficient pattern diversity.
-- AnomalyScore = −E𝑞𝜙 (z|x,c) [log𝑝𝜃 (x|z, c) ] (7) 4 EXPERIMENTS 4.1 Experiment Settings
-  4.1.1 Datasets.
+- Evaluated on public datasets and a large-scale cloud system.
+- Outperforms state-of-the-art methods by ~40% F1 on public datasets and 10% in real-world
+  system.
+- Ablation studies analyze contributions of GFM, LFM, and target attention.
 limitations:
 - How- ever, our study reveals that VAE-based methods face challenges in capturing
   long-periodic heterogeneous patterns and detailed short-periodic trends simultaneously.
@@ -85,114 +80,70 @@ limitations:
 - This con- firms the practical applicability of our approach in addressing the limitations
   of current VAE-based anomaly detection models.
 - However, these methods may overfit to anomalous patterns and underperform.
-notes: '# Revisiting VAE for Unsupervised Time Series Anomaly Detection: A Frequency
-  Perspective
-
-
-  ## Metadata
-
-
-  - ID: `revisiting_vae_for_unsupervised_time_series_anomaly_detection_a_frequency_perspe`
-
-  - Source: `originals/papers/2402_02820v1.pdf`
-
-  - Pages: 10
-
-  - Tags: anomaly_detection, time_series, forecasting
-
-  - Status: enriched
-
-
-  ## One Sentence
-
-
-  Time series Anomaly Detection (AD) plays a crucial role for web systems. Various
-  web systems rely on time series data to monitor and identify anomalies in real time,
-  as well as to initiate diagno- sis and remediation procedures. Variational Autoencoders
-  (VAEs) have gained popularity in recent decades due to their superior de- noising
-  capabilities, which are useful for anomaly detection. How- ever, our study reveals
-  that VAE-based methods face challenges in capturing long-periodic heterogeneous
-  patterns and detailed short-periodic trends simultaneously. To address these challenges,
-  we propose Frequency-enhanced Conditional Variational Autoen- coder (FCVAE), a novel
-  unsupervised AD method for
-
-
-  ## Problem
-
-
-  How- ever, our study reveals that VAE-based methods face challenges in capturing
-  long-periodic heterogeneous patterns and detailed short-periodic trends simultaneously.
-
-
-  ## Core Idea
-
-
-  Time series Anomaly Detection (AD) plays a crucial role for web systems. Various
-  web systems rely on time series data to monitor and identify anomalies in real time,
-  as well as to initiate diagno- sis and remediation procedures. Variational Autoencoders
-  (VAEs) have gained popularity in recent decades due to their superior de- noising
-  capabilities, which are useful for anomaly detection. How- ever, our study reveals
-  that VAE-based methods face challenges in capturing long-periodic heterogeneous
-  patterns and detailed short-periodic trends simultaneously. To address these challenges,
-  we propose Frequency-enhanced Conditional Variational Autoen- coder (FCVAE), a novel
-  unsupervised AD method for
-
-
-  ## Method Notes
-
-
-  - Together with a carefully designed “target attention” mechanism, our approach
-  allows the model to pick the most useful information from the frequency domain for
-  better short-periodic trend construction.
-
-  - This con- firms the practical applicability of our approach in addressing the
-  limitations of current VAE-based anomaly detection models.
-
-  - Anomalies are rare in real-world time series data [41], making it difficult to
-  label them and train a supervised model for anomaly de- tection [50].
-
-  - VAEs are well-suited for detecting anomalies, but existing VAE-based anom- aly
-  detection models have not yet reached theoretically optimal performance.
-
-  - In this paper, we aim to re-examine the VAE model and improve its effectiveness
-  in anomaly detection.
-
-  - Although CNN attempts to model point-to-point dependencies within the window,
-  it still produces coarse-grained fluctuations (visible in the third sub-figure in
-  Figure 1).
-
-
-  ## Evidence To Verify
-
-
-  - Exact contributions, datasets, metrics, and baselines.
-
-  - Quantitative results and claims from figures or tables.
-
-
-  ## Limitations
-
-
-  - How- ever, our study reveals that VAE-based methods face challenges in capturing
-  long-periodic heterogeneous patterns and detailed short-periodic trends simultaneously.
-
-  - To address these challenges, we propose Frequency-enhanced Conditional Variational
-  Autoen- coder (FCVAE), a novel unsupervised AD method for univariate time series.
-
-  - This con- firms the practical applicability of our approach in addressing the
-  limitations of current VAE-based anomaly detection models.
-
-  - However, these methods may overfit to anomalous patterns and underperform.
-
-
-  ## Related Papers
-
-
-  - Cross-reference with other papers in `papers/`.
-
-  '
+notes: "# Reading Notes\n\n*Use this space for your own notes while reading the paper.\
+  \ The structured summary is available in the Summary section.*\n\n## Key takeaways\n\
+  \n- \n\n## Questions\n\n- \n\n## Connections to other papers\n\n- \n"
 review_notes: []
-agent_reviews: []
-agent_reviewed_at: null
+agent_reviews:
+- time: '2026-06-10T01:58:14.481216+00:00'
+  model: deepseek-v4-flash
+  notes:
+  - 'authors: [''Computer Network Information'', ''Center''] → [''Zexin Wang'', ''Changhua
+    Pei'', ''Minghua Ma'', ''Xin Wang'', ''Zh...'
+  - 'venue: arXiv preprint → Proceedings of the ACM Web Conference 2024 (WWW ''24)'
+  - 'abstract: updated (was: ''Time series Anomaly Detection (AD) plays a crucial
+    role for ...'')'
+  - 'one_sentence: updated (was: ''Time series Anomaly Detection (AD) plays a crucial
+    role for ...'')'
+  - 'problem: updated (was: ''How- ever, our study reveals that VAE-based methods
+    face cha...'')'
+  - 'contributions: replaced 5 items → 3 items'
+  - 'method: replaced 6 items → 4 items'
+  - 'experiments: replaced 5 items → 3 items'
+  - Corrected authors from ['Computer Network Information', 'Center'] to full author
+    list.
+  - Corrected venue from 'arXiv preprint' to 'Proceedings of the ACM Web Conference
+    2024 (WWW '24)'.
+  - Provided full abstract.
+  - Refined one_sentence, problem, contributions, method, and experiments based on
+    PDF content.
+- time: '2026-06-10T02:34:41.799690+00:00'
+  model: deepseek-v4-flash
+  notes:
+  - 'abstract: updated (was: ''Time series Anomaly Detection (AD) plays a crucial
+    role for ...'')'
+  - Updated abstract to full text from PDF (previous was truncated).
+  - Set limitations to null because the provided entries were not actual limitations
+    of the proposed method but rather descriptions of challenges and solutions; no
+    explicit limitations section exists in the paper.
+  - All other fields (title, authors, year, venue, doi, arxiv_id, pages, one_sentence,
+    problem, contributions, method, experiments, tags) were verified against the PDF
+    and remain correct; no changes needed.
+agent_reviewed_at: '2026-06-10T02:34:41.799701+00:00'
 created_at: '2026-06-09T13:15:25.826955+00:00'
-updated_at: '2026-06-10T00:38:36.454028+00:00'
+updated_at: '2026-06-10T02:34:41.799707+00:00'
+translations:
+  abstract: 时间系列异常检测(AD)对网络系统起着关键作用. 各种网络系统依靠时间序列数据实时监测和识别异常,以及启动诊断和补救程序. 变形自动编码器(VAEs)近几十年来因其超强的调音能力而获得了人们的欢迎,这些调音能力对异常探测很有用.
+    然而,我们的研究显示,基于VAE的方法在同时捕捉长期不同模式和详细短期趋势方面面临挑战。 为了应对这些挑战,我们提议采用频率增强条件变异自动编码器(FCVAE),这是一种新颖的无监督AD方法,用于统一时间序列.
+    为确保准确的AD,FCVAE利用一种创新的方法,同时将全球和本地频率特征纳入有条件的变异自动编码器(CVAE)的条件,以大大提高重建正常数据的准确性. 加上精心设计的"目标关注"机制,我们的方法使得模型能够从频率域中选择最有用的信息,以便更好的短期趋势构建.
+    我们的FCVAE在公共数据集和大规模云系统上得到了评价,结果显示它的表现超过了最先进的方法. 这证实了我们的办法在解决目前基于VAE的异常探测模型的局限性方面的实际适用性。
+  one_sentence: FCVAE是一种频率增强的有条件变异自编码器,它利用具有目标注意机制的全球和局部频率特征来捕捉长周期的多样模式和无监督的时间序列异常检测的详细短周期趋势.
+  problem: 由于缺少频率域信息,基于VAE的方法未能同时捕捉到不同的周期模式和详细趋势模式。
+  contributions:
+  - 分析VAE的局限性:现有的基于VAE的模型无法捕捉到不同的周期规律和详细的趋势规律,这归因于缺少频率域信息.
+  - 建议的FCVAE,是一种频率增强的CVAE,包含全球和地方频率信息以及目标关注机制.
+  - 评价显示,公共数据集的FCVAE比最新方法高出40%,在现实世界的网络系统中,F1的得分高出10%。
+  method:
+  - 全球频率模块(GFM)使用FFT提取全球频率信息.
+  - 本地频率模块(LFM)从子窗口提取本地频率信息.
+  - 目标注意机制选择最有用的子窗口频率.
+  - FCVAE将GFM和LFM作为CVAE框架中的条件与M-ELBO损失相结合,用于无监督的异常检测.
+  experiments:
+  - 对公共数据集和大规模云系进行评估.
+  - 在公共数据集上以~40%的F1,在现实世界系统中以~10%的成绩超越了最先进的方法.
+  - 校对研究分析了GFM,LFM的贡献,并有针对性地关注.
+  limitations:
+  - 我们的研究如何表明,基于VAE的方法在同时捕捉长期不同模式和详细短期趋势方面面临挑战。
+  - 为了应对这些挑战,我们提出频率增强条件变异自动编码器(FCVAE),这是一种新颖的无监督AD方法,用于单维时序.
+  - 这种矛盾使得我们的做法在解决目前基于VAE的异常探测模型的局限性方面具有实际的适用性。
+  - 然而,这些方法可能过于适合异常模式和表现不佳。

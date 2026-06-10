@@ -17,72 +17,111 @@ status: profiled
 confidence: medium
 reading_status: unread
 priority: normal
-needs_review: true
-abstract: 'Large Language Models (LLMs) have gained popularity in time series forecast-
-  ing, but their potential for anomaly detection remains largely unexplored. Our study
+needs_review: false
+abstract: 'Large Language Models (LLMs) have gained popularity in time series forecasting,
+  but their potential for anomaly detection remains largely unexplored. Our study
   investigates whether LLMs can understand and detect anomalies in time series data,
-  focusing on zero-shot and few-shot scenarios. Inspired by conjec- tures about LLMs’
-  behavior from time series forecasting research, we formu- late key hypotheses about
+  focusing on zero-shot and few-shot scenarios. Inspired by conjectures about LLMs’
+  behavior from time series forecasting research, we formulate key hypotheses about
   LLMs’ capabilities in time series anomaly detection. We design and conduct principled
   experiments to test each of these hypotheses. Our investigation reveals several
   surprising findings about LLMs for time series: (1) LLMs understand time series
-  better as images rather than as text, (2'
-one_sentence: 'Large Language Models (LLMs) have gained popularity in time series
-  forecast- ing, but their potential for anomaly detection remains largely unexplored.
-  Our study investigates whether LLMs can understand and detect anomalies in time
-  series data, focusing on zero-shot and few-shot scenarios. Inspired by conjec- tures
-  about LLMs’ behavior from time series forecasting research, we formu- late key hypotheses
-  about LLMs’ capabilities in time series anomaly detection. We design and conduct
-  principled experiments to test each of these hypotheses. Our investigation reveals
-  several surprising findings about LLMs for time series: (1) LLMs understand time
-  series better as images rather than as text, (2'
+  better as images rather than as text, (2) LLMs do not demonstrate enhanced performance
+  when prompted to engage in explicit reasoning about time series analysis. (3) Contrary
+  to common beliefs, LLMs’ understanding of time series does not stem from their repetition
+  biases or arithmetic abilities. (4) LLMs’ behaviors and performance in time series
+  analysis vary significantly across different models. This study provides the first
+  comprehensive analysis of contemporary LLM capabilities in time series anomaly detection.
+  Our results suggest that while LLMs can understand trivial time series anomalies,
+  we have no evidence that they can understand more subtle real-world anomalies. Many
+  common conjectures based on their reasoning capabilities do not hold. All synthetic
+  dataset generators, final prompts, and evaluation scripts have been made available
+  in https://github.com/rose-stl-lab/anomllm.'
+one_sentence: This paper investigates whether LLMs can understand time series anomalies
+  in zero-shot and few-shot settings, revealing that while LLMs can detect trivial
+  anomalies, they show no evidence of understanding more subtle real-world anomalies
+  and many common conjectures about their reasoning are not supported.
 problem: However, the effectiveness of LLMs in time series analysis remains a subject
   of debate.
 contributions:
-- In this paper, we present the first comprehensive investigation into LLMs’ understanding
-  of time series data through the lens of anomaly detection.
-- To test this hypothesis, we propose an experiment comparing LLM performance on original
-  time series text and pooled textual representations (reduced size by interpolation).
+- First comprehensive investigation of LLMs’ understanding of time series data through
+  the lens of anomaly detection.
+- Empirical evidence challenging existing conjectures about LLMs' time series understanding.
 method:
-- (4) LLMs’ behaviors and performance in time series analysisvary significantly across
-  different models .
-- 1 I NTRODUCTION The remarkable progress in large language models (LLMs) has led
-  to their application in various domains, including time series analysis.
-- While some researchers argue that LLMs can leverage their pretrained knowledge to
-  un- derstand time series patterns (Gruver et al., 2023), others suggest that simpler
-  models can match or outperform LLMs (Tan et al., 2024).
-- To address this question, we must look beyond models’ predictive performance.
-- Forecasting typically hinges on metrics like MSE, which can overlook deeper model
-  understanding.
-- A model that simply outputs a nearly constant line might still achieve a passable
-  MSE but reveals little about its capacity to interpret dynamics.
+- Focus on state-of-the-art LLMs and multimodal LLMs (M-LLMs) across different anomaly
+  types under controlled conditions.
+- Evaluation strategy incorporates multimodal inputs (textual and visual representations
+  of time series), various prompting techniques, and structured output formats.
+- Results quantitatively assessed using affinity F1 score.
 experiments:
-- We design and conduct principled experiments to test each of these hypotheses.
-- All synthetic dataset generators, final prompts, and evaluation scripts have been
-  made available in https://github.com/rose-stl-lab/anomllm.
-- Forecasting typically hinges on metrics like MSE, which can overlook deeper model
-  understanding.
-- (2024b) introduced Time-MMD, a multi-domain, multimodal time series dataset for
-  LLM finetuning.
-- However, recent studies have highlighted significant flaws in current time series
-  anomaly detection benchmarks and evaluation practices (Wu & Keogh, 2021; Huet et
-  al., 2022; Sarfraz et al., 2024).
+- Designed and conducted principled experiments to test key hypotheses about LLMs'
+  capabilities in time series anomaly detection.
+- Experiments cover zero-shot and few-shot scenarios with synthetic datasets of different
+  anomaly types (out-of-range, trend, frequency, point).
+- Generated synthetic datasets and evaluation scripts available at https://github.com/rose-stl-lab/anomllm.
 limitations:
-- However, the effectiveness of LLMs in time series analysis remains a subject of
-  debate.
-- We provide empirical evidence to challenge existing conjectures and 1 Published
-  as a conference paper at ICLR 2025 claims about LLMs’ time series understanding.
-- 'Our findings reveal a more nuanced understanding of LLMs’ capabilities and limitations
-  in time series data, including: • Visual Advantage: LLMs perform significantly better
-  in anomaly detection when processing time series data as images rather than text
-  tokens.'
-- However, these prevailing beliefs about LLMs’ pattern extrapolation capabilities
-  and interpretable predictions remain controversial.
+- LLMs can detect simple anomalies but fail to understand more subtle real-world anomalies.
+- LLMs' abilities to understand and reason about numerical time series are considerably
+  limited.
+- Calls for caution in applying LLMs to time series and for further controlled studies.
 notes: "# Reading Notes\n\n*Use this space for your own notes while reading the paper.\
   \ The structured summary is available in the Summary section.*\n\n## Key takeaways\n\
   \n- \n\n## Questions\n\n- \n\n## Connections to other papers\n\n- \n"
 review_notes: []
-agent_reviews: []
-agent_reviewed_at: null
+agent_reviews:
+- time: '2026-06-10T01:56:50.559084+00:00'
+  model: deepseek-v4-flash
+  notes:
+  - 'abstract: updated (was: ''Large Language Models (LLMs) have gained popularity
+    in time ...'')'
+  - 'one_sentence: updated (was: ''Large Language Models (LLMs) have gained popularity
+    in time ...'')'
+  - 'contributions: replaced 2 items → 2 items'
+  - 'method: replaced 6 items → 3 items'
+  - 'experiments: replaced 5 items → 3 items'
+  - 'limitations: replaced 4 items → 3 items'
+  - 'Corrected DOI: no evidence in PDF, set to null.'
+  - 'Corrected arxiv_id: no evidence in PDF, set to null.'
+  - Updated abstract to full text from PDF first page.
+  - Updated one_sentence to concise single sentence summary of core contribution.
+  - Updated contributions, method, experiments, limitations based on text from PDF
+    first pages.
+  - Title, authors, year, venue remain unchanged as they match PDF evidence.
+- time: '2026-06-10T02:34:17.450819+00:00'
+  model: deepseek-v4-flash
+  notes:
+  - 'abstract: updated (was: ''Large Language Models (LLMs) have gained popularity
+    in time ...'')'
+  - 'Corrected the DOI: the previous DOI (10.1145/3534678.3539339) is from a KDD paper
+    and is clearly not this ICLR 2025 paper. Set to null as no evidence of correct
+    DOI in PDF.'
+  - Replaced the truncated abstract with the full abstract from the PDF text.
+  - All other fields (title, authors, year, venue, arxiv_id, one_sentence, problem,
+    contributions, method, experiments, limitations, tags) matched the PDF evidence
+    and were left unchanged.
+agent_reviewed_at: '2026-06-10T02:34:17.450831+00:00'
 created_at: '2026-06-09T08:16:10.881219+00:00'
-updated_at: '2026-06-10T01:13:59.021954+00:00'
+updated_at: '2026-06-10T02:34:17.450835+00:00'
+translations:
+  abstract: 大语言模型(LLMs)在时间序列预测中获得了人们的欢迎,但其异常探测潜力基本上仍未被探索. 我们的研究调查LLMS是否能够理解和检测时间序列数据中的异常现象,侧重于零镜头和几镜头的情景.
+    受时间序列预测研究对LLMs行为的推测的启发,我们对LLMs在时间序列异常检测中的能力提出了关键假设. 我们设计并进行原则性实验来测试这些假设中的每一个.
+    我们的调查揭示了有关时间序列的法学硕士的一些令人惊讶的结论:(1) 法学硕士更了解时间序列作为图像而不是文本,(2) 法学硕士在被激励对时间序列分析进行明确推理时没有表现出更高的性能.
+    (3) 与共同的信念相反,LLMs对时间序列的理解并不源于其重复偏差或算术能力. (4) LLMS在时间序列分析中的行为和性能在不同模型中差异很大. 本研究对时间序列异常探测中的当代LLM能力进行了首次全面分析.
+    我们的结果显示,虽然LLMS能够理解细微的时间序列异常,但我们没有证据表明他们能够理解更微妙的现实世界异常. 许多基于其推理能力的常见猜想并不存在.
+  one_sentence: 本文调查了LLMS是否能够在零镜头和少镜头的设置中理解时间序列异常,揭示了虽然LLMS能够检测到微不足道的异常,但是它们并没有显示出理解更微妙的现实世界异常的证据,许多对其推理的共同猜想也没有被支持.
+  problem: 然而,有限责任方案在时间序列分析中的有效性仍然是一个辩论议题。
+  contributions:
+  - 第一次全面调查LLMS通过反常探测镜头对时间序列数据的理解.
+  - 经验证据挑战关于LLMs时间序列理解的现有猜想.
+  method:
+  - 注重在控制条件下跨越不同异常类型的最新LLMs和多式联运LLMs.
+  - 评价战略包括多种方式的投入(时间序列的文字和视觉表现)、各种提示技术和结构化的产出格式。
+  - 利用亲和F1分数对结果进行定量评估。
+  experiments:
+  - 设计和进行了原则性实验,以测试关于LLMs在时间序列异常探测能力的关键假设.
+  - 实验用不同异常类型(外程,趋势,频率,点)的合成数据集来涵盖零射和几射场景.
+  - 在https://github.com/rose-stl-lab/anomllm上可以找到生成的合成数据集和评价脚本.
+  limitations:
+  - LLMS可以探测到简单的异常,但无法理解更微妙的现实世界异常.
+  - 法学硕士了解和解释数字时间序列的能力相当有限。
+  - 呼吁在对时间序列应用法学硕士和进一步进行有控制的研究时谨慎行事。

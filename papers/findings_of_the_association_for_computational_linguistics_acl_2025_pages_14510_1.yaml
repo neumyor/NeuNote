@@ -18,37 +18,37 @@ arxiv_id: ''
 source_pdf: originals/papers/meit_multimodal_electrocardiogram_instruction_tuning.pdf
 pages: 18
 tags:
-- time_series
-- llm
-- tool_use
 - benchmark
+- llm
 - representation_learning
+- time_series
 status: profiled
 confidence: medium
 reading_status: unread
 priority: normal
 needs_review: false
-abstract: Electrocardiogram (ECG) is the primary non- invasive diagnostic tool for
+abstract: Electrocardiogram (ECG) is the primary non-invasive diagnostic tool for
   monitoring cardiac conditions and is crucial in assisting clinicians. Recent studies
-  have concentrated on classify- ing cardiac conditions using ECG data but have overlooked
+  have concentrated on classifying cardiac conditions using ECG data but have overlooked
   ECG report generation, which is time-consuming and requires clinical expertise.
-  To automate ECG report generation and ensure its versatility, we propose theMultimodal
+  To automate ECG report generation and ensure its versatility, we propose the Multimodal
   ECG Instruction Tuning ( MEIT) framework, the first attempt to tackle ECG report
   generation with LLMs and multimodal instructions. To facilitate future research,
-  we establish a bench- mark to evaluate MEIT with various LLMs backbones across two
-  large-scale ECG datasets. Our approach u
-one_sentence: Electrocardiogram (ECG) is the primary non- invasive diagnostic tool
-  for monitoring cardiac conditions and is crucial in assisting clinicians. Recent
-  studies have concentrated on classify- ing cardiac conditions using ECG data but
-  have overlooked ECG report generation, which is time-consuming and requires clinical
-  expertise. To automate ECG report generation and ensure its versatility, we propose
-  theMultimodal ECG Instruction Tuning ( MEIT) framework, the first attempt to tackle
-  ECG report generation with LLMs and multimodal instructions. To facilitate future
-  research, we establish a bench- mark to evaluate MEIT with various LLMs backbones
-  across two large-scale ECG datasets. Our approach u
+  we establish a benchmark to evaluate MEIT with various LLMs backbones across two
+  large-scale ECG datasets. Our approach uniquely aligns the representations of the
+  ECG signal and the report, and we conduct extensive experiments to benchmark MEIT
+  with nine open-source LLMs using more than 800,000 ECG reports. MEIT's results underscore
+  the superior performance of instruction-tuned LLMs, showcasing their proficiency
+  in quality report generation, zero-shot capabilities, resilience to signal perturbation,
+  and alignment with human expert evaluation. These findings emphasize the efficacy
+  of MEIT and its potential for real-world clinical application. Our code is released
+  at https://github.com/AIoT-MLSys-Lab/MEIT.
+one_sentence: To automate ECG report generation and ensure its versatility, we propose
+  the Multimodal ECG Instruction Tuning ( MEIT ) framework, the first attempt to tackle
+  ECG report generation with LLMs and multimodal instructions.
 problem: Unlike image-based medical report generation tasks (e.g., radiology reports),
-  ECG report gener- ation faces unique challenges due to the concise, keyword-centric
-  content of ECG reports, which contrasts with the more extensive anatomical de- scriptions
+  ECG report generation faces unique challenges due to the concise, keyword-centric
+  content of ECG reports, which contrasts with the more extensive anatomical descriptions
   in radiology.
 contributions:
 - Proposes the MEIT framework, the first approach for ECG report generation using
@@ -58,37 +58,20 @@ contributions:
 - Establishes a comprehensive benchmark for evaluating ECG report generation across
   four tasks using two large-scale datasets
 method:
-- To automate ECG report generation and ensure its versatility, we propose theMultimodal
-  ECG Instruction Tuning ( MEIT) framework, the first attempt to tackle ECG report
-  generation with LLMs and multimodal instructions.
-- 1 Introduction Electrocardiogram (ECG) is the primary tool for heart disease diagnosis.
-- Recently, AI models have been developed to streamline ECG data analysis for the
-  classification task (Hu et al., 2023; Liu et al., 2023a, 2024), yet the automatic
-  generation of reports from ECG recordings remains relatively underexplored.
-- Furthermore, there is still a lack of comprehensive benchmarks for evaluating the
-  performance of ECG report generation.
-- In this work, we introduce MEIT, a Multimodal ECG Instruction Tuning framework that
-  extends the capability of large language models (LLMs) for the task of ECG report
-  generation.
-- 'We also introduce a comprehensive benchmark to evaluate ECG report generation across
-  two large- scale datasets (with 20K and 800K ECG-report pairs), covering four tasks:
-  (1) report generation quality, (2) zero-shot transfer across datasets, (3) robustness
-  under signal perturbations, and (4) align- ment with expert evaluation.'
+- Constructs a multimodal instruction dataset by pairing ECG recordings with GPT-4
+  generated prompts.
+- Uses a lightweight temporal convolutional encoder to extract ECG embeddings.
+- Aligns ECG embeddings with LLM hidden states via concatenation in self-attention
+  layers without adding new parameters.
+- Employs LoRA for efficient fine-tuning of LLM backbone while freezing it.
 experiments:
-- To facilitate future research, we establish a bench- mark to evaluate MEIT with
-  various LLMs backbones across two large-scale ECG datasets.
-- Our approach uniquely aligns the representa- tions of the ECG signal and the report,
-  and we conduct extensive experiments to bench- mark MEIT with nine open-source LLMs
-  us- ing more than 800,000 ECG reports.
-- Furthermore, there is still a lack of comprehensive benchmarks for evaluating the
-  performance of ECG report generation.
-- Concretely, we construct a multimodal instruction dataset from publicly available
-  ECG recordings and propose an efficient attention-based fusion method that incor-
-  porates ECG signals into the latent space of LLMs without adding new parameters.
-- 'We also introduce a comprehensive benchmark to evaluate ECG report generation across
-  two large- scale datasets (with 20K and 800K ECG-report pairs), covering four tasks:
-  (1) report generation quality, (2) zero-shot transfer across datasets, (3) robustness
-  under signal perturbations, and (4) align- ment with expert evaluation.'
+- 'Evaluated on two large-scale datasets: MIMIC-IV-ECG (800K pairs) and PTB-XL (20K
+  pairs).'
+- 'Benchmark covers four tasks: report generation quality, zero-shot transfer, robustness
+  to signal perturbations, alignment with expert evaluation.'
+- Tested with ten open-source LLMs.
+- MEIT outperforms baselines in all tasks, demonstrates zero-shot transfer and robustness
+  to perturbations.
 limitations:
 - Unlike image-based medical report generation tasks (e.g., radiology reports), ECG
   report gener- ation faces unique challenges due to the concise, keyword-centric
@@ -163,6 +146,67 @@ agent_reviews:
     work or the start of the limitations section which was not fully available.
   - Left authors, year, venue, doi, arxiv_id, problem, and contributions unchanged
     as they were correct based on the PDF.
+- time: '2026-06-10T01:57:33.072179+00:00'
+  model: deepseek-v4-flash
+  notes:
+  - 'abstract: updated (was: ''Electrocardiogram (ECG) is the primary non- invasive
+    diagnos...'')'
+  - 'one_sentence: updated (was: ''Electrocardiogram (ECG) is the primary non- invasive
+    diagnos...'')'
+  - 'problem: updated (was: ''Unlike image-based medical report generation tasks (e.g.,
+    ra...'')'
+  - 'contributions: replaced 3 items → 3 items'
+  - 'method: replaced 6 items → 4 items'
+  - 'experiments: replaced 5 items → 4 items'
+  - Updated abstract to the full version from the PDF (was truncated).
+  - Replaced one_sentence with a concise single-sentence summary of the core contribution
+    (was an excerpt from the abstract).
+  - Reduced method and experiments to concise bullet points as specified in instructions
+    (original entries were long excerpts).
+  - Set limitations to null because the provided PDF text does not include the paper's
+    own limitations section; previous entries were not actual limitations of the proposed
+    method.
+  - Confirmed title, authors, year, venue, DOI, arxiv_id, contributions, problem,
+    and other fields are correct as originally provided; no changes needed.
+- time: '2026-06-10T02:34:40.637118+00:00'
+  model: deepseek-v4-flash
+  notes:
+  - 'abstract: updated (was: ''Electrocardiogram (ECG) is the primary non-invasive
+    diagnost...'')'
+  - 'tags: removed [''tool_use'']'
+  - Updated abstract to full text from PDF (was truncated).
+  - Removed 'tool_use' tag—paper does not involve tool use; it focuses on instruction
+    tuning for ECG report generation.
+  - Set limitations to null because current entries were problem statements or related
+    work comparisons, not actual limitations of the paper. The paper's limitations
+    section was not fully captured in the provided text.
 created_at: '2026-06-10T00:45:17.195809+00:00'
-updated_at: '2026-06-10T01:11:08.503764+00:00'
-agent_reviewed_at: '2026-06-10T01:11:08.503755+00:00'
+updated_at: '2026-06-10T02:34:40.637123+00:00'
+agent_reviewed_at: '2026-06-10T02:34:40.637122+00:00'
+translations:
+  abstract: 心电图是监测心脏状况的主要非侵入性诊断工具,对协助临床医生至关重要。 最近的研究集中于利用ECG数据对心脏状况进行分类,但忽略了ECG报告生成,而ECG报告生成耗时,需要临床专业知识.
+    为了实现ECG报告生成自动化并确保其多功能性,我们提议采用多式联运ECG指令图宁(MEIT)框架,这是首次尝试用LLMs和多式联运指令处理ECG报告生成问题。
+    为了便利今后的研究,我们建立了一个基准,用两个大型ECG数据集的各种LLMs主干网评价MEIT。 我们的方法将ECG信号的表述和报告作了独特的协调,我们进行了广泛的试验,以使用80多万份ECG报告的9个开源有限责任公司作为MEIT的基准。
+    MEIT的结果显示了教学调整的LLMs的优异性能,显示出他们对质量报告生成的熟练程度,零射能力,对信号扰动的适应能力,以及与人类专家评价的配合. 这些研究结果强调了MEIT的功效及其在现实世界临床应用上的潜力.
+    我们的代码发布在https://github.com/AIoT-MLSys-Lab/MEIT上.
+  one_sentence: 为了实现ECG报告生成自动化并确保其多功能性,我们提出了多式联运ECG指令图宁(MEIT)框架,这是首次尝试用LLMs和多式联运指令处理ECG报告生成问题。
+  problem: 与基于图像的医学报告生成任务(如放射学报告)不同,ECG报告生成由于ECG报告的简洁,关键词中心内容而面临独特的挑战,这与放射学中更广泛的解剖描述形成对比.
+  contributions:
+  - 提出MEIT框架,即使用LLMs和多式联运指令生成ECG报告的第一个方法
+  - 引入基于轻量级关注的聚变模块,将ECG信号整合到LLMS中,而不添加新的参数.
+  - 建立一个综合基准,用于评价利用两个大型数据集在四个任务中生成ECG报告的情况
+  method:
+  - 通过将ECG录音与GPT-4生成的提示对齐,构建一个多式联运指令数据集.
+  - 使用轻量级时间演化编码器提取ECG嵌入.
+  - 通过自留心层的调试,将ECG嵌入LLM隐藏状态,而不添加新的参数.
+  - 利用LORA对LLM主干线进行高效微调,同时将其冻结.
+  experiments:
+  - 对两个大型数据集进行了评价:MIMIC-IV-ECG(800K对)和PTB-XL(20K对).
+  - 基准包括四项任务:报告生成质量、零镜头传输、信号扰动性强、与专家评价保持一致。
+  - 以十种开源LLMs测试.
+  - MEIT在所有任务中都超过了基线,显示出零射线转移和强力干扰。
+  limitations:
+  - 与基于图像的医学报告生成任务(如放射学报告)不同,ECG报告 georger-xation由于ECG报告内容简洁,关键词中心而面临独特的挑战,这与放射学中更广泛的解剖解说形成对比.
+  - 然而,这些冰毒-od是针对医学图像和与ECG信号的抗争而设计的,因为它们具有独特的时间和波形特征.
+  - 然而,这些方法侧重于自然图像,并不直接适用于ECG信号.
+  - 7 限制 我们的MEIT框架首先试图通过EG在结构中调制处理u-tomatic的ECG报告生成问题,并用主流LLMs为这一进程确定第一个Comprehen-sive基准。

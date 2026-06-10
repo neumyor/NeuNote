@@ -9,104 +9,136 @@ authors:
 - Yigong Hu
 - Baris Kasikci
 - Peng Cheng
-year: 2021
+year: 2025
 venue: arXiv preprint
 doi: ''
 arxiv_id: '2501.14170'
 source_pdf: originals/papers/argos_agentic_time_series_anomaly_detection_with_autonomous_rule_generation_via_large_language_models.pdf
 pages: 20
 tags:
-- anomaly_detection
-- time_series
-- llm
 - agent
+- anomaly_detection
+- llm
 - multi_agent
+- time_series
 status: profiled
 confidence: medium
 reading_status: unread
 priority: normal
-needs_review: true
+needs_review: false
 abstract: Observability in cloud infrastructure is critical for service providers,
-  driving the widespread adoption of anomaly de- tection systems for monitoring metrics.
-  However, existing systems often struggle to simultaneously achieve explain- ability,
-  reproducibility, and autonomy, which are three indis- pensable properties for production
-  use. We introduce AR- GOS, an agentic system for detecting time-series anomalies
-  in cloud infrastructure by leveraging large language mod- els (LLMs). ARGOS proposes
-  to use explainable and repro- ducible anomaly rules as intermediate representation
-  and em- ploys LLMs to autonomously generate such rules. The sys- tem will efficiently
-  train error-free and accuracy
-one_sentence: Observability in cloud infrastructure is critical for service providers,
-  driving the widespread adoption of anomaly de- tection systems for monitoring metrics.
-  However, existing systems often struggle to simultaneously achieve explain- ability,
-  reproducibility, and autonomy, which are three indis- pensable properties for production
-  use. We introduce AR- GOS, an agentic system for detecting time-series anomalies
-  in cloud infrastructure by leveraging large language mod- els (LLMs). ARGOS proposes
-  to use explainable and repro- ducible anomaly rules as intermediate representation
-  and em- ploys LLMs to autonomously generate such rules. The sys- tem will efficiently
-  train error-free and accuracy
-problem: However, existing systems often struggle to simultaneously achieve explain-
-  ability, reproducibility, and autonomy, which are three indis- pensable properties
+  driving the widespread adoption of anomaly detection systems for monitoring metrics.
+  However, existing systems often struggle to simultaneously achieve explainability,
+  reproducibility, and autonomy, which are three indispensable properties for production
+  use. We introduce ARGOS, an agentic system for detecting time-series anomalies in
+  cloud infrastructure by leveraging large language models (LLMs). ARGOS proposes
+  to use explainable and reproducible anomaly rules as intermediate representation
+  and employs LLMs to autonomously generate such rules. The system will efficiently
+  train error-free and accuracy-guaranteed anomaly rules through multiple collaborative
+  agents and deploy the trained rules for low-cost online anomaly detection. Through
+  evaluation results, we demonstrate that ARGOS outperforms state-of-the-art methods,
+  increasing F1 scores by up to 9.5% and 28.3% on public anomaly detection datasets
+  and an internal dataset collected from Microsoft, respectively.
+one_sentence: We introduce ARGOS, an agentic system that uses large language models
+  to autonomously generate explainable and reproducible anomaly detection rules for
+  time-series data in cloud infrastructure.
+problem: Existing anomaly detection systems often struggle to simultaneously achieve
+  explainability, reproducibility, and autonomy, which are three indispensable properties
   for production use.
 contributions:
-- We introduce AR- GOS, an agentic system for detecting time-series anomalies in cloud
-  infrastructure by leveraging large language mod- els (LLMs).
-- To address these challenges, we propose ARGOS , a time- series anomaly detection
-  system that autonomously generates rules using LLMs.
-- 'In summary, our contributions are as follows: • We show that current state-of-the-art
-  time-series anomaly detection systems fall short in simultaneously achieving explainability,
-  reproducibility, and autonomy.'
-- • We propose ARGOS , a time-series anomaly detection sys- tem that autonomously
-  trains and deploys anomaly detec- tion rules through an LLM-based agentic pipeline.
-- Instead, we propose to use LLMs in a training phase before the deployment to gener-
-  ate anomaly detection rules from time-series data collected and labeled offline.
+- We show that current state-of-the-art time-series anomaly detection systems fall
+  short in simultaneously achieving explainability, reproducibility, and autonomy.
+- We observe that LLMs could be employed to autonomously generate explainable and
+  reproducible rules for anomaly detection.
+- We propose ARGOS, a time-series anomaly detection system that autonomously trains
+  and deploys anomaly detection rules through an LLM-based agentic pipeline.
+- We evaluate ARGOS on public and internal datasets, demonstrating its effectiveness
+  and efficiency compared with state-of-the-art methods.
 method:
-- We introduce AR- GOS, an agentic system for detecting time-series anomalies in cloud
-  infrastructure by leveraging large language mod- els (LLMs).
-- ARGOS proposes to use explainable and repro- ducible anomaly rules as intermediate
-  representation and em- ploys LLMs to autonomously generate such rules.
-- The sys- tem will efficiently train error-free and accuracy-guaranteed anomaly rules
-  through multiple collaborative agents and de- ploy the trained rules for low-cost
-  online anomaly detection.
-- For instance, Google’s Borg [60] features robust monitoring tools that track task
-  health and performance metrics, automatically restarting failed tasks and scaling
-  up to tens of thousands of machines.
-- 1 illustrates a real-world interruption, where distributed model training on 256
-  A100 GPUs encountered a network hang issue [44].
-- Monitors equipped with manually-written anomaly rules failed to detect the issue
-  in time, which was only mitigated after human intervention at timestamp 17:50 by
-  terminating training, resulting in significant waste of resources and time.
+- ARGOS uses explainable and reproducible anomaly rules as an intermediate representation
+  and employs LLMs to autonomously generate such rules.
+- ARGOS employs an agent-based pipeline with feedback loops to iteratively correct
+  anomaly detection rules and improve accuracy.
+- ARGOS aggregates predictions of its anomaly detection rules with predictions of
+  existing anomaly detection systems to guarantee better accuracy.
+- ARGOS simultaneously proposes a set of n rule candidates in each iteration and selects
+  the best k rules for further refinement.
 experiments:
-- Through evaluation results, we demonstrate that ARGOS out- performs state-of-the-art
-  methods, increasing F1 scores by up to 9.5% and 28.3% on public anomaly detection
-  datasets and an internal dataset collected from Microsoft, respectively.
-- To minimize the negative consequences of service inter- ruptions, early-detection
-  of anomalies in metrics monitor- ing is crucial, as such metrics provide real-time
-  insights into the health and performance of cloud services.
-- For instance, Google’s Borg [60] features robust monitoring tools that track task
-  health and performance metrics, automatically restarting failed tasks and scaling
-  up to tens of thousands of machines.
-- The system should also produce consistent results for the same input metrics, ensuring
-  that when an alarm is triggered in production, OCEs can reproduce it in a different
-  environment and conduct fur- ther root cause analysis.
-- The system also needs to be frequently updated as data distributions shift when
-  new metrics or dominant workloads are introduced [5, 32].
+- Evaluated on two public datasets (KPI and Yahoo) and an internal dataset collected
+  from Microsoft.
+- Outperforms state-of-the-art methods with F1 score improvements up to 9.5% on KPI,
+  4.8% on Yahoo, and 28.3% on the internal dataset.
+- Speeds up inference by 3.0×, 34.3×, and 1.5× on KPI, Yahoo, and the internal dataset
+  respectively.
 limitations:
-- However, existing systems often struggle to simultaneously achieve explain- ability,
-  reproducibility, and autonomy, which are three indis- pensable properties for production
-  use.
-- 1 Introduction Ensuring the reliability and availability of cloud services is a
-  key challenge for service providers [8, 19, 31, 32, 71], as downtime or interruptions
-  can severely impact both customer experience and business operations.
-- For instance, Google’s Borg [60] features robust monitoring tools that track task
-  health and performance metrics, automatically restarting failed tasks and scaling
-  up to tens of thousands of machines.
-- However, detecting anomalies in time with high accuracy is challenging due to the
-  variety of anomalies.
+- LLMs can produce code or rules that have syntax errors or are inaccurate due to
+  misunderstanding of data patterns.
+- It is hard to guarantee that the anomaly rules autonomously generated by LLMs have
+  better accuracy than existing production anomaly detection systems that have been
+  well-tuned over years.
+- Due to inherent randomness in LLM behavior, producing accurate anomaly detection
+  rules with a limited number of trials remains challenging.
 notes: "# Reading Notes\n\n*Use this space for your own notes while reading the paper.\
   \ The structured summary is available in the Summary section.*\n\n## Key takeaways\n\
   \n- \n\n## Questions\n\n- \n\n## Connections to other papers\n\n- \n"
 review_notes: []
-agent_reviews: []
-agent_reviewed_at: null
+agent_reviews:
+- time: '2026-06-10T01:56:11.191478+00:00'
+  model: deepseek-v4-flash
+  notes:
+  - 'year: 2021 → 2025'
+  - 'abstract: updated (was: ''Observability in cloud infrastructure is critical for
+    servic...'')'
+  - 'one_sentence: updated (was: ''Observability in cloud infrastructure is critical
+    for servic...'')'
+  - 'problem: updated (was: ''However, existing systems often struggle to simultaneously
+    a...'')'
+  - 'contributions: replaced 5 items → 4 items'
+  - 'method: replaced 6 items → 4 items'
+  - 'experiments: replaced 5 items → 3 items'
+  - 'limitations: replaced 4 items → 3 items'
+  - Corrected year from 2021 to 2025 based on arXiv date (24 Jan 2025).
+  - Provided full abstract from the PDF instead of truncated version.
+  - Rewrote one_sentence to succinctly summarize the core contribution as per guidelines.
+  - Updated contributions to match the four listed in the paper's introduction.
+  - Refined method bullets to focus on the core technical approach from the paper.
+  - Updated experiments to state specific datasets and quantitative results.
+  - Derived limitations from the challenges explicitly mentioned in the paper (Section
+    1 and 2).
+  - Left unchanged fields (title, authors, venue, doi, arxiv_id) as null because they
+    were correct or absent.
+- time: '2026-06-10T02:34:20.778780+00:00'
+  model: deepseek-v4-flash
+  notes:
+  - Corrected the abstract field which was truncated in the original metadata (cut
+    off at 'indispensabl'). Replaced with the full abstract from the PDF text.
+  - All other fields (title, authors, year, venue, doi, arxiv_id, one_sentence, problem,
+    contributions, method, experiments, limitations, tags) match the source PDF and
+    require no changes.
+agent_reviewed_at: '2026-06-10T02:34:20.778785+00:00'
 created_at: '2026-06-09T08:00:27.626657+00:00'
-updated_at: '2026-06-10T01:13:41.632755+00:00'
+updated_at: '2026-06-10T02:34:20.778787+00:00'
+translations:
+  abstract: 云基础设施的可观测性对服务提供者至关重要,这促使人们广泛采用异常检测系统来监测衡量标准。 然而,现有系统往往难以同时实现可解释性、可再生产性和自主性,而这些都是生产使用不可或缺的三个特性。
+    我们引入了ARGOS,这是一个通过利用大型语言模型(LLMs)探测云基础设施中时间序列异常的代理系统. ARGOS建议使用可解释和可复制的异常规则作为中间代表,并使用LLMs自主生成这种规则。
+    该系统将通过多个协作代理,高效地培训无错误和准确保障的异常规则,并部署经过培训的低成本在线异常检测规则。 通过评价结果,我们证明ARGOS的成绩优于最先进的方法,在公共异常检测数据集和从微软收集的内部数据集上,F1的分数分别增加了9.5%和28.3%。
+  one_sentence: 我们引入了ARGOS,是一种代理系统,它使用大型语言模型,为云基础设施中的时间序列数据自主生成可解释和可复制的异常检测规则.
+  problem: 现有的异常探测系统往往要同时实现可解释性,可再生产性和自主性,这是生产使用的三种不可或缺的特性.
+  contributions:
+  - 我们表明,目前最先进的时间序列异常探测系统在同时实现可解释性、可复制性和自主性方面还不足。
+  - 我们注意到,可以使用有限责任公司自动生成可解释和可复制的异常检测规则。
+  - 我们提出ARGOS,一种时间序列异常探测系统,它通过LLM的代理管道,自主地训练和部署异常探测规则.
+  - 我们评价公共和内部数据集的大气监测信息系统,显示其效力和效率与最新方法相比。
+  method:
+  - ARGOS使用可解释和可复制的异常规则作为中间代表,并使用LLMs自主生成这种规则.
+  - ARGOS使用一个具有反馈循环的基于代理的管道来迭代地纠正异常检测规则并提高准确性.
+  - ARGOS将对其异常探测规则的预测与对现有异常探测系统的预测结合起来,以保证更好的准确性.
+  - ARGOS同时在每个迭代中提出一组n规则候选人,并选择最好的k规则进行进一步完善.
+  experiments:
+  - 对两个公共数据集(KPI和Yahoo)以及从微软收集的内部数据集进行了评价.
+  - F1在KPI上提升到9.5%,在雅虎上提升到4.8%,在内部数据集上提升到28.3%.
+  - 在KPI,雅虎和内部数据集上分别加快了3.0×,34.3×和1.5×的推论.
+  limitations:
+  - LLMS可以产生有语法错误或由于对数据模式的误解而不准确的代码或规则.
+  - 很难保证LLMs自主生成的异常规则的准确性比多年来经过良好调整的现有生产异常探测系统要好.
+  - 由于LLM行为的内在随机性,产生准确的异常检测规则,且试验次数有限,仍然具有挑战性.

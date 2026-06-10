@@ -361,6 +361,11 @@ Rules:
 - For title: only provide it when the current title is clearly wrong (e.g. it looks \
   like a PDF filename slug, contains garbled text, or is a section heading). \
   Do NOT change a title that is merely imperfectly formatted.
+- For tags: review the current tags and the known-tags list provided in the prompt.\
+  Keep tags that still apply, remove any that don't, and add NEW tags only when the\
+  paper clearly covers a topic not represented by any existing tag. Be conservative:\
+  do NOT create tags that are synonyms of existing ones (e.g. don't add \"llms\" if\
+  \"llm\" exists). Use lowercase, underscore_separated names.
 
 Output ONLY a valid JSON object with this schema:
 {
@@ -377,14 +382,16 @@ Output ONLY a valid JSON object with this schema:
   "method": ["string"] | null,
   "experiments": ["string"] | null,
   "limitations": ["string"] | null,
+  "tags": ["string"] | null,
   "review_notes": ["string"]
 }
 
+For tags: provide the COMPLETE list of tags that should be on this paper (keep + remove + add).
 Include review_notes explaining what you changed and what remains unknown.
 """
 
 
-def _build_review_prompt(paper: dict[str, Any], pdf_text: str) -> str:
+def _build_review_prompt(paper: dict[str, Any], pdf_text: str, known_tags: list[str] | None = None) -> str:
     identity = f"""\
 Current paper metadata:
 - id: {paper.get('id')}
@@ -408,6 +415,13 @@ Current extracted content:
 - experiments: {json.dumps(paper.get('experiments', []))}
 - limitations: {json.dumps(paper.get('limitations', []))}
 """
+    tags_info = ""
+    if known_tags:
+        tags_info = f"""\
+Known tags across the library (avoid duplicates/synonyms):
+{json.dumps(sorted(known_tags))}
+
+"""
     pdf_snippet = pdf_text[:16000]
     return f"""\
 Review this paper's metadata against the source PDF text and output corrections.
@@ -416,7 +430,7 @@ Review this paper's metadata against the source PDF text and output corrections.
 
 {summary}
 
-Source PDF text (first pages):
+{tags_info}Source PDF text (first pages):
 ---
 {pdf_snippet}
 ---
@@ -482,7 +496,7 @@ def _merge_review_patch(paper: dict[str, Any], patch: dict[str, Any]) -> tuple[d
     """Merge agent corrections into paper. Returns (paper, notes)."""
     notes: list[str] = []
 
-    # ── title: correct when current looks bad OR agent title is substantially different ──
+    # ── title: only correct if current looks bad OR substantially different ──
     title = patch.get("title")
     if title and title != paper.get("title", ""):
         current = paper.get("title", "")
@@ -490,7 +504,7 @@ def _merge_review_patch(paper: dict[str, Any], patch: dict[str, Any]) -> tuple[d
             paper["title"] = title
             notes.append(f"title: '{_brief(current)}' → '{_brief(title)}'")
 
-    # identity fields - only overwrite non-empty
+    # ── identity fields: if agent provides a value, apply it ──
     for key in ("authors", "year", "venue", "doi", "arxiv_id"):
         value = patch.get(key)
         if value is not None and value != "" and value != []:
@@ -498,41 +512,34 @@ def _merge_review_patch(paper: dict[str, Any], patch: dict[str, Any]) -> tuple[d
             paper[key] = value
             notes.append(f"{key}: {_brief(old)} → {_brief(value)}")
 
-    # text fields - overwrite if current is empty/auto, OR agent value is significantly better
-    auto_markers = ("TODO", "First-pass", "Not extracted", "No abstract")
+    # ── text fields: if agent provides a value, apply it ──
     for key in ("abstract", "one_sentence", "problem"):
         value = patch.get(key)
-        if not value:
-            continue
-        current = str(paper.get(key, ""))
-        is_auto = not current or any(m in current for m in auto_markers)
-        # Agent value is 50%+ longer → likely truncated→full replacement
-        is_longer = len(value) > len(current) * 1.5 and len(current) > 0
-        if is_auto or is_longer:
-            old = current[:60]
+        if value and value != paper.get(key, ""):
+            old = str(paper.get(key, ""))[:60]
             paper[key] = value
-            reason = "auto" if is_auto else "expanded"
-            notes.append(f"{key}: {reason} (was: '{old}...')")
+            notes.append(f"{key}: updated (was: '{old}...')")
 
-    # list fields - replace if current is auto-generated OR agent list differs substantially
-    auto_list_markers = ("first-pass", "review source", "verify", "todo")
+    # ── list fields: if agent provides a list, apply it ──
     for key in ("contributions", "method", "experiments", "limitations"):
         value = patch.get(key)
-        if not value or len(value) == 0:
-            continue
-        current = paper.get(key) or []
-        current_text = " ".join(str(v) for v in current).lower()
-        is_auto = len(current) == 0 or any(m in current_text for m in auto_list_markers)
-        # Check if agent's list is substantially different (Jaccard < 0.3)
-        if not is_auto and len(current) > 0:
-            curr_set = set(" ".join(str(v).lower().split()[:12]) for v in current)
-            sugg_set = set(" ".join(str(v).lower().split()[:12]) for v in value)
-            overlap = curr_set & sugg_set
-            similarity = len(overlap) / max(len(curr_set | sugg_set), 1)
-            is_auto = similarity < 0.3
-        if is_auto:
+        if value and len(value) > 0:
+            current = paper.get(key) or []
             paper[key] = value
             notes.append(f"{key}: replaced {len(current)} items → {len(value)} items")
+
+    # ── tags: if agent provides tags, use them (agent decides keep/remove/add) ──
+    new_tags = patch.get("tags")
+    if new_tags is not None and isinstance(new_tags, list):
+        old_tags = set(paper.get("tags", []))
+        new_set = set(new_tags)
+        added = new_set - old_tags
+        removed = old_tags - new_set
+        paper["tags"] = sorted(new_set)
+        if added:
+            notes.append(f"tags: added {sorted(added)}")
+        if removed:
+            notes.append(f"tags: removed {sorted(removed)}")
 
     return paper, notes
 
@@ -546,7 +553,7 @@ async def run_agent_paper_review(root: Path, paper_id: str,
                                   config: dict[str, Any] | None = None,
                                   job_id: str | None = None) -> dict[str, Any]:
     """Run a Claude agent to review and correct paper metadata."""
-    from .kb import extract_pdf_text, job_debug_log, load_paper, now_iso, save_paper
+    from .kb import _known_tags, extract_pdf_text, job_debug_log, load_paper, now_iso, save_paper
 
     def _dbg(msg: str) -> None:
         if job_id:
@@ -574,7 +581,8 @@ async def run_agent_paper_review(root: Path, paper_id: str,
         _dbg("agent_review: no API key, skipping")
         return {"status": "skipped", "reason": "no api key configured"}
 
-    prompt = _build_review_prompt(paper, pdf_text)
+    known_tags = _known_tags(root)
+    prompt = _build_review_prompt(paper, pdf_text, known_tags)
     _dbg(f"agent_review: calling {model} at {endpoint or 'default'}, prompt {len(prompt)} chars")
 
     import httpx

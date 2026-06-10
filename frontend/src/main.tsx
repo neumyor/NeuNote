@@ -50,6 +50,7 @@ type Paper = {
   notes: string;
   review_notes: string[];
   agent_reviews: any[];
+  translations?: Record<string, string | string[]>;
   created_at: string;
   updated_at: string;
 };
@@ -135,6 +136,23 @@ function App() {
       return matchesQuery && matchesTag && matchesStatus;
     });
   }, [papers, query, selectedTag, statusFilter]);
+
+  const authorCounts = useMemo(() => {
+    const counts = new Map<string, number>();
+    for (const p of papers) {
+      for (const a of p.authors ?? []) counts.set(a, (counts.get(a) ?? 0) + 1);
+    }
+    return [...counts.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0])).slice(0, 15);
+  }, [papers]);
+
+  const dailyActivity = useMemo(() => {
+    const map = new Map<string, number>();
+    for (const p of papers) {
+      const d = (p.updated_at ?? p.created_at ?? "").slice(0, 10);
+      if (d) map.set(d, (map.get(d) ?? 0) + 1);
+    }
+    return map;
+  }, [papers]);
 
   useEffect(() => { void loadConfig(); }, []);
 
@@ -267,6 +285,25 @@ function App() {
     }
   }
 
+  async function translatePaper(paperId: string) {
+    setBusy("translate");
+    setError("");
+    try {
+      const data = await request<{ translations: Record<string, string | string[]> }>(
+        `/api/papers/${encodeURIComponent(paperId)}/translate`,
+        { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ root: savedRoot }) }
+      );
+      if (selectedPaper && selectedPaper.id === paperId) {
+        setSelectedPaper({ ...selectedPaper, translations: data.translations });
+      }
+      await loadPapers();
+    } catch (err) {
+      setError(String((err as Error).message ?? err));
+    } finally {
+      setBusy("");
+    }
+  }
+
   async function enrichAll() {
     setBusy("enrich-all");
     setError("");
@@ -378,10 +415,10 @@ function App() {
         {error && <div className="error global-error">{error}</div>}
         {page === "dashboard" && (
           <DashboardPage
-            stats={stats} papers={papers} jobs={jobs} paperJobs={paperJobs}
-            openProfile={openProfile} setPage={setPage}
-            uploadPapers={uploadPapers} busy={busy} uploadProgress={uploadProgress}
-            enrichAll={enrichAll} activeJobCount={activeJobCount}
+            stats={stats} papers={papers} tagCounts={tagCounts}
+            authorCounts={authorCounts} dailyActivity={dailyActivity}
+            openProfile={openProfile} uploadPapers={uploadPapers}
+            busy={busy} uploadProgress={uploadProgress}
           />
         )}
         {page === "library" && (
@@ -400,7 +437,8 @@ function App() {
           <ProfilePage
             paper={selectedPaper} busy={busy}
             goBack={() => setPage("library")}
-            enrichPaper={enrichPaper} updatePaper={updatePaper}
+            enrichPaper={enrichPaper} translatePaper={translatePaper}
+            updatePaper={updatePaper}
             deletePaper={deletePaper} openPdf={openPdf}
             paperJob={selectedPaperId ? paperJobs.get(selectedPaperId) : undefined}
           />
@@ -445,20 +483,20 @@ function AppNav({ page, setPage, paperCount, jobCount }: { page: Page; setPage: 
 // ── Dashboard ────────────────────────────────────────────────────────
 
 function DashboardPage(props: {
-  stats: Stats; papers: Paper[]; jobs: Job[]; paperJobs: Map<string, Job>;
-  openProfile: (id: string) => void; setPage: (p: Page) => void;
+  stats: Stats; papers: Paper[];
+  tagCounts: [string, number][];
+  authorCounts: [string, number][];
+  dailyActivity: Map<string, number>;
+  openProfile: (id: string) => void;
   uploadPapers: (e: React.ChangeEvent<HTMLInputElement>) => void;
   busy: string; uploadProgress: string;
-  enrichAll: () => void; activeJobCount: number;
 }) {
-  const reviewItems = props.papers.filter((p) => p.needs_review).slice(0, 6);
-  const recentItems = [...props.papers].sort((a, b) => (b.updated_at ?? "").localeCompare(a.updated_at ?? "")).slice(0, 6);
   return (
     <div className="dashboard-page">
       <section className="page-heading inline">
         <div>
-          <h1>Library Dashboard</h1>
-          <p>Manage your paper collection. Each paper has one YAML file under papers/.</p>
+          <h1>Dashboard</h1>
+          <p>{props.stats.papers} papers · {props.stats.profiled} profiled · {props.stats.tags} tags</p>
         </div>
         <UploadControl busy={props.busy} uploadProgress={props.uploadProgress} uploadPapers={props.uploadPapers} />
       </section>
@@ -466,25 +504,21 @@ function DashboardPage(props: {
         <Metric icon={<FileText size={18} />} label="Papers" value={props.stats.papers} />
         <Metric icon={<BookOpenCheck size={18} />} label="Profiled" value={props.stats.profiled} />
         <Metric icon={<Sparkles size={18} />} label="Needs review" value={props.stats.needs_review} />
-        <Metric icon={<Play size={18} />} label="Active jobs" value={props.activeJobCount} />
+        <Metric icon={<Database size={18} />} label="Tags" value={props.stats.tags} />
       </section>
-      <section className="audit-band panel">
-        <div>
-          <h2>Enrichment</h2>
-          <p>Extract structured metadata from PDFs into paper YAML files. Jobs run in parallel (configured in Settings).</p>
+      <section className="dashboard-charts">
+        <div className="panel chart-panel">
+          <h2>Tags Distribution</h2>
+          <TagChart tagCounts={props.tagCounts} />
         </div>
-        <button onClick={props.enrichAll} disabled={props.busy === "enrich-all"}>
-          {props.busy === "enrich-all" ? <Loader2 className="spin" size={16} /> : <Sparkles size={16} />}
-          Enrich all papers
-        </button>
-      </section>
-      <section className="dashboard-grid">
-        <ListPanel title="Needs Review" empty="All papers reviewed.">
-          {reviewItems.map((p) => <ProfileListItem key={p.id} paper={p} paperJob={props.paperJobs.get(p.id)} onClick={() => props.openProfile(p.id)} />)}
-        </ListPanel>
-        <ListPanel title="Recently Updated" empty="No papers yet.">
-          {recentItems.map((p) => <ProfileListItem key={p.id} paper={p} paperJob={props.paperJobs.get(p.id)} onClick={() => props.openProfile(p.id)} />)}
-        </ListPanel>
+        <div className="panel chart-panel">
+          <h2>Top Authors</h2>
+          <AuthorChart authorCounts={props.authorCounts} />
+        </div>
+        <div className="panel chart-panel chart-wide">
+          <h2>Activity</h2>
+          <ActivityHeatmap dailyActivity={props.dailyActivity} />
+        </div>
       </section>
     </div>
   );
@@ -498,26 +532,106 @@ function Metric({ icon, label, value }: { icon: React.ReactNode; label: string; 
   );
 }
 
-function ListPanel({ title, empty, children }: { title: string; empty: string; children: React.ReactNode }) {
-  const items = React.Children.toArray(children).filter(Boolean);
+// ── Tag Chart ────────────────────────────────────────────────────────
+
+function TagChart({ tagCounts }: { tagCounts: [string, number][] }) {
+  const max = tagCounts[0]?.[1] ?? 1;
   return (
-    <section className="panel list-panel">
-      <h2>{title}</h2>
-      <div className="compact-list">{items.length ? items : <p className="empty-inline">{empty}</p>}</div>
-    </section>
+    <div className="bar-chart">
+      {tagCounts.map(([tag, count]) => (
+        <div className="bar-row" key={tag}>
+          <span className="bar-label">{tag}</span>
+          <div className="bar-track">
+            <div className="bar-fill" style={{ width: `${(count / max) * 100}%` }} />
+          </div>
+          <span className="bar-value">{count}</span>
+        </div>
+      ))}
+    </div>
   );
 }
 
-function ProfileListItem({ paper, paperJob, onClick }: { paper: Paper; paperJob?: Job; onClick: () => void }) {
-  const jobRunning = paperJob && ["queued", "running"].includes(paperJob.status);
+// ── Author Chart ─────────────────────────────────────────────────────
+
+function AuthorChart({ authorCounts }: { authorCounts: [string, number][] }) {
+  const max = authorCounts[0]?.[1] ?? 1;
   return (
-    <button className="profile-list-item" onClick={onClick}>
-      <span>{paper.title || paper.id}</span>
-      <small>
-        {paper.id} · {paper.reading_status ?? "unread"} · {paper.status}
-        {jobRunning && <span className="pill running">enriching</span>}
-      </small>
-    </button>
+    <div className="bar-chart">
+      {authorCounts.map(([author, count]) => (
+        <div className="bar-row" key={author}>
+          <span className="bar-label">{author}</span>
+          <div className="bar-track">
+            <div className="bar-fill author-fill" style={{ width: `${(count / max) * 100}%` }} />
+          </div>
+          <span className="bar-value">{count}</span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// ── Activity Heatmap ─────────────────────────────────────────────────
+
+function ActivityHeatmap({ dailyActivity }: { dailyActivity: Map<string, number> }) {
+  const today = new Date();
+  const weeks = 20;
+  const days: { date: string; count: number }[] = [];
+  for (let w = weeks - 1; w >= 0; w--) {
+    for (let d = 6; d >= 0; d--) {
+      const dt = new Date(today);
+      dt.setDate(dt.getDate() - (w * 7 + (6 - d)));
+      days.push({ date: dt.toISOString().slice(0, 10), count: dailyActivity.get(dt.toISOString().slice(0, 10)) ?? 0 });
+    }
+  }
+  const maxCount = Math.max(1, ...days.map((d) => d.count));
+  const color = (count: number) => {
+    if (count === 0) return "var(--rail)";
+    const p = count / maxCount;
+    if (p < 0.25) return "#bfd6c2";
+    if (p < 0.5) return "#7baa82";
+    if (p < 0.75) return "#4d7a56";
+    return "#1f3328";
+  };
+  const dayLabels = ["", "Mon", "", "Wed", "", "Fri", ""];
+
+  return (
+    <div className="heatmap-wrap">
+      <div className="heatmap-inner">
+        <div className="heatmap-y-labels">
+          {dayLabels.map((l, i) => <span key={i}>{l}</span>)}
+        </div>
+        <div className="heatmap-cells">
+          {Array.from({ length: weeks }, (_, w) => (
+            <div className="heatmap-week" key={w}>
+              {Array.from({ length: 7 }, (_, d) => {
+                const day = days[w * 7 + d];
+                const dt = new Date(day.date + "T00:00:00");
+                const showMonth = dt.getDate() <= 7;
+                return (
+                  <div className="heatmap-cell-wrap" key={d}>
+                    <div
+                      className="heatmap-cell"
+                      style={{ background: color(day.count) }}
+                      title={`${day.date}: ${day.count} updates`}
+                    />
+                    {showMonth && d === 0 && (
+                      <span className="heatmap-month">{dt.toLocaleString("en", { month: "short" })}</span>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          ))}
+        </div>
+      </div>
+      <div className="heatmap-legend">
+        <span>Less</span>
+        {[0, 1, 2, 3, 4].map((i) => (
+          <div key={i} className="legend-cell" style={{ background: i === 0 ? "var(--rail)" : color((i / 4) * maxCount) }} />
+        ))}
+        <span>More</span>
+      </div>
+    </div>
   );
 }
 
@@ -635,6 +749,7 @@ function shortDate(value?: string) {
 function ProfilePage(props: {
   paper: Paper | null; busy: string;
   goBack: () => void; enrichPaper: (id: string) => void;
+  translatePaper: (id: string) => void;
   updatePaper: (id: string, patch: Record<string, unknown>) => void;
   deletePaper: (id: string) => void; openPdf: (p: Paper) => void;
   paperJob?: Job;
@@ -643,12 +758,14 @@ function ProfilePage(props: {
   const [tagDraft, setTagDraft] = useState("");
   const [reviewNote, setReviewNote] = useState("");
   const [notesDraft, setNotesDraft] = useState("");
+  const [showChinese, setShowChinese] = useState(false);
 
   useEffect(() => {
     if (paper) {
       setTagDraft((paper.tags ?? []).join(", "));
       setReviewNote("");
       setNotesDraft(paper.notes ?? "");
+      setShowChinese(false);
     }
   }, [paper?.id]);
 
@@ -656,7 +773,19 @@ function ProfilePage(props: {
     return <div className="loading-state"><Loader2 className="spin" size={20} /> Loading paper...</div>;
   }
 
+  const hasZh = Boolean(paper.translations && Object.keys(paper.translations).length > 0);
   const jobRunning = props.paperJob && ["queued", "running"].includes(props.paperJob.status);
+
+  async function handleTranslate() {
+    if (showChinese) {
+      setShowChinese(false);
+      return;
+    }
+    if (!hasZh) {
+      await props.translatePaper(paper!.id);
+    }
+    setShowChinese(true);
+  }
 
   return (
     <div className="profile-page">
@@ -672,6 +801,10 @@ function ProfilePage(props: {
             {jobRunning ? <Loader2 className="spin" size={16} /> : <RefreshCw size={16} />}
             {jobRunning ? ` Enriching ${props.paperJob?.progress ?? 0}%` : " Enrich"}
           </button>
+          <button onClick={handleTranslate} disabled={props.busy === "translate"}>
+            {props.busy === "translate" ? <Loader2 className="spin" size={16} /> : showChinese ? "EN" : "中"}
+            {showChinese ? "英文" : "中文"}
+          </button>
           <button className="danger-button" onClick={() => props.deletePaper(paper.id)} disabled={props.busy === "delete"}>
             {props.busy === "delete" ? <Loader2 className="spin" size={16} /> : <Trash2 size={16} />} Delete
           </button>
@@ -686,13 +819,13 @@ function ProfilePage(props: {
       <section className="profile-layout">
         <article className="panel profile-main">
           <h2>Summary</h2>
-          <Field label="One sentence" value={paper.one_sentence} />
-          <Field label="Problem" value={paper.problem} />
-          <ListField label="Contributions" values={paper.contributions ?? []} />
-          <ListField label="Method" values={paper.method ?? []} />
-          <ListField label="Experiments" values={paper.experiments ?? []} />
-          <ListField label="Limitations" values={paper.limitations ?? []} />
-          <Field label="Abstract" value={paper.abstract} />
+          <Field label="One sentence" value={showChinese && hasZh ? (paper.translations?.one_sentence as string) : paper.one_sentence} />
+          <Field label="Problem" value={showChinese && hasZh ? (paper.translations?.problem as string) : paper.problem} />
+          <ListField label="Contributions" values={showChinese && hasZh ? (paper.translations?.contributions as string[] || []) : (paper.contributions ?? [])} />
+          <ListField label="Method" values={showChinese && hasZh ? (paper.translations?.method as string[] || []) : (paper.method ?? [])} />
+          <ListField label="Experiments" values={showChinese && hasZh ? (paper.translations?.experiments as string[] || []) : (paper.experiments ?? [])} />
+          <ListField label="Limitations" values={showChinese && hasZh ? (paper.translations?.limitations as string[] || []) : (paper.limitations ?? [])} />
+          <Field label="Abstract" value={showChinese && hasZh ? (paper.translations?.abstract as string) : paper.abstract} />
         </article>
         <aside className="profile-side">
           <section className="panel">

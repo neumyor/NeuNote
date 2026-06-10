@@ -221,24 +221,29 @@ def _infer_title(text: str, fallback: str) -> str:
     return fallback.replace("_", " ").title()
 
 
-def _infer_tags(title: str, text: str) -> list[str]:
+def _known_tags(root: Path) -> list[str]:
+    """Collect all unique tags from existing papers."""
+    tags: set[str] = set()
+    for paper in list_papers(root):
+        for t in paper.get("tags", []):
+            tags.add(t)
+    return sorted(tags)
+
+
+def _infer_tags(root: Path, title: str, text: str) -> list[str]:
+    """Infer initial tags from text using existing vocabulary."""
     haystack = f"{title}\n{text}".lower()
-    rules = {
-        "anomaly_detection": ["anomaly"],
-        "time_series": ["time series", "temporal"],
-        "llm": ["large language model", "llm"],
-        "agent": ["agent"],
-        "multi_agent": ["multi-agent", "multi agent"],
-        "tool_use": ["tool"],
-        "retrieval": ["retrieval", "retrieve"],
-        "forecasting": ["forecast"],
-        "benchmark": ["benchmark"],
-        "conformal_prediction": ["conformal"],
-        "mle_agent": ["machine learning engineering", "mle"],
-        "harness": ["harness"],
-        "representation_learning": ["representation learning", "contrastive"],
-    }
-    return [tag for tag, needles in rules.items() if any(n in haystack for n in needles)] or ["paper"]
+    tags: list[str] = []
+    # Check against known tags from existing papers
+    for tag in _known_tags(root):
+        tag_phrase = tag.replace("_", " ")
+        if tag_phrase in haystack or tag in haystack:
+            tags.append(tag)
+    # Always add time_series if temporal content mentioned
+    if ("time series" in haystack or "temporal" in haystack) and "time_series" not in tags:
+        tags.append("time_series")
+    # Fallback
+    return sorted(set(tags)) or ["paper"]
 
 
 def _compact_abstract(text: str) -> str:
@@ -275,7 +280,7 @@ def ingest_pdf(root: Path, temp_pdf: Path, original_name: str) -> dict[str, Any]
     existing = {p.get("id") for p in list_papers(root)}
     paper_id = unique_id(existing, slugify(title)[:80].strip("_"))
 
-    tags = _infer_tags(title, text)
+    tags = _infer_tags(root, title, text)
     sentences = _split_sentences(text)
     abstract = _compact_abstract(text)
     problem = _first_sentence(sentences, ["problem", "challenge", "difficult", "lack", "however"]) or abstract
@@ -359,6 +364,14 @@ def _is_auto_list(value: Any) -> bool:
     joined = " ".join(str(v) for v in value).lower()
     markers = ("first-pass", "review source", "verify", "todo")
     return any(m in joined for m in markers)
+
+
+def _text_is_english(text: str) -> bool:
+    """Check if text is primarily English (not Chinese)."""
+    if not text:
+        return False
+    cjk = sum(1 for c in text if '\u4e00' <= c <= '\u9fff' or '\u3040' <= c <= '\u30ff')
+    return cjk < len(text) * 0.05  # < 5% CJK → English
 
 
 def enrich_paper(root: Path, paper_id: str, max_pages: int = 8, job_id: str | None = None) -> dict[str, Any]:
@@ -625,8 +638,31 @@ def run_enrichment_job(root: Path, paper_id: str, job_id: str, config: dict[str,
                            message=f"Agent review failed: {exc}")
         else:
             job_debug_log(root, job_id, "Agent review skipped: no API key")
-            update_job(root, job_id, stage="agent_review", progress=90,
+            update_job(root, job_id, stage="agent_review", progress=85,
                        message="Agent review skipped: no API key configured.")
+
+        # ── Translation (after enrichment, if paper is in English) ──
+        try:
+            from .translate import translate_paper_summary
+            paper = load_paper(root, paper_id)
+            if not paper.get("translations") and _text_is_english(paper.get("abstract", "")):
+                update_job(root, job_id, stage="translating", progress=92,
+                           message="Translating summary to Chinese.")
+                job_debug_log(root, job_id, "Stage: translating (en→zh)")
+                job = load_job(root, job_id)
+                if job.get("status") == "cancelled":
+                    return
+                translations = translate_paper_summary(paper)
+                paper["translations"] = translations
+                save_paper(root, paper)
+                field_count = len(translations)
+                job_debug_log(root, job_id, f"Translation complete: {field_count} fields")
+                update_job(root, job_id, stage="translating", progress=96,
+                           message=f"Translated {field_count} summary fields.")
+            else:
+                job_debug_log(root, job_id, "Translation skipped (already translated or non-English)")
+        except Exception as exc:
+            job_debug_log(root, job_id, f"Translation failed (non-fatal): {exc}")
 
         update_job(root, job_id, status="completed", stage="completed",
                    progress=100, message="Enrichment completed.")

@@ -40,6 +40,7 @@ from .kb import (
     save_session,
     update_job,
 )
+from .translate import translate_paper_summary
 
 APP_CONFIG = Path(".kb_app_config.yaml")
 DEFAULT_ROOT = Path(os.environ.get("KB_DEFAULT_ROOT", Path.cwd())).resolve()
@@ -325,6 +326,24 @@ def api_delete_job(job_id: str, root: str | None = None) -> dict[str, Any]:
         pass
     delete_job(kb_root, job_id)
     return {"root": str(kb_root), "deleted": job_id, "jobs": list_jobs(kb_root)}
+
+
+# ── translation ───────────────────────────────────────────────────────
+
+@app.post("/api/papers/{paper_id}/translate")
+def api_translate_paper(paper_id: str, config: RootConfig) -> dict[str, Any]:
+    """Translate the summary fields of a paper to Chinese using offline Argos Translate."""
+    kb_root = resolve_root(config.root)
+    try:
+        paper = load_paper(kb_root, paper_id)
+    except FileNotFoundError as exc:
+        raise HTTPException(status_code=404, detail=str(exc))
+
+    translations = translate_paper_summary(paper)
+    # Cache translations in the paper YAML
+    paper["translations"] = translations
+    save_paper(kb_root, paper)
+    return {"root": str(kb_root), "translations": translations}
 
 
 # ── sessions ──────────────────────────────────────────────────────────

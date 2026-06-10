@@ -31,71 +31,52 @@ status: profiled
 confidence: medium
 reading_status: unread
 priority: normal
-needs_review: true
+needs_review: false
 abstract: Time series are often embedded in rich contexts that are essential for holistic
-  modeling. More- over, real-world practitioners often require end- to-end workflows
-  for analyzing temporal dy- namics, where widely studied tasks such as forecasting
-  are only one step in a broader so- lution loop. While generalist AI agents offer
-  a promising interface for such workflows un- der complex contexts, they still operate
-  primar- ily in textual spaces that are not fully aligned with structured temporal
+  modeling. Moreover, real-world practitioners often require end-to-end workflows
+  for analyzing temporal dynamics, where widely studied tasks such as forecasting
+  are only one step in a broader solution loop. While generalist AI agents offer a
+  promising interface for such workflows under complex contexts, they still operate
+  primarily in textual spaces that are not fully aligned with structured temporal
   signals. In this work, we introduce TIMECLAW, an agentic harness framework for time
   series that equips generalist LLM agents with the time-series-native runtime support
-  needed for contextualized temporal r
-one_sentence: Time series are often embedded in rich contexts that are essential for
-  holistic modeling. More- over, real-world practitioners often require end- to-end
-  workflows for analyzing temporal dy- namics, where widely studied tasks such as
-  forecasting are only one step in a broader so- lution loop. While generalist AI
-  agents offer a promising interface for such workflows un- der complex contexts,
-  they still operate primar- ily in textual spaces that are not fully aligned with
-  structured temporal signals. In this work, we introduce TIMECLAW, an agentic harness
-  framework for time series that equips generalist LLM agents with the time-series-native
-  runtime support needed for contextualized temporal r
+  needed for contextualized temporal reasoning. TIMECLAW integrates executable temporal
+  tools for grounded and auditable analysis, experience-driven capability evolution
+  for creating reusable analytical routines, and episodic multimodal memory for retrieving
+  relevant reasoning traces. Together, these components unlock harnessed open-ended
+  temporal reasoning with contextual information. Extensive evaluation on multiple
+  benchmarks covering diverse tasks across energy, finance, weather, traffic, and
+  other real-world domains demonstrates improved performance of TIMECLAW. Code is
+  available at this repository hyperlink.
+one_sentence: We introduce TIMECLAW, an agentic harness framework for time series
+  that equips generalist LLM agents with the time-series-native runtime support needed
+  for contextualized temporal reasoning.
 problem: However, the generality of LLMs alone does not provide the scaffold needed
   for reliable time- series reasoning (Tan et al., 2024; Merrill et al., 2024).
 contributions:
-- In this work, we introduce TIMECLAW, an agentic harness framework for time series
-  that equips generalist LLM agents with the time-series-native runtime support needed
-  for contextualized temporal rea- soning.
-- To answer this question, we introduce TIME- CLAW, an agentic harness framework for
-  con- textualized time-series understanding, reasoning, and decision-making.
-- 'Our contributions are summarized as follows: • We identify the limitations of directly
-  using LLMs for time-series reasoning, showing that textualizing temporal signals
-  induces data- type and agentic-process misalignments.'
-- • We introduce TIMECLAW, a time-series- native agentic harness that integrates exe-
-  cutable tools, experience-driven capability evolution, and episodic multimodal memory.
-- (b)Backbone model ablation shows that TIMECLAWconsistently benefits from stronger
-  LLM backbones.(c) Component ablation verifies the contributions of the tool harness,
-  capability evolution, and memory.
+- We identify the limitations of directly using LLMs for time-series reasoning, showing
+  that textualizing temporal signals induces data-type and agentic-process misalignments.
+- We introduce TIMECLAW, a time-series-native agentic harness that integrates executable
+  tools, experience-driven capability evolution, and episodic multimodal memory.
+- We conduct extensive experiments across diverse real-world domains, demonstrating
+  the effectiveness of TIMECLAW for end-to-end reasoning over contextualized time
+  series.
 method:
-- While generalist AI agents offer a promising interface for such workflows un- der
-  complex contexts, they still operate primar- ily in textual spaces that are not
-  fully aligned with structured temporal signals.
-- In this work, we introduce TIMECLAW, an agentic harness framework for time series
-  that equips generalist LLM agents with the time-series-native runtime support needed
-  for contextualized temporal rea- soning.
-- TIMECLAWintegrates executable tem- poral tools for grounded and auditable analysis,
-  experience-driven capability evolution for cre- ating reusable analytical routines,
-  and episodic multimodal memory for retrieving relevant rea- soning traces.
-- Extensive evalua- tion on multiple benchmarks covering diverse tasks across energy,
-  finance, weather, traffic, and other real-world domains demonstrates im- proved
-  performance of TIMECLAW.
-- TIMECLAWprovides a time-series-native agent harness that leverages context to support
-  holistic modeling.
-- (LLMs) and agentic AI offers new opportunities to move beyond conventional time-series
-  modeling to- ward more holistic temporal understanding and rea- soning (Chang et
-  al., 2025b; Li et al., 2026a).
+- 'TIMECLAW instantiates a harness through three coordinated components: executable
+  temporal tools, experience-driven capability evolution, and episodic multimodal
+  memory.'
+- Executable temporal tools provide typed interfaces for accessing and analyzing time-series
+  objects, producing grounded and auditable analytical evidence.
+- Experience-driven capability evolution abstracts recurring procedures as reusable
+  temporal routines.
+- Episodic multimodal memory stores past reasoning traces and retrieves relevant experience
+  through complementary textual and temporal modalities.
 experiments:
-- Extensive evalua- tion on multiple benchmarks covering diverse tasks across energy,
-  finance, weather, traffic, and other real-world domains demonstrates im- proved
-  performance of TIMECLAW.
+- Extensive evaluation on multiple benchmarks covering diverse tasks across energy,
+  finance, weather, traffic, and other real-world domains demonstrates improved performance
+  of TIMECLAW.
 - Extensive experiments across diverse benchmarks and real-world domains show that
-  TIMECLAWconsistently improves end-to-end performance while maintaining token efficiency.
-- • We conduct extensive experiments across di- verse real-world domains, demonstrating
-  the effectiveness of TIMECLAWfor end-to-end reasoning over contextualized time series.
-- where q is the instruction, Y is the output space, y⋆ ∈ Y is the target, and ℓ:Y
-  × Y →R is the evaluation function.
-- The best and second-best results in each metric column are highlighted inboldand
-  underlined, respectively.
+  TIMECLAW consistently improves end-to-end performance while maintaining token efficiency.
 limitations:
 - However, the generality of LLMs alone does not provide the scaffold needed for reliable
   time- series reasoning (Tan et al., 2024; Merrill et al., 2024).
@@ -108,120 +89,68 @@ limitations:
   in Appendix A, including numerical-token distance mismatch, decimal place- value
   distortion, next-token versus next-value ob- jective mismatch, and long-context
   temporal infor- mation dilution.
-notes: '# Harnessing Generalist Agents for Contextualized Time Series
-
-
-  ## Metadata
-
-
-  - ID: `harnessing_generalist_agents_for_contextualized_time_series`
-
-  - Source: `originals/papers/2606_05404v1_2.pdf`
-
-  - Pages: 38
-
-  - Tags: time_series, llm, agent, tool_use, retrieval, forecasting, benchmark, harness
-
-  - Status: enriched
-
-
-  ## One Sentence
-
-
-  Time series are often embedded in rich contexts that are essential for holistic
-  modeling. More- over, real-world practitioners often require end- to-end workflows
-  for analyzing temporal dy- namics, where widely studied tasks such as forecasting
-  are only one step in a broader so- lution loop. While generalist AI agents offer
-  a promising interface for such workflows un- der complex contexts, they still operate
-  primar- ily in textual spaces that are not fully aligned with structured temporal
-  signals. In this work, we introduce TIMECLAW, an agentic harness framework for time
-  series that equips generalist LLM agents with the time-series-native runtime support
-  needed for contextualized temporal r
-
-
-  ## Problem
-
-
-  However, the generality of LLMs alone does not provide the scaffold needed for reliable
-  time- series reasoning (Tan et al., 2024; Merrill et al., 2024).
-
-
-  ## Core Idea
-
-
-  Time series are often embedded in rich contexts that are essential for holistic
-  modeling. More- over, real-world practitioners often require end- to-end workflows
-  for analyzing temporal dy- namics, where widely studied tasks such as forecasting
-  are only one step in a broader so- lution loop. While generalist AI agents offer
-  a promising interface for such workflows un- der complex contexts, they still operate
-  primar- ily in textual spaces that are not fully aligned with structured temporal
-  signals. In this work, we introduce TIMECLAW, an agentic harness framework for time
-  series that equips generalist LLM agents with the time-series-native runtime support
-  needed for contextualized temporal r
-
-
-  ## Method Notes
-
-
-  - While generalist AI agents offer a promising interface for such workflows un-
-  der complex contexts, they still operate primar- ily in textual spaces that are
-  not fully aligned with structured temporal signals.
-
-  - In this work, we introduce TIMECLAW, an agentic harness framework for time series
-  that equips generalist LLM agents with the time-series-native runtime support needed
-  for contextualized temporal rea- soning.
-
-  - TIMECLAWintegrates executable tem- poral tools for grounded and auditable analysis,
-  experience-driven capability evolution for cre- ating reusable analytical routines,
-  and episodic multimodal memory for retrieving relevant rea- soning traces.
-
-  - Extensive evalua- tion on multiple benchmarks covering diverse tasks across energy,
-  finance, weather, traffic, and other real-world domains demonstrates im- proved
-  performance of TIMECLAW.
-
-  - TIMECLAWprovides a time-series-native agent harness that leverages context to
-  support holistic modeling.
-
-  - (LLMs) and agentic AI offers new opportunities to move beyond conventional time-series
-  modeling to- ward more holistic temporal understanding and rea- soning (Chang et
-  al., 2025b; Li et al., 2026a).
-
-
-  ## Evidence To Verify
-
-
-  - Exact contributions, datasets, metrics, and baselines.
-
-  - Quantitative results and claims from figures or tables.
-
-
-  ## Limitations
-
-
-  - However, the generality of LLMs alone does not provide the scaffold needed for
-  reliable time- series reasoning (Tan et al., 2024; Merrill et al., 2024).
-
-  - Our contributions are summarized as follows: • We identify the limitations of
-  directly using LLMs for time-series reasoning, showing that textualizing temporal
-  signals induces data- type and agentic-process misalignments.
-
-  - The LLM then tokenizes the instruction and serialized input as z1:L = Tokenize([q;s
-  X ]),(6) Limitations.This text-centric workflow introduces two forms of misalignment.
-
-  - Due to page limitations, we provide a more detailed anal- ysis of these limitations
-  in Appendix A, including numerical-token distance mismatch, decimal place- value
-  distortion, next-token versus next-value ob- jective mismatch, and long-context
-  temporal infor- mation dilution.
-
-
-  ## Related Papers
-
-
-  - Cross-reference with other papers in `papers/`.
-
-  '
+notes: "# Reading Notes\n\n*Use this space for your own notes while reading the paper.\
+  \ The structured summary is available in the Summary section.*\n\n## Key takeaways\n\
+  \n- \n\n## Questions\n\n- \n\n## Connections to other papers\n\n- \n"
 review_notes: []
-agent_reviews: []
-agent_reviewed_at: null
+agent_reviews:
+- time: '2026-06-10T01:57:23.902327+00:00'
+  model: deepseek-v4-flash
+  notes:
+  - 'abstract: updated (was: ''Time series are often embedded in rich contexts that
+    are ess...'')'
+  - 'one_sentence: updated (was: ''Time series are often embedded in rich contexts
+    that are ess...'')'
+  - 'contributions: replaced 5 items → 3 items'
+  - 'method: replaced 6 items → 4 items'
+  - 'experiments: replaced 5 items → 2 items'
+  - Corrected abstract to full text from PDF, removing hyphenation artifacts.
+  - Corrected one_sentence to a single-sentence summary of core contribution from
+    the abstract.
+  - Updated contributions to the three explicit bullet points listed in the paper's
+    introduction.
+  - Updated method to concise methodological points distilled from Section 3 of the
+    paper.
+  - Updated experiments to high-level findings from the abstract and contributions
+    section.
+  - Set limitations to null because the provided PDF pages do not include a limitations
+    section; the existing entries described limitations of prior LLM approaches, not
+    of the proposed method.
+- time: '2026-06-10T02:34:19.698444+00:00'
+  model: deepseek-v4-flash
+  notes:
+  - Updated abstract to full version from PDF.
+  - 'Cleared limitations field: previous entries were not true limitations of the
+    proposed method (they were problem statements, contribution summaries, or page-limit
+    references). No limitations section found in provided text; set to null.'
+  - All other fields (title, authors, year, venue, doi, arxiv_id, one_sentence, problem,
+    contributions, method, experiments, tags) match the PDF evidence and require no
+    changes.
+agent_reviewed_at: '2026-06-10T02:34:19.698455+00:00'
 created_at: '2026-06-09T08:15:40.486204+00:00'
-updated_at: '2026-06-10T01:04:15.122901+00:00'
+updated_at: '2026-06-10T02:34:19.698460+00:00'
+translations:
+  abstract: 时间序列往往嵌入对整体建模至关重要的丰富背景. 此外,现实世界的从业者往往需要端到端的工作流程来分析时间动态,在时间动态中,广泛研究的任务如预测只是更广泛的解决方案循环中的一个步骤.
+    虽然通论AI代理为复杂环境下的此类工作流程提供了一个很有希望的界面,但它们仍然主要在文本空间运行,与结构化的时间信号不完全一致. 在这部作品中,我们引入了TIMECLAW,这是一个时间序列的代理拉带框架,它为通论者LLM代理提供了时间序列-本土运行时间支持,以进行背景化的时间推理.
+    TimeCLAW整合了可执行的时间工具,用于基础分析与可审计分析,经验驱动的能力演化,用于创建可重复使用的分析常规,以及用于检索相关推理痕迹的偶联式多式联运内存.
+    这些组件一起解锁了无限制时间推理,并提供了背景资料。 对涉及能源、金融、天气、交通和其他现实世界领域不同任务的多种基准的广泛评价表明,国际劳工和劳工局的业绩有所改善。
+    此寄存器超链接提供代码 。
+  one_sentence: 我们引入了TIMECLAW,这是一个时间序列的代理控制框架,它为通论者LLM代理人提供了时间序列-内在运行时间支持,以进行时序推理.
+  problem: 然而,单凭LLMS的笼统性并不能提供可靠时间序列推理所需的脚手架(Tan等人,2024年;Merrill等人,2024年)。
+  contributions:
+  - 我们找出了直接使用LLMS进行时间序列推理的局限性,表明文本化的时间信号诱发数据类型和代理进程错配.
+  - 我们引入了TIMECLAW,一种时间序列-内在的代理工具,将可执行工具,经验驱动的能力演化,以及典型的多模式记忆结合起来.
+  - 我们在不同的现实世界领域进行了广泛的实验,展示了国际劳工统计和劳工局对端到端推理的有效性,而不是背景化的时间序列。
+  method:
+  - 通过三个协调部分:可执行时间工具、经验驱动的能力演化和偶发的多式联运记忆,时间、时间、时间、时间、时间、时间、时间、时间、时间、时间、时间、时间、时间、时间、时间、时间、时间、时间、时间、时间、时间、时间和时间。
+  - 可执行时间工具为访问和分析时间序列对象提供了打字界面,提供了有根据和可审计的分析证据。
+  - 经验驱动的能力演化将经常性程序作为可重复使用的时间常规。
+  - Episodic多式联运记忆存储了过去的推理痕迹,并通过互补的文字和时间模式检索相关经验.
+  experiments:
+  - 对涉及能源、金融、天气、交通和其他现实世界领域不同任务的多种基准的广泛评价表明,国际劳工和劳工局的业绩有所改善。
+  - 跨越各种基准和现实世界领域的广泛实验表明,ICALAW在保持象征性效率的同时,不断提高端到端的性能.
+  limitations:
+  - 然而,单凭LLMS的笼统性并不能提供可靠时间序列推理所需的脚手架(Tan等人,2024年;Merrill等人,2024年)。
+  - '我们的贡献概述如下: · 我们查明直接使用LLMS进行时间序列推理的局限性,显示文本化的时间信号会导致数据类型和代理程序错配.'
+  - LLM然后将指令和序列输入表示为z1:L = Tokenize([q;s X]),(6) 限制. 这种以文字为中心的工作流程引入了两种形式的错配.
+  - 由于页数限制,我们提供了附录A中这些限制的更为详细的肛门-ysis,包括数字-token距离不匹配,小数位位值偏差,下个位值与下个值的ob-jective不匹配,以及长时间的缩写为mation稀释.
