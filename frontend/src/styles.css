@@ -250,7 +250,7 @@ svg.lucide,
 }
 
 .brand-button {
-  min-width: 220px;
+  min-width: 180px;
   justify-content: flex-start;
   border-color: transparent;
   border-bottom-width: 2px;
@@ -304,8 +304,9 @@ svg.lucide,
 .app-nav nav {
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
+  justify-content: flex-end;
   gap: var(--space-2);
-  overflow-x: auto;
   min-width: 0;
   max-width: 100%;
 }
@@ -1544,7 +1545,7 @@ h1 {
   }
 }
 
-@media (max-width: 880px) {
+@media (max-width: 1024px) {
   .app-nav {
     align-items: flex-start;
     flex-direction: column;
@@ -1553,6 +1554,7 @@ h1 {
 
   .app-nav nav {
     width: 100%;
+    justify-content: flex-start;
   }
 
   .page-heading.inline,
