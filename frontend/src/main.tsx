@@ -552,7 +552,7 @@ function DashboardPage(props: {
     <div className="dashboard-page">
       <section className="page-heading inline">
         <div>
-          <p className="kicker">知记</p>
+          <p className="kicker">纽记</p>
           <h1>文献档案</h1>
           <p>{props.stats.papers} 篇文献 · {props.stats.profiled} 篇已整理 · {props.stats.tags} 个主题标签</p>
         </div>
