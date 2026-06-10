@@ -1,0 +1,23 @@
+# dependencies
+node_modules/
+frontend/dist/
+frontend/tsconfig.tsbuildinfo
+backend/.venv/
+__pycache__/
+.pytest_cache/
+.ruff_cache/
+
+# runtime config (contains API keys)
+.kb_app_config.yaml
+backend/.kb_app_config.yaml
+metadata/app_config.yaml
+
+# runtime data
+logs/chat_sessions/
+logs/jobs/
+logs/debug/
+logs/ingest_log.md
+logs/update_log.md
+
+# large binary files
+originals/papers/

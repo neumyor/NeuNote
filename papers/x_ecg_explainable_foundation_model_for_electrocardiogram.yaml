@@ -1,0 +1,206 @@
+id: x_ecg_explainable_foundation_model_for_electrocardiogram
+title: X Ecg Explainable Foundation Model For Electrocardiogram
+authors: []
+year: 2026
+venue: ICLR 2026 (under review)
+doi: ''
+arxiv_id: ''
+source_pdf: originals/papers/x_ecg_explainable_foundation_model_for_electrocardiogram.pdf
+pages: 14
+tags:
+- anomaly_detection
+- llm
+- tool_use
+- retrieval
+- benchmark
+- representation_learning
+status: profiled
+confidence: medium
+reading_status: unread
+priority: normal
+needs_review: false
+abstract: Electrocardiography (ECG) is a cost-effective and widely accessible tool
+  for eval- uating cardiac health. While numerous machine learning methods have been
+  de- veloped to assist cardiologists in diagnosis, many suffer from lacking explain-
+  ability, making it difficult to understand why a particular disease is classified.
+  To address this limitation, we introduceX-ECG, an explainable ECG foundation model.
+  To train this model, we first curate wave-level anomalies annotations on public
+  datasets, using a rule-based algorithm that finds abnormal waves, intervals or segments
+  in ECG signal according to established clinical knowledge. To help models learn
+  where to focus, we propose an attention-guid
+one_sentence: Electrocardiography (ECG) is a cost-effective and widely accessible
+  tool for eval- uating cardiac health. While numerous machine learning methods have
+  been de- veloped to assist cardiologists in diagnosis, many suffer from lacking
+  explain- ability, making it difficult to understand why a particular disease is
+  classified. To address this limitation, we introduceX-ECG, an explainable ECG foundation
+  model. To train this model, we first curate wave-level anomalies annotations on
+  public datasets, using a rule-based algorithm that finds abnormal waves, intervals
+  or segments in ECG signal according to established clinical knowledge. To help models
+  learn where to focus, we propose an attention-guid
+problem: While numerous machine learning methods have been de- veloped to assist cardiologists
+  in diagnosis, many suffer from lacking explain- ability, making it difficult to
+  understand why a particular disease is classified.
+contributions:
+- Construction of MIMIC-IV-ECG+X and PTB-XL+X datasets with fine-grained wave-level
+  anomaly annotations.
+- Proposal of an attention-guided training mechanism that leverages heatmaps from
+  the curated dataset to enhance model explainability.
+- Demonstration that the attention-guided model improves performance on arrhythmia
+  classification, report generation, and anomaly localization tasks.
+method:
+- To address this limitation, we introduceX-ECG, an explainable ECG foundation model.
+- To train this model, we first curate wave-level anomalies annotations on public
+  datasets, using a rule-based algorithm that finds abnormal waves, intervals or segments
+  in ECG signal according to established clinical knowledge.
+- To help models learn where to focus, we propose an attention-guided training approach
+  that enables the model to highlight relevant regions.
+- To the best of our knowledge, X-ECGis the first ECG foundation model with built-in
+  explainability.
+- Our exper- iments show that using our dataset to guide the model not only adds explainability
+  but also improves performance in arrhythmia classification and report generation
+  tasks.
+- 'Criteria Left Bundle Branch Block (LBBB): QRS duration > 120ms Dominant S wave
+  in V1 Broad monophasic R wave and absence of Q waves in I, aVL, V5-6 Prolong R wave
+  peak time (> 60ms) in V5-6 LLM I aVL V5 V6 Attention Score Figure 1:X-ECGis capable
+  of identifying abnormal regions that contribute to its output, thereby enhancing
+  model interpretability.'
+experiments:
+- To train this model, we first curate wave-level anomalies annotations on public
+  datasets, using a rule-based algorithm that finds abnormal waves, intervals or segments
+  in ECG signal according to established clinical knowledge.
+- Our exper- iments show that using our dataset to guide the model not only adds explainability
+  but also improves performance in arrhythmia classification and report generation
+  tasks.
+- Many groups have proposed classification models with excellent performance across
+  dif- ferent benchmarks Strodthoff et al.
+- Existing ECG datasets, most notably MIMIC-IV-ECG and PTB-XL, typically have the
+  waveform and metadata containing the disease class(es) associated with each waveform.
+- These datasets how- ever do not have locations of the anomalies on the waveforms.
+limitations:
+- To address this limitation, we introduceX-ECG, an explainable ECG foundation model.
+- (2025) extend this progress by addressing challenges in interpreting corrupted ECG
+  signals.
+notes: '# X Ecg Explainable Foundation Model For Electrocardiogram
+
+
+  ## Metadata
+
+
+  - ID: `x_ecg_explainable_foundation_model_for_electrocardiogram`
+
+  - Source: `originals/papers/x_ecg_explainable_foundation_model_for_electrocardiogram.pdf`
+
+  - Pages: 14
+
+  - Tags: anomaly_detection, llm, tool_use, retrieval, benchmark, representation_learning
+
+  - Status: enriched
+
+
+  ## One Sentence
+
+
+  Electrocardiography (ECG) is a cost-effective and widely accessible tool for eval-
+  uating cardiac health. While numerous machine learning methods have been de- veloped
+  to assist cardiologists in diagnosis, many suffer from lacking explain- ability,
+  making it difficult to understand why a particular disease is classified. To address
+  this limitation, we introduceX-ECG, an explainable ECG foundation model. To train
+  this model, we first curate wave-level anomalies annotations on public datasets,
+  using a rule-based algorithm that finds abnormal waves, intervals or segments in
+  ECG signal according to established clinical knowledge. To help models learn where
+  to focus, we propose an attention-guid
+
+
+  ## Problem
+
+
+  While numerous machine learning methods have been de- veloped to assist cardiologists
+  in diagnosis, many suffer from lacking explain- ability, making it difficult to
+  understand why a particular disease is classified.
+
+
+  ## Core Idea
+
+
+  Electrocardiography (ECG) is a cost-effective and widely accessible tool for eval-
+  uating cardiac health. While numerous machine learning methods have been de- veloped
+  to assist cardiologists in diagnosis, many suffer from lacking explain- ability,
+  making it difficult to understand why a particular disease is classified. To address
+  this limitation, we introduceX-ECG, an explainable ECG foundation model. To train
+  this model, we first curate wave-level anomalies annotations on public datasets,
+  using a rule-based algorithm that finds abnormal waves, intervals or segments in
+  ECG signal according to established clinical knowledge. To help models learn where
+  to focus, we propose an attention-guid
+
+
+  ## Method Notes
+
+
+  - To address this limitation, we introduceX-ECG, an explainable ECG foundation model.
+
+  - To train this model, we first curate wave-level anomalies annotations on public
+  datasets, using a rule-based algorithm that finds abnormal waves, intervals or segments
+  in ECG signal according to established clinical knowledge.
+
+  - To help models learn where to focus, we propose an attention-guided training approach
+  that enables the model to highlight relevant regions.
+
+  - To the best of our knowledge, X-ECGis the first ECG foundation model with built-in
+  explainability.
+
+  - Our exper- iments show that using our dataset to guide the model not only adds
+  explainability but also improves performance in arrhythmia classification and report
+  generation tasks.
+
+  - Criteria Left Bundle Branch Block (LBBB): QRS duration > 120ms Dominant S wave
+  in V1 Broad monophasic R wave and absence of Q waves in I, aVL, V5-6 Prolong R wave
+  peak time (> 60ms) in V5-6 LLM I aVL V5 V6 Attention Score Figure 1:X-ECGis capable
+  of identifying abnormal regions that contribute to its output, thereby enhancing
+  model interpretability.
+
+
+  ## Evidence To Verify
+
+
+  - Exact contributions, datasets, metrics, and baselines.
+
+  - Quantitative results and claims from figures or tables.
+
+
+  ## Limitations
+
+
+  - To address this limitation, we introduceX-ECG, an explainable ECG foundation model.
+
+  - (2025) extend this progress by addressing challenges in interpreting corrupted
+  ECG signals.
+
+
+  ## Related Papers
+
+
+  - Cross-reference with other papers in `papers/`.
+
+  '
+review_notes: []
+agent_reviews:
+- time: '2026-06-10T00:55:37.368086+00:00'
+  model: deepseek-v4-flash
+  notes:
+  - 'year: None → 2026'
+  - 'venue:  → ICLR 2026 (under review)'
+  - 'contributions: replaced 0 items → 3 items'
+  - Set authors to null because the paper is under double-blind review with anonymous
+    authors; real names are not known.
+  - Set year to 2026 and venue to 'ICLR 2026 (under review)' based on the header 'Under
+    review as a conference paper at ICLR 2026'.
+  - DOI and arxiv_id are not mentioned in the provided text; left as null.
+  - Provided full abstract, one-sentence summary, contributions, method, and experiments
+    based on the paper's introduction and related sections.
+  - Limitations set to null because no explicit limitations section was found in the
+    provided text.
+  - Original tags may not be fully appropriate; they were left unchanged as the task
+    only asks to correct metadata from the PDF text.
+created_at: '2026-06-10T00:45:17.685492+00:00'
+updated_at: '2026-06-10T00:55:37.368113+00:00'
+agent_reviewed_at: '2026-06-10T00:55:37.368108+00:00'

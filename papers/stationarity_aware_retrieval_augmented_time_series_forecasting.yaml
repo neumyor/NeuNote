@@ -1,0 +1,228 @@
+id: stationarity_aware_retrieval_augmented_time_series_forecasting
+title: Stationarity-Aware Retrieval-Augmented Time Series Forecasting
+authors:
+- Shiqiao Zhou
+- Holger Schöner
+- Zipeng Wu
+- Edouard Fouché
+- IAG Wilson
+- Shuo Wang
+year: 2026
+venue: arXiv preprint
+doi: 10.1145/3770855.3817813
+arxiv_id: '2606.04135'
+source_pdf: originals/papers/2606_04135v1_2.pdf
+pages: 12
+tags:
+- time_series
+- llm
+- retrieval
+- forecasting
+- benchmark
+- representation_learning
+status: profiled
+confidence: medium
+reading_status: unread
+priority: normal
+needs_review: true
+abstract: Time series forecasting relies on historical patterns, but real-world series
+  often exhibit non-stationarity and regime shifts that chal- lenge fully parametric
+  forecasters. Inspired by Retrieval-Augmented Generation (RAG), recent work augments
+  forecasters by retrieving relevant historical segments and using them as external
+  evidence at inference time. However, due to the intrinsic non-stationarity of real-world
+  time series, a highly similar past segment does not nec- essarily imply a similar
+  future, rendering similarity-only retrieval brittle and prone to redundancy. We
+  proposeStationarity-Aware Retrieval-Augmented Time SeriesForecasting (SARAF), a
+  frame- work that adaptively balances relev
+one_sentence: Time series forecasting relies on historical patterns, but real-world
+  series often exhibit non-stationarity and regime shifts that chal- lenge fully parametric
+  forecasters. Inspired by Retrieval-Augmented Generation (RAG), recent work augments
+  forecasters by retrieving relevant historical segments and using them as external
+  evidence at inference time. However, due to the intrinsic non-stationarity of real-world
+  time series, a highly similar past segment does not nec- essarily imply a similar
+  future, rendering similarity-only retrieval brittle and prone to redundancy. We
+  proposeStationarity-Aware Retrieval-Augmented Time SeriesForecasting (SARAF), a
+  frame- work that adaptively balances relev
+problem: However, due to the intrinsic non-stationarity of real-world time series,
+  a highly similar past segment does not nec- essarily imply a similar future, rendering
+  similarity-only retrieval brittle and prone to redundancy.
+contributions:
+- We proposeStationarity-Aware Retrieval-Augmented Time SeriesForecasting (SARAF),
+  a frame- work that adaptively balances relevance and diversity in retrieval.
+- Keywords Time Series Forecasting; Retrieval-Augmented Forecasting; Non- Stationary
+  Time Series ∗The contribution was carried out while this co-author was employed
+  by Siemens AG.
+- To this end, we proposeSARAF, astationarity-awareretrieval- augmentedforecasting
+  framework that improves evidence quality under distribution shifts and heterogeneous
+  regimes.
+- First, we introduce atime-aligned retrieval enhancementthat explicitly favors candidates
+  from historically aligned periods (e.g., the same hour-of-day or day-of-week).
+- 'Our main contributions are: • We empirically demonstrate that the reliability of
+  similarity- based retrieval is strongly dataset-dependent: future simi- larity between
+  retrieved results and the ground truth varies substantially across stationarity
+  levels.'
+method:
+- Inspired by Retrieval-Augmented Generation (RAG), recent work augments forecasters
+  by retrieving relevant historical segments and using them as external evidence at
+  inference time.
+- However, due to the intrinsic non-stationarity of real-world time series, a highly
+  similar past segment does not nec- essarily imply a similar future, rendering similarity-only
+  retrieval brittle and prone to redundancy.
+- We proposeStationarity-Aware Retrieval-Augmented Time SeriesForecasting (SARAF),
+  a frame- work that adaptively balances relevance and diversity in retrieval.
+- CCS Concepts •Information systems → Information retrieval;•Applied computing→Forecasting.
+- Keywords Time Series Forecasting; Retrieval-Augmented Forecasting; Non- Stationary
+  Time Series ∗The contribution was carried out while this co-author was employed
+  by Siemens AG.
+- Over the past decades, forecast- ing methods have evolved from classical statistical
+  models such as ARIMA [ 2] to modern deep learning approaches that better capture
+  nonlinearity and multivariate dependencies.
+experiments:
+- SARAF first forms a candidate pool via temporal similarity with time-aligned enhancement,
+  then applies a diversity-aware selection strategy to cover heterogeneous historical
+  regimes, with the diversi- fication strength automatically modulated by dataset-level
+  station- arity.
+- Extensive experiments on eight real-world datasets show that SARAF achieves competitive
+  forecasting perfor- mance and improves average accuracy and robustness over strong
+  baselines, with particularly clear benefits under challenging non- stationary settings.
+- 'This is particularly benefi- cial for long-tail behaviors: loss-minimization tends
+  to prioritize frequent regimes, so rare yet consequential motifs are often under-
+  emphasized by fully parametric forecasters, whereas retrieval gives the model an
+  additional chance to fetch a few closely related his- torical segments as explicit
+  references.'
+- To probe this assumption, we conduct a simple diagnostic experiment under the 720-input
+  and 96-horizon setting, as shown in Fig.
+- Specifically, we choose two widely used time series forecasting benchmarks, Electricity
+  and Exchange, as representative cases for this diagnosis.
+limitations:
+- However, due to the intrinsic non-stationarity of real-world time series, a highly
+  similar past segment does not nec- essarily imply a similar future, rendering similarity-only
+  retrieval brittle and prone to redundancy.
+- However, most existing retrieval-augmented forecasters implic- itly assume that“similar
+  pasts imply similar futures”, and thus per- form similarity-only top-𝐾 retrieval
+  based on the input history.
+- 'However, such attenuation has two key limitations: (i) it does not resolve the
+  root cause—the mismatch between input-based retrieval and future relevance—and (ii)
+  it can overly suppress partially useful neighbors, effectively re- verting the model
+  to a purely parametric forecaster and diminishing retrieval’s benefits on long-tail
+  or regime-specific patterns.'
+- Deep learning mitigated these limitations with recurrent mod- els such as LSTMs
+  [10] and probabilistic frameworks like DeepAR [28].
+notes: '# Stationarity-Aware Retrieval-Augmented Time Series Forecasting
+
+
+  ## Metadata
+
+
+  - ID: `stationarity_aware_retrieval_augmented_time_series_forecasting`
+
+  - Source: `originals/papers/2606_04135v1_2.pdf`
+
+  - Pages: 12
+
+  - Tags: time_series, llm, retrieval, forecasting, benchmark, representation_learning
+
+  - Status: enriched
+
+
+  ## One Sentence
+
+
+  Time series forecasting relies on historical patterns, but real-world series often
+  exhibit non-stationarity and regime shifts that chal- lenge fully parametric forecasters.
+  Inspired by Retrieval-Augmented Generation (RAG), recent work augments forecasters
+  by retrieving relevant historical segments and using them as external evidence at
+  inference time. However, due to the intrinsic non-stationarity of real-world time
+  series, a highly similar past segment does not nec- essarily imply a similar future,
+  rendering similarity-only retrieval brittle and prone to redundancy. We proposeStationarity-Aware
+  Retrieval-Augmented Time SeriesForecasting (SARAF), a frame- work that adaptively
+  balances relev
+
+
+  ## Problem
+
+
+  However, due to the intrinsic non-stationarity of real-world time series, a highly
+  similar past segment does not nec- essarily imply a similar future, rendering similarity-only
+  retrieval brittle and prone to redundancy.
+
+
+  ## Core Idea
+
+
+  Time series forecasting relies on historical patterns, but real-world series often
+  exhibit non-stationarity and regime shifts that chal- lenge fully parametric forecasters.
+  Inspired by Retrieval-Augmented Generation (RAG), recent work augments forecasters
+  by retrieving relevant historical segments and using them as external evidence at
+  inference time. However, due to the intrinsic non-stationarity of real-world time
+  series, a highly similar past segment does not nec- essarily imply a similar future,
+  rendering similarity-only retrieval brittle and prone to redundancy. We proposeStationarity-Aware
+  Retrieval-Augmented Time SeriesForecasting (SARAF), a frame- work that adaptively
+  balances relev
+
+
+  ## Method Notes
+
+
+  - Inspired by Retrieval-Augmented Generation (RAG), recent work augments forecasters
+  by retrieving relevant historical segments and using them as external evidence at
+  inference time.
+
+  - However, due to the intrinsic non-stationarity of real-world time series, a highly
+  similar past segment does not nec- essarily imply a similar future, rendering similarity-only
+  retrieval brittle and prone to redundancy.
+
+  - We proposeStationarity-Aware Retrieval-Augmented Time SeriesForecasting (SARAF),
+  a frame- work that adaptively balances relevance and diversity in retrieval.
+
+  - CCS Concepts •Information systems → Information retrieval;•Applied computing→Forecasting.
+
+  - Keywords Time Series Forecasting; Retrieval-Augmented Forecasting; Non- Stationary
+  Time Series ∗The contribution was carried out while this co-author was employed
+  by Siemens AG.
+
+  - Over the past decades, forecast- ing methods have evolved from classical statistical
+  models such as ARIMA [ 2] to modern deep learning approaches that better capture
+  nonlinearity and multivariate dependencies.
+
+
+  ## Evidence To Verify
+
+
+  - Exact contributions, datasets, metrics, and baselines.
+
+  - Quantitative results and claims from figures or tables.
+
+
+  ## Limitations
+
+
+  - However, due to the intrinsic non-stationarity of real-world time series, a highly
+  similar past segment does not nec- essarily imply a similar future, rendering similarity-only
+  retrieval brittle and prone to redundancy.
+
+  - However, most existing retrieval-augmented forecasters implic- itly assume that“similar
+  pasts imply similar futures”, and thus per- form similarity-only top-𝐾 retrieval
+  based on the input history.
+
+  - However, such attenuation has two key limitations: (i) it does not resolve the
+  root cause—the mismatch between input-based retrieval and future relevance—and (ii)
+  it can overly suppress partially useful neighbors, effectively re- verting the model
+  to a purely parametric forecaster and diminishing retrieval’s benefits on long-tail
+  or regime-specific patterns.
+
+  - Deep learning mitigated these limitations with recurrent mod- els such as LSTMs
+  [10] and probabilistic frameworks like DeepAR [28].
+
+
+  ## Related Papers
+
+
+  - Cross-reference with other papers in `papers/`.
+
+  '
+review_notes: []
+agent_reviews: []
+agent_reviewed_at: null
+created_at: '2026-06-09T08:15:40.294893+00:00'
+updated_at: '2026-06-10T00:38:36.828150+00:00'

@@ -1,0 +1,198 @@
+id: revisiting_vae_for_unsupervised_time_series_anomaly_detection_a_frequency_perspe
+title: 'Revisiting VAE for Unsupervised Time Series Anomaly Detection: A Frequency
+  Perspective'
+authors:
+- Computer Network Information
+- Center
+year: 2024
+venue: arXiv preprint
+doi: ''
+arxiv_id: '2402.02820'
+source_pdf: originals/papers/2402_02820v1.pdf
+pages: 10
+tags:
+- anomaly_detection
+- time_series
+- forecasting
+status: profiled
+confidence: medium
+reading_status: unread
+priority: normal
+needs_review: true
+abstract: Time series Anomaly Detection (AD) plays a crucial role for web systems.
+  Various web systems rely on time series data to monitor and identify anomalies in
+  real time, as well as to initiate diagno- sis and remediation procedures. Variational
+  Autoencoders (VAEs) have gained popularity in recent decades due to their superior
+  de- noising capabilities, which are useful for anomaly detection. How- ever, our
+  study reveals that VAE-based methods face challenges in capturing long-periodic
+  heterogeneous patterns and detailed short-periodic trends simultaneously. To address
+  these challenges, we propose Frequency-enhanced Conditional Variational Autoen-
+  coder (FCVAE), a novel unsupervised AD method for
+one_sentence: Time series Anomaly Detection (AD) plays a crucial role for web systems.
+  Various web systems rely on time series data to monitor and identify anomalies in
+  real time, as well as to initiate diagno- sis and remediation procedures. Variational
+  Autoencoders (VAEs) have gained popularity in recent decades due to their superior
+  de- noising capabilities, which are useful for anomaly detection. How- ever, our
+  study reveals that VAE-based methods face challenges in capturing long-periodic
+  heterogeneous patterns and detailed short-periodic trends simultaneously. To address
+  these challenges, we propose Frequency-enhanced Conditional Variational Autoen-
+  coder (FCVAE), a novel unsupervised AD method for
+problem: How- ever, our study reveals that VAE-based methods face challenges in capturing
+  long-periodic heterogeneous patterns and detailed short-periodic trends simultaneously.
+contributions:
+- To address these challenges, we propose Frequency-enhanced Conditional Variational
+  Autoen- coder (FCVAE), a novel unsupervised AD method for univariate time series.
+- In this paper, we introduce a novel unsupervised anomaly detec- tion algorithm,
+  named FCVAE (Frequency-enhanced Conditional Variational AutoEncoder).
+- 'Our paper’s contributions can be sum- marized as follows: • Our analysis of the
+  widely-used VAE model for anomaly detection reveals that existing VAE-based models
+  fail to cap- ture both heterogeneous periodic patterns and detailed trend patterns.'
+- However, for our method, we train the model by incorporating all the time series
+  from the dataset together, which provides sufficient pattern diversity.
+- Therefore, we propose the LFM that incorporates the target attention.
+method:
+- Together with a carefully designed “target attention” mechanism, our approach allows
+  the model to pick the most useful information from the frequency domain for better
+  short-periodic trend construction.
+- This con- firms the practical applicability of our approach in addressing the limitations
+  of current VAE-based anomaly detection models.
+- Anomalies are rare in real-world time series data [41], making it difficult to label
+  them and train a supervised model for anomaly de- tection [50].
+- VAEs are well-suited for detecting anomalies, but existing VAE-based anom- aly detection
+  models have not yet reached theoretically optimal performance.
+- In this paper, we aim to re-examine the VAE model and improve its effectiveness
+  in anomaly detection.
+- Although CNN attempts to model point-to-point dependencies within the window, it
+  still produces coarse-grained fluctuations (visible in the third sub-figure in Figure
+  1).
+experiments:
+- Our FCVAE has been evaluated on public datasets and a large-scale cloud system,
+  and the results demonstrate that it outperforms state-of-the-art methods.
+- • Evaluations demonstrate that our FCVAE substantially sur- passes state-of-the-art
+  methods ( ∼40% on public datasets and 10% in a real-world web system in terms of
+  F1 score).
+- x represents the entire time series data array, while 𝑥𝑖 signifies the metric value
+  at time 𝑖.
+- However, for our method, we train the model by incorporating all the time series
+  from the dataset together, which provides sufficient pattern diversity.
+- AnomalyScore = −E𝑞𝜙 (z|x,c) [log𝑝𝜃 (x|z, c) ] (7) 4 EXPERIMENTS 4.1 Experiment Settings
+  4.1.1 Datasets.
+limitations:
+- How- ever, our study reveals that VAE-based methods face challenges in capturing
+  long-periodic heterogeneous patterns and detailed short-periodic trends simultaneously.
+- To address these challenges, we propose Frequency-enhanced Conditional Variational
+  Autoen- coder (FCVAE), a novel unsupervised AD method for univariate time series.
+- This con- firms the practical applicability of our approach in addressing the limitations
+  of current VAE-based anomaly detection models.
+- However, these methods may overfit to anomalous patterns and underperform.
+notes: '# Revisiting VAE for Unsupervised Time Series Anomaly Detection: A Frequency
+  Perspective
+
+
+  ## Metadata
+
+
+  - ID: `revisiting_vae_for_unsupervised_time_series_anomaly_detection_a_frequency_perspe`
+
+  - Source: `originals/papers/2402_02820v1.pdf`
+
+  - Pages: 10
+
+  - Tags: anomaly_detection, time_series, forecasting
+
+  - Status: enriched
+
+
+  ## One Sentence
+
+
+  Time series Anomaly Detection (AD) plays a crucial role for web systems. Various
+  web systems rely on time series data to monitor and identify anomalies in real time,
+  as well as to initiate diagno- sis and remediation procedures. Variational Autoencoders
+  (VAEs) have gained popularity in recent decades due to their superior de- noising
+  capabilities, which are useful for anomaly detection. How- ever, our study reveals
+  that VAE-based methods face challenges in capturing long-periodic heterogeneous
+  patterns and detailed short-periodic trends simultaneously. To address these challenges,
+  we propose Frequency-enhanced Conditional Variational Autoen- coder (FCVAE), a novel
+  unsupervised AD method for
+
+
+  ## Problem
+
+
+  How- ever, our study reveals that VAE-based methods face challenges in capturing
+  long-periodic heterogeneous patterns and detailed short-periodic trends simultaneously.
+
+
+  ## Core Idea
+
+
+  Time series Anomaly Detection (AD) plays a crucial role for web systems. Various
+  web systems rely on time series data to monitor and identify anomalies in real time,
+  as well as to initiate diagno- sis and remediation procedures. Variational Autoencoders
+  (VAEs) have gained popularity in recent decades due to their superior de- noising
+  capabilities, which are useful for anomaly detection. How- ever, our study reveals
+  that VAE-based methods face challenges in capturing long-periodic heterogeneous
+  patterns and detailed short-periodic trends simultaneously. To address these challenges,
+  we propose Frequency-enhanced Conditional Variational Autoen- coder (FCVAE), a novel
+  unsupervised AD method for
+
+
+  ## Method Notes
+
+
+  - Together with a carefully designed “target attention” mechanism, our approach
+  allows the model to pick the most useful information from the frequency domain for
+  better short-periodic trend construction.
+
+  - This con- firms the practical applicability of our approach in addressing the
+  limitations of current VAE-based anomaly detection models.
+
+  - Anomalies are rare in real-world time series data [41], making it difficult to
+  label them and train a supervised model for anomaly de- tection [50].
+
+  - VAEs are well-suited for detecting anomalies, but existing VAE-based anom- aly
+  detection models have not yet reached theoretically optimal performance.
+
+  - In this paper, we aim to re-examine the VAE model and improve its effectiveness
+  in anomaly detection.
+
+  - Although CNN attempts to model point-to-point dependencies within the window,
+  it still produces coarse-grained fluctuations (visible in the third sub-figure in
+  Figure 1).
+
+
+  ## Evidence To Verify
+
+
+  - Exact contributions, datasets, metrics, and baselines.
+
+  - Quantitative results and claims from figures or tables.
+
+
+  ## Limitations
+
+
+  - How- ever, our study reveals that VAE-based methods face challenges in capturing
+  long-periodic heterogeneous patterns and detailed short-periodic trends simultaneously.
+
+  - To address these challenges, we propose Frequency-enhanced Conditional Variational
+  Autoen- coder (FCVAE), a novel unsupervised AD method for univariate time series.
+
+  - This con- firms the practical applicability of our approach in addressing the
+  limitations of current VAE-based anomaly detection models.
+
+  - However, these methods may overfit to anomalous patterns and underperform.
+
+
+  ## Related Papers
+
+
+  - Cross-reference with other papers in `papers/`.
+
+  '
+review_notes: []
+agent_reviews: []
+agent_reviewed_at: null
+created_at: '2026-06-09T13:15:25.826955+00:00'
+updated_at: '2026-06-10T00:38:36.454028+00:00'

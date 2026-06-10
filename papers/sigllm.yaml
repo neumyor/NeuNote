@@ -1,0 +1,194 @@
+id: sigllm
+title: Large Language Models can be Zero-Shot Anomaly Detectors for Time Series?
+authors:
+- Sarah Alnegheimish
+- Linh Nguyen
+- Laure Berti-Equille
+- Kalyan Veeramachaneni
+year: 2019
+venue: arXiv preprint
+doi: ''
+arxiv_id: '2405.14755'
+source_pdf: originals/papers/large_language_models_can_be_zero_shot_anomaly_detectors_for_time_series.pdf
+pages: 11
+tags:
+- anomaly_detection
+- time_series
+- llm
+status: profiled
+confidence: medium
+reading_status: unread
+priority: normal
+needs_review: true
+abstract: 'Recent studies have shown the ability of large lan- guage models to perform
+  a variety of tasks, includ- ing time series forecasting. The flexible nature of
+  these models allows them to be used for many ap- plications. In this paper, we present
+  a novel study of large language models used for the challenging task of time series
+  anomaly detection. This prob- lem entails two aspects novel for LLMs: the need for
+  the model to identify part of the input sequence (or multiple parts) as anomalous;
+  and the need for it to work with time series data rather than the tradi- tional
+  text input. We introduce S IGLLM, a frame- work for time series anomaly detection
+  using large language models. Our framework i'
+one_sentence: 'Recent studies have shown the ability of large lan- guage models to
+  perform a variety of tasks, includ- ing time series forecasting. The flexible nature
+  of these models allows them to be used for many ap- plications. In this paper, we
+  present a novel study of large language models used for the challenging task of
+  time series anomaly detection. This prob- lem entails two aspects novel for LLMs:
+  the need for the model to identify part of the input sequence (or multiple parts)
+  as anomalous; and the need for it to work with time series data rather than the
+  tradi- tional text input. We introduce S IGLLM, a frame- work for time series anomaly
+  detection using large language models. Our framework i'
+problem: Identifying unusual patterns can be a cumbersome and difficult task, especially
+  when massive amounts of signal must be analyzed.
+contributions:
+- In this paper, we present a novel study of large language models used for the challenging
+  task of time series anomaly detection.
+- We introduce S IGLLM, a frame- work for time series anomaly detection using large
+  language models.
+- First, we present a prompt-based detection method that directly asks a language
+  model to indicate which elements of the input are anomalies.
+- In this paper, we present a thorough study of LLMs used for the challenging task
+  of anomaly detection from time series data, asking the question Can LLMs become
+  anomaly detectors for time series data?
+- In this paper, we present S IGLLM, a framework for using LLMs to detect anomalies
+  in time series data, with current interaction support for models hosted by OpenAI
+  1 and Hug- gingFace 2.
+method:
+- Large language models can be zero-shot anomaly detectors for time series?
+- Sarah Alnegheimish1 , Linh Nguyen1 , Laure Berti-Equille2 and Kalyan Veeramachaneni1
+  1MIT 2IRD ESPACE-DEV {smish, linhnk, kalyanv}@mit.edu, laure.berti@ird.fr, Abstract
+  Recent studies have shown the ability of large lan- guage models to perform a variety
+  of tasks, includ- ing time series forecasting.
+- The flexible nature of these models allows them to be used for many ap- plications.
+- In this paper, we present a novel study of large language models used for the challenging
+  task of time series anomaly detection.
+- 'This prob- lem entails two aspects novel for LLMs: the need for the model to identify
+  part of the input sequence (or multiple parts) as anomalous; and the need for it
+  to work with time series data rather than the tradi- tional text input.'
+- We introduce S IGLLM, a frame- work for time series anomaly detection using large
+  language models.
+experiments:
+- We evaluated our framework on 11 datasets spanning various sources and 10 pipelines.
+- We show that the forecasting method significantly out- performed the prompting method
+  in all 11 datasets with respect to the F1 score.
+- 'Moreover, LLMs have shown 0.2 0.0 0.2 Distance from Baseline DL Classic LLM Transformer
+  Commercial Difference in F1 Score 1.405 1.410 1.415 1.420 timestamp ×109 1.0 0.5
+  0.0 0.5 1.0 value E-2 from SMAP Original signal LLM forecast Figure 1: (left) F1
+  Score performances of different model types, compared to a moving average baseline.'
+- (right) Illustration of MISTRAL forecasts on E-2 signal from the SMAP dataset.
+- Our findings, captured in Figure 1(left), show that LLMs improve on a simple moving
+  average baseline.
+limitations:
+- However, there is still a gap between classic and deep learning approaches and LLMs.
+- However, reducing the set of possible values to a smaller range (e.g.
+- However, the GPT tokenizer tends to seg- ment numbers into chunks that may not correspond
+  directly with the individual digits Liu and Low [2023].
+- However, this problem becomes more ambiguous when the context is larger.
+notes: '# Large Language Models can be Zero-Shot Anomaly Detectors for Time Series?
+
+
+  ## Metadata
+
+
+  - ID: `sigllm`
+
+  - Source: `originals/papers/large_language_models_can_be_zero_shot_anomaly_detectors_for_time_series.pdf`
+
+  - Pages: 11
+
+  - Tags: anomaly_detection, time_series, llm
+
+  - Status: enriched
+
+
+  ## One Sentence
+
+
+  Recent studies have shown the ability of large lan- guage models to perform a variety
+  of tasks, includ- ing time series forecasting. The flexible nature of these models
+  allows them to be used for many ap- plications. In this paper, we present a novel
+  study of large language models used for the challenging task of time series anomaly
+  detection. This prob- lem entails two aspects novel for LLMs: the need for the model
+  to identify part of the input sequence (or multiple parts) as anomalous; and the
+  need for it to work with time series data rather than the tradi- tional text input.
+  We introduce S IGLLM, a frame- work for time series anomaly detection using large
+  language models. Our framework i
+
+
+  ## Problem
+
+
+  Identifying unusual patterns can be a cumbersome and difficult task, especially
+  when massive amounts of signal must be analyzed.
+
+
+  ## Core Idea
+
+
+  Recent studies have shown the ability of large lan- guage models to perform a variety
+  of tasks, includ- ing time series forecasting. The flexible nature of these models
+  allows them to be used for many ap- plications. In this paper, we present a novel
+  study of large language models used for the challenging task of time series anomaly
+  detection. This prob- lem entails two aspects novel for LLMs: the need for the model
+  to identify part of the input sequence (or multiple parts) as anomalous; and the
+  need for it to work with time series data rather than the tradi- tional text input.
+  We introduce S IGLLM, a frame- work for time series anomaly detection using large
+  language models. Our framework i
+
+
+  ## Method Notes
+
+
+  - Large language models can be zero-shot anomaly detectors for time series?
+
+  - Sarah Alnegheimish1 , Linh Nguyen1 , Laure Berti-Equille2 and Kalyan Veeramachaneni1
+  1MIT 2IRD ESPACE-DEV {smish, linhnk, kalyanv}@mit.edu, laure.berti@ird.fr, Abstract
+  Recent studies have shown the ability of large lan- guage models to perform a variety
+  of tasks, includ- ing time series forecasting.
+
+  - The flexible nature of these models allows them to be used for many ap- plications.
+
+  - In this paper, we present a novel study of large language models used for the
+  challenging task of time series anomaly detection.
+
+  - This prob- lem entails two aspects novel for LLMs: the need for the model to identify
+  part of the input sequence (or multiple parts) as anomalous; and the need for it
+  to work with time series data rather than the tradi- tional text input.
+
+  - We introduce S IGLLM, a frame- work for time series anomaly detection using large
+  language models.
+
+
+  ## Evidence To Verify
+
+
+  - Exact contributions, datasets, metrics, and baselines.
+
+  - Quantitative results and claims from figures or tables.
+
+
+  ## Limitations
+
+
+  - However, there is still a gap between classic and deep learning approaches and
+  LLMs.
+
+  - However, reducing the set of possible values to a smaller range (e.g.
+
+  - However, the GPT tokenizer tends to seg- ment numbers into chunks that may not
+  correspond directly with the individual digits Liu and Low [2023].
+
+  - However, this problem becomes more ambiguous when the context is larger.
+
+
+  ## Related Papers
+
+
+  - Cross-reference with other papers in `papers/`.
+
+  '
+review_notes: []
+agent_reviews: []
+agent_reviewed_at: null
+created_at: '2026-06-09T08:00:28.856648+00:00'
+updated_at: '2026-06-10T00:38:35.183588+00:00'

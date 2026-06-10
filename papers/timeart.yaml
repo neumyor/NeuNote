@@ -1,0 +1,215 @@
+id: timeart
+title: 'TimeART: Towards Agentic Time Series Reasoning via Tool-Augmentation'
+authors:
+- Xingjian Wu
+- Junkai Lu
+- Zhengyu Li
+- Xiangfei Qiu
+- Jilin Hu
+- Chenjuan Guo
+- Christian S. Jensen
+- Bin Yang
+year: 2024
+venue: arXiv preprint
+doi: ''
+arxiv_id: '2601.13653'
+source_pdf: originals/papers/timeart_towards_agentic_time_series_reasoning_via_tool_augmentation.pdf
+pages: 21
+tags:
+- time_series
+- llm
+- agent
+- tool_use
+status: profiled
+confidence: medium
+reading_status: unread
+priority: normal
+needs_review: true
+abstract: Time series data widely exist in real-world cyber- physical systems. Though
+  analyzing and inter- preting them contributes to significant values, e.g, disaster
+  prediction and financial risk control, cur- rent workflows mainly rely on human
+  data scien- tists, which requires significant labor costs and lacks automation.
+  To tackle this, we introduce TimeART, a framework fusing the analytical ca- pability
+  of strong out-of-the-box tools and the reasoning capability of Large Language Models
+  (LLMs), which serves as a fully agentic data scientist for Time Series Question
+  Answering (TSQA). To teach the LLM-based Time Series Reasoning Models (TSRMs) strategic
+  tool-use, we also collect a100kexpert traj
+one_sentence: Time series data widely exist in real-world cyber- physical systems.
+  Though analyzing and inter- preting them contributes to significant values, e.g,
+  disaster prediction and financial risk control, cur- rent workflows mainly rely
+  on human data scien- tists, which requires significant labor costs and lacks automation.
+  To tackle this, we introduce TimeART, a framework fusing the analytical ca- pability
+  of strong out-of-the-box tools and the reasoning capability of Large Language Models
+  (LLMs), which serves as a fully agentic data scientist for Time Series Question
+  Answering (TSQA). To teach the LLM-based Time Series Reasoning Models (TSRMs) strategic
+  tool-use, we also collect a100kexpert traj
+problem: Though analyzing and inter- preting them contributes to significant values,
+  e.g, disaster prediction and financial risk control, cur- rent workflows mainly
+  rely on human data scien- tists, which requires significant labor costs and lacks
+  automation.
+contributions:
+- To tackle this, we introduce TimeART, a framework fusing the analytical ca- pability
+  of strong out-of-the-box tools and the reasoning capability of Large Language Models
+  (LLMs), which serves as a fully agentic data scientist for Time Series Question
+  Answering (TSQA).
+- To overcome the above-mentioned problems, we propose TimeART, a Time series Agentic
+  Reasoning framework with Tool-augmentation.
+- Furthermore, in order to strengthen the tool invocation capability of TSRMs, we
+  proposeTime- ToolBench, a comprehensive corpus for agentic time series reasoning,
+  containing100kReAct-style (Yao et al., 2022) tool-use trajectories from multiple
+  real-world domains, col- lected with GPT-4o and valiated through a strict scheme.
+- 'Our contributions are summarized as: • We introduceTimeART, an Agentic Time Series
+  Rea- soning framework supporting tool-use.'
+- For simplification,we denote our method as TimeART in the following parts.
+method:
+- 'TimeART: Towards Agentic Time Series Reasoning via Tool-Augmentation Xingjian Wu
+  1 Junkai Lu 1 Zhengyu Li 1 Xiangfei Qiu 1 Jilin Hu 1 Chenjuan Guo 1 Christian S.'
+- To tackle this, we introduce TimeART, a framework fusing the analytical ca- pability
+  of strong out-of-the-box tools and the reasoning capability of Large Language Models
+  (LLMs), which serves as a fully agentic data scientist for Time Series Question
+  Answering (TSQA).
+- To teach the LLM-based Time Series Reasoning Models (TSRMs) strategic tool-use,
+  we also collect a100kexpert trajectory corpus called TimeToolBench.
+- Experimentally, we train an 8B TSRM on TimeToolBench and equip it with the TimeART
+  framework, and it achieves consistent state-of-the-art performance on multiple TSQA
+  tasks, which pioneers a novel approach towards agentic time series reasoning.
+- In conventional pipelines, data scientists play a vital role in process orchestration
+  and model design.
+- Agents may use tools to explore potential correct trajectories.
+experiments:
+- Experimentally, we train an 8B TSRM on TimeToolBench and equip it with the TimeART
+  framework, and it achieves consistent state-of-the-art performance on multiple TSQA
+  tasks, which pioneers a novel approach towards agentic time series reasoning.
+- Numerical hallucination Cognitive defect The dataset is from electricity energy
+  and it reflects the hourly power generation over three months.
+- • Experimentally, we train an 8B TSRM onTimeTool- Benchthrough our proposed training
+  strategy, and then equip it with theTimeARTframework.
+- It is demon- strated state-of-the-art performance on multiple TSQA benchmarks.
+- Since the tool-use trajectories are LLM artifacts, the original TSQA datasets used
+  to generate them are from research teams (Kong et al., 2025; Cai et al., 2024; Chen
+  et al., 2025a; Xie et al., 2024), which are from real-world applications or generated
+  synthetically through human check, covering multiple domains shown in Figure 3.
+limitations:
+- However, there still remain some limitations in TSRMs, making them struggle to replace
+  data scientists.
+- 'However, this paradigm faces some challenges in time series reasoning–see Figure
+  2: 1) low generalization.The balance of behaviour cloning is hard to control, often
+  causing TSRMs to simply imitate the tool-use trajectories of experts.'
+- However, it is limited by the design of reward functions and quality of rollouts,
+  especially when the reward is sparse.
+- However, they still fall short in understand- ing the boundaries of tools’ capabilities,
+  which may cause suboptimal and conservative invocations.
+notes: '# TimeART: Towards Agentic Time Series Reasoning via Tool-Augmentation
+
+
+  ## Metadata
+
+
+  - ID: `timeart`
+
+  - Source: `originals/papers/timeart_towards_agentic_time_series_reasoning_via_tool_augmentation.pdf`
+
+  - Pages: 21
+
+  - Tags: time_series, llm, agent, tool_use
+
+  - Status: enriched
+
+
+  ## One Sentence
+
+
+  Time series data widely exist in real-world cyber- physical systems. Though analyzing
+  and inter- preting them contributes to significant values, e.g, disaster prediction
+  and financial risk control, cur- rent workflows mainly rely on human data scien-
+  tists, which requires significant labor costs and lacks automation. To tackle this,
+  we introduce TimeART, a framework fusing the analytical ca- pability of strong out-of-the-box
+  tools and the reasoning capability of Large Language Models (LLMs), which serves
+  as a fully agentic data scientist for Time Series Question Answering (TSQA). To
+  teach the LLM-based Time Series Reasoning Models (TSRMs) strategic tool-use, we
+  also collect a100kexpert traj
+
+
+  ## Problem
+
+
+  Though analyzing and inter- preting them contributes to significant values, e.g,
+  disaster prediction and financial risk control, cur- rent workflows mainly rely
+  on human data scien- tists, which requires significant labor costs and lacks automation.
+
+
+  ## Core Idea
+
+
+  Time series data widely exist in real-world cyber- physical systems. Though analyzing
+  and inter- preting them contributes to significant values, e.g, disaster prediction
+  and financial risk control, cur- rent workflows mainly rely on human data scien-
+  tists, which requires significant labor costs and lacks automation. To tackle this,
+  we introduce TimeART, a framework fusing the analytical ca- pability of strong out-of-the-box
+  tools and the reasoning capability of Large Language Models (LLMs), which serves
+  as a fully agentic data scientist for Time Series Question Answering (TSQA). To
+  teach the LLM-based Time Series Reasoning Models (TSRMs) strategic tool-use, we
+  also collect a100kexpert traj
+
+
+  ## Method Notes
+
+
+  - TimeART: Towards Agentic Time Series Reasoning via Tool-Augmentation Xingjian
+  Wu 1 Junkai Lu 1 Zhengyu Li 1 Xiangfei Qiu 1 Jilin Hu 1 Chenjuan Guo 1 Christian
+  S.
+
+  - To tackle this, we introduce TimeART, a framework fusing the analytical ca- pability
+  of strong out-of-the-box tools and the reasoning capability of Large Language Models
+  (LLMs), which serves as a fully agentic data scientist for Time Series Question
+  Answering (TSQA).
+
+  - To teach the LLM-based Time Series Reasoning Models (TSRMs) strategic tool-use,
+  we also collect a100kexpert trajectory corpus called TimeToolBench.
+
+  - Experimentally, we train an 8B TSRM on TimeToolBench and equip it with the TimeART
+  framework, and it achieves consistent state-of-the-art performance on multiple TSQA
+  tasks, which pioneers a novel approach towards agentic time series reasoning.
+
+  - In conventional pipelines, data scientists play a vital role in process orchestration
+  and model design.
+
+  - Agents may use tools to explore potential correct trajectories.
+
+
+  ## Evidence To Verify
+
+
+  - Exact contributions, datasets, metrics, and baselines.
+
+  - Quantitative results and claims from figures or tables.
+
+
+  ## Limitations
+
+
+  - However, there still remain some limitations in TSRMs, making them struggle to
+  replace data scientists.
+
+  - However, this paradigm faces some challenges in time series reasoning–see Figure
+  2: 1) low generalization.The balance of behaviour cloning is hard to control, often
+  causing TSRMs to simply imitate the tool-use trajectories of experts.
+
+  - However, it is limited by the design of reward functions and quality of rollouts,
+  especially when the reward is sparse.
+
+  - However, they still fall short in understand- ing the boundaries of tools’ capabilities,
+  which may cause suboptimal and conservative invocations.
+
+
+  ## Related Papers
+
+
+  - Cross-reference with other papers in `papers/`.
+
+  '
+review_notes: []
+agent_reviews: []
+agent_reviewed_at: null
+created_at: '2026-06-09T08:00:31.139639+00:00'
+updated_at: '2026-06-10T00:38:37.239634+00:00'

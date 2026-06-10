@@ -1,0 +1,168 @@
+id: findings_of_the_association_for_computational_linguistics_acl_2025_pages_14510_1
+title: 'MEIT: Multimodal Electrocardiogram Instruction Tuning on Large Language Models
+  for Report Generation'
+authors:
+- Zhongwei Wan
+- Che Liu
+- Xin Wang
+- Chaofan Tao
+- Hui Shen
+- Jing Xiong
+- Rossella Arcucci
+- Huaxiu Yao
+- Mi Zhang
+year: 2025
+venue: 'Findings of the Association for Computational Linguistics: ACL 2025'
+doi: ''
+arxiv_id: ''
+source_pdf: originals/papers/meit_multimodal_electrocardiogram_instruction_tuning.pdf
+pages: 18
+tags:
+- time_series
+- llm
+- tool_use
+- benchmark
+- representation_learning
+status: profiled
+confidence: medium
+reading_status: unread
+priority: normal
+needs_review: false
+abstract: Electrocardiogram (ECG) is the primary non- invasive diagnostic tool for
+  monitoring cardiac conditions and is crucial in assisting clinicians. Recent studies
+  have concentrated on classify- ing cardiac conditions using ECG data but have overlooked
+  ECG report generation, which is time-consuming and requires clinical expertise.
+  To automate ECG report generation and ensure its versatility, we propose theMultimodal
+  ECG Instruction Tuning ( MEIT) framework, the first attempt to tackle ECG report
+  generation with LLMs and multimodal instructions. To facilitate future research,
+  we establish a bench- mark to evaluate MEIT with various LLMs backbones across two
+  large-scale ECG datasets. Our approach u
+one_sentence: Electrocardiogram (ECG) is the primary non- invasive diagnostic tool
+  for monitoring cardiac conditions and is crucial in assisting clinicians. Recent
+  studies have concentrated on classify- ing cardiac conditions using ECG data but
+  have overlooked ECG report generation, which is time-consuming and requires clinical
+  expertise. To automate ECG report generation and ensure its versatility, we propose
+  theMultimodal ECG Instruction Tuning ( MEIT) framework, the first attempt to tackle
+  ECG report generation with LLMs and multimodal instructions. To facilitate future
+  research, we establish a bench- mark to evaluate MEIT with various LLMs backbones
+  across two large-scale ECG datasets. Our approach u
+problem: Unlike image-based medical report generation tasks (e.g., radiology reports),
+  ECG report gener- ation faces unique challenges due to the concise, keyword-centric
+  content of ECG reports, which contrasts with the more extensive anatomical de- scriptions
+  in radiology.
+contributions:
+- Proposes the MEIT framework, the first approach for ECG report generation using
+  LLMs and multimodal instructions
+- Introduces a lightweight attention-based fusion module to integrate ECG signals
+  into LLMs without adding new parameters
+- Establishes a comprehensive benchmark for evaluating ECG report generation across
+  four tasks using two large-scale datasets
+method:
+- To automate ECG report generation and ensure its versatility, we propose theMultimodal
+  ECG Instruction Tuning ( MEIT) framework, the first attempt to tackle ECG report
+  generation with LLMs and multimodal instructions.
+- 1 Introduction Electrocardiogram (ECG) is the primary tool for heart disease diagnosis.
+- Recently, AI models have been developed to streamline ECG data analysis for the
+  classification task (Hu et al., 2023; Liu et al., 2023a, 2024), yet the automatic
+  generation of reports from ECG recordings remains relatively underexplored.
+- Furthermore, there is still a lack of comprehensive benchmarks for evaluating the
+  performance of ECG report generation.
+- In this work, we introduce MEIT, a Multimodal ECG Instruction Tuning framework that
+  extends the capability of large language models (LLMs) for the task of ECG report
+  generation.
+- 'We also introduce a comprehensive benchmark to evaluate ECG report generation across
+  two large- scale datasets (with 20K and 800K ECG-report pairs), covering four tasks:
+  (1) report generation quality, (2) zero-shot transfer across datasets, (3) robustness
+  under signal perturbations, and (4) align- ment with expert evaluation.'
+experiments:
+- To facilitate future research, we establish a bench- mark to evaluate MEIT with
+  various LLMs backbones across two large-scale ECG datasets.
+- Our approach uniquely aligns the representa- tions of the ECG signal and the report,
+  and we conduct extensive experiments to bench- mark MEIT with nine open-source LLMs
+  us- ing more than 800,000 ECG reports.
+- Furthermore, there is still a lack of comprehensive benchmarks for evaluating the
+  performance of ECG report generation.
+- Concretely, we construct a multimodal instruction dataset from publicly available
+  ECG recordings and propose an efficient attention-based fusion method that incor-
+  porates ECG signals into the latent space of LLMs without adding new parameters.
+- 'We also introduce a comprehensive benchmark to evaluate ECG report generation across
+  two large- scale datasets (with 20K and 800K ECG-report pairs), covering four tasks:
+  (1) report generation quality, (2) zero-shot transfer across datasets, (3) robustness
+  under signal perturbations, and (4) align- ment with expert evaluation.'
+limitations:
+- Unlike image-based medical report generation tasks (e.g., radiology reports), ECG
+  report gener- ation faces unique challenges due to the concise, keyword-centric
+  content of ECG reports, which contrasts with the more extensive anatomical de- scriptions
+  in radiology.
+- However, these meth- ods are designed for medical images and struggle with ECG signals
+  due to their distinct temporal and waveform characteristics.
+- However, these methods focus on natural images and are not directly applicable to
+  ECG signals.
+- 7 Limitations Our MEIT framework first attempts to address au- tomatic ECG report
+  generation through ECG in- struction tuning, establishing the first comprehen- sive
+  benchmark for this process with mainstream LLMs.
+notes: "# Reading Notes\n\n*Use this space for your own notes while reading the paper.\
+  \ The structured summary is available in the Summary section.*\n\n## Key takeaways\n\
+  \n- \n\n## Questions\n\n- \n\n## Connections to other papers\n\n- \n"
+review_notes: []
+agent_reviews:
+- time: '2026-06-10T00:55:46.657918+00:00'
+  model: deepseek-v4-flash
+  notes:
+  - 'authors: [] → [''Zhongwei Wan'', ''Che Liu'', ''Xin Wang'', ''Chaofan Tao'',
+    ''Hui ...'
+  - 'year: None → 2025'
+  - 'venue:  → Findings of the Association for Computational Linguistics: A...'
+  - 'contributions: replaced 0 items → 3 items'
+  - Added authors based on the paper header.
+  - Set year to 2025 from the proceedings header.
+  - 'Set venue to ''Findings of the Association for Computational Linguistics: ACL
+    2025'' from the header.'
+  - Updated abstract to the full text from the PDF.
+  - Created a concise one_sentence summary from the abstract and introduction.
+  - Preserved the problem statement from the PDF (it's a direct quote).
+  - Wrote contributions based on the paper's stated primary contributions (end of
+    Section 1).
+  - Method bullets extracted from Sections 3.3, 3.4, and 3.5.
+  - Experiments bullets based on Section 4 and the evaluation description.
+  - Limitations not explicitly present in the provided PDF text; the '7 Limitations'
+    section is incomplete and does not clearly state self-acknowledged limitations,
+    so left as null.
+  - DOI and arXiv ID not found in the provided text.
+  - 'Note: Abstract says ''nine'' LLMs, but introduction says ''ten''; maintained
+    exact wording from abstract for consistency.'
+- time: '2026-06-10T00:58:56.871693+00:00'
+  model: deepseek-v4-flash
+  notes:
+  - 'Corrected title from a placeholder string that included page numbers and conference
+    details to the actual paper title: ''MEIT: Multimodal Electrocardiogram Instruction
+    Tuning on Large Language Models for Report Generation''.'
+  - Provided full abstract from the PDF text, cleaning up hyphenation artifacts (e.g.,
+    'non-invasive', 'classifying').
+  - Rewrote one_sentence to be a concise summary of the core contribution.
+  - Converted method and experiments from long quotes to concise, factual bullet points
+    as per instructions.
+  - Set limitations to null because the provided PDF text does not include the limitations
+    section; the current extracted limitations were not accurate limitations of the
+    method.
+- time: '2026-06-10T01:11:08.503733+00:00'
+  model: deepseek-v4-flash
+  notes:
+  - 'title: ''Findings of the Association for Computational Linguistics: A...'' →
+    ''MEIT: Multimodal Electrocardiogram Instruction Tuning on Lar...'''
+  - 'Corrected the title from the venue/page header to the actual paper title: ''MEIT:
+    Multimodal Electrocardiogram Instruction Tuning on Large Language Models for Report
+    Generation''.'
+  - Updated the abstract to the full version from the PDF, which was previously truncated.
+  - Replaced the one_sentence with a concise summary of the core contribution from
+    the abstract.
+  - Reformatted the method and experiments fields as concise factual bullet points
+    based on the paper's description.
+  - Set limitations to null because the provided PDF text does not contain clear limitations
+    of the proposed method; the extracted snippets were either challenges from related
+    work or the start of the limitations section which was not fully available.
+  - Left authors, year, venue, doi, arxiv_id, problem, and contributions unchanged
+    as they were correct based on the PDF.
+created_at: '2026-06-10T00:45:17.195809+00:00'
+updated_at: '2026-06-10T01:11:08.503764+00:00'
+agent_reviewed_at: '2026-06-10T01:11:08.503755+00:00'

@@ -1,0 +1,241 @@
+id: sandmle
+title: Synthetic Sandbox for Training Machine Learning Engineering Agents
+authors:
+- Yuhang Zhou
+- Lizhu Zhang
+- Yifan Wu
+- Jiayi Liu
+- Xiangjun Fan
+- Zhuokai Zhao
+- Hong Yan
+year: 2026
+venue: arXiv preprint
+doi: ''
+arxiv_id: '2604.04872'
+source_pdf: originals/papers/synthetic_sandbox_for_training_machine_learning_engineering_agents.pdf
+pages: 28
+tags:
+- agent
+- mle_agent
+- harness
+status: profiled
+confidence: medium
+reading_status: unread
+priority: normal
+needs_review: true
+abstract: 'specifications into executable environments, anML Developeragent writes
+  a self-contained Python script to perform four critical operations. First, it synthesizes
+  the micro-scale datasetsZ and partitions them into training (Dtrain) and hidden
+  test 5 (Dtest) sets. Then, it implements the defined hidden rulesH to deterministically
+  map the generated features z to ground-truth labels l via H : l = f (z) + ϵ. Continuing
+  our previous example of urban road damage detection task, the agent writes the procedural
+  code to generate the synthetic urban road images, calculates the edge pixel ratiof
+  (z)for each, injects the specified blur noiseϵ, and mathematically assigns the final
+  damage severity labell.'
+one_sentence: 'specifications into executable environments, anML Developeragent writes
+  a self-contained Python script to perform four critical operations. First, it synthesizes
+  the micro-scale datasetsZ and partitions them into training (Dtrain) and hidden
+  test 5 (Dtest) sets. Then, it implements the defined hidden rulesH to deterministically
+  map the generated features z to ground-truth labels l via H : l = f (z) + ϵ. Continuing
+  our previous example of urban road damage detection task, the agent writes the procedural
+  code to generate the synthetic urban road images, calculates the edge pixel ratiof
+  (z)for each, injects the specified blur noiseϵ, and mathematically assigns the final
+  damage severity labell.'
+problem: Based on this insight, we introduceSandMLE, a multi-agent framework that
+  generates diverse, verifiable synthetic MLE environments from a small number of
+  seed tasks, preserving the structural and technical complexity of real-world problems
+  while constraining datasets to micro-scale (each task is paired with only 50–200
+  training samples).
+contributions:
+- Based on this insight, we introduceSandMLE, a multi-agent framework that generates
+  diverse, verifiable synthetic MLE environments from a small number of seed tasks,
+  preserving the structural and technical complexity of real-world problems while
+  constraining datasets to micro-scale (each task is paired with only 50–200 training
+  samples).
+- 'Our main contributions are summarized as follows: • Scalable Synthetic MLE Sandbox
+  Generation:We design a novel multi-agent framework that procedurally extracts structural
+  DNA from seed tasks to generate diverse, high quality, and verifiable synthetic
+  MLE tasks with micro-scale datasets.'
+- • Trajectory-wise RL for MLE:Leveraging these synthetic environments, we propose
+  and successfully apply trajectory-wise RL with the milestone-based reward to the
+  MLE domain, enabling LLMs to learn complex, long horizon trial-and-error strategies.
+- To address these limitations, we proposeSandMLE, a framework that algorithmically
+  generates a massive, diverse curriculum of synthetic MLE tasks with their associated
+  data and environment.
+method:
+- Based on this insight, we introduceSandMLE, a multi-agent framework that generates
+  diverse, verifiable synthetic MLE environments from a small number of seed tasks,
+  preserving the structural and technical complexity of real-world problems while
+  constraining datasets to micro-scale (each task is paired with only 50–200 training
+  samples).
+- Furthermore, the trained policy generalizes across unseen agentic scaffolds, achieving
+  up to 32.4% better HumanRank score on MLE-Dojo.
+- Date:April 7, 2026 Correspondence:Yuhang, Lizhu, Zhuokai, Hong at{zyhang, lizhu,
+  zhuokai, hong}@meta.com 1 Introduction Large Language Models (LLMs) have demonstrated
+  exceptional reasoning capabilities, particularly when optimized through Reinforcement
+  Learning with Verifiable Rewards (RLVR) (Guo et al., 2025).
+- However, as these models are deployed to solve increasingly complex problems, machine
+  learning engineering (MLE) has emerged as a challenging frontier.
+- Unlike simple question answering, MLE tasks inherently cannot be resolved in a single
+  turn; they require an agent to iteratively propose ideas, write code, execute it,
+  analyze environment feedback, and adjust its strategy over multiple attempts.
+- Most existing work on applying LLM agents to MLE tasks focuses on developing complex
+  agent scaffolding to improve task performance (Toledo et al., 2025; Liu et al.,
+  2025a), but these framework-level enhancements do not fundamentally improve the
+  agent’s intrinsic reasoning abilities.
+experiments:
+- Based on this insight, we introduceSandMLE, a multi-agent framework that generates
+  diverse, verifiable synthetic MLE environments from a small number of seed tasks,
+  preserving the structural and technical complexity of real-world problems while
+  constraining datasets to micro-scale (each task is paired with only 50–200 training
+  samples).
+- Through extensive experiments, we show thatSandMLEreduces execution time by over
+  13×, enabling large-scale, on-policy trajectory-wise RL for the first time in the
+  MLE domain.
+- On MLE-bench-lite,SandMLE yields significant gains over SFT baselines across Qwen3-8B,
+  14B, and 30B-A3B, with relative medal rate improvements ranging from 20.3% to 66.9%.
+- 'This orders-of- magnitude gap in feedback latency makes applying online RL to MLE
+  a critical bottleneck: each rollout step requires executing full ML pipelines—data
+  preprocessing, model training, and metric evaluation—with a single code execution
+  averaging nearly 200 seconds on standard problems.'
+- Unlike SWE, where execution time is dominated by compilation and test logic, MLE
+  latency is overwhelmingly driven by dataset size.
+limitations:
+- However, as these models are deployed to solve increasingly complex problems, machine
+  learning engineering (MLE) has emerged as a challenging frontier.
+- For similar long-horizon challenges, such as software engineering (SWE) (Jimenez
+  et al., 2024) and web search (Zhou et al., 2023), previous works have successfully
+  utilized trajectory-wise reinforcement learning (RL) to enhance LLM reasoning (Wu
+  et al., 2025a; Luo et al., 2025; Wu et al., 2025b; Chen et al., 2025).
+- 'However, extending these frameworks to MLE introduces a severe computational bottleneck:
+  each rollout step requires training and evaluating ML models to derive environmental
+  rewards renders standard on-policy RL prohibitively slow (Cai et al., 2026).'
+- 3 Preliminaries 3.1 MLE as a Sequential Decision Process We formalize the MLE task
+  as a sequential decision process and review GRPO (Shao et al., 2024), the RLVR algorithm
+  we employ, along with the specific challenges that arise when applying it to multi-turn
+  agentic settings.
+notes: '# Synthetic Sandbox for Training Machine Learning Engineering Agents
+
+
+  ## Metadata
+
+
+  - ID: `sandmle`
+
+  - Source: `originals/papers/synthetic_sandbox_for_training_machine_learning_engineering_agents.pdf`
+
+  - Pages: 28
+
+  - Tags: agent, mle_agent, harness
+
+  - Status: enriched
+
+
+  ## One Sentence
+
+
+  specifications into executable environments, anML Developeragent writes a self-contained
+  Python script to perform four critical operations. First, it synthesizes the micro-scale
+  datasetsZ and partitions them into training (Dtrain) and hidden test 5 (Dtest) sets.
+  Then, it implements the defined hidden rulesH to deterministically map the generated
+  features z to ground-truth labels l via H : l = f (z) + ϵ. Continuing our previous
+  example of urban road damage detection task, the agent writes the procedural code
+  to generate the synthetic urban road images, calculates the edge pixel ratiof (z)for
+  each, injects the specified blur noiseϵ, and mathematically assigns the final damage
+  severity labell.
+
+
+  ## Problem
+
+
+  Based on this insight, we introduceSandMLE, a multi-agent framework that generates
+  diverse, verifiable synthetic MLE environments from a small number of seed tasks,
+  preserving the structural and technical complexity of real-world problems while
+  constraining datasets to micro-scale (each task is paired with only 50–200 training
+  samples).
+
+
+  ## Core Idea
+
+
+  specifications into executable environments, anML Developeragent writes a self-contained
+  Python script to perform four critical operations. First, it synthesizes the micro-scale
+  datasetsZ and partitions them into training (Dtrain) and hidden test 5 (Dtest) sets.
+  Then, it implements the defined hidden rulesH to deterministically map the generated
+  features z to ground-truth labels l via H : l = f (z) + ϵ. Continuing our previous
+  example of urban road damage detection task, the agent writes the procedural code
+  to generate the synthetic urban road images, calculates the edge pixel ratiof (z)for
+  each, injects the specified blur noiseϵ, and mathematically assigns the final damage
+  severity labell.
+
+
+  ## Method Notes
+
+
+  - Based on this insight, we introduceSandMLE, a multi-agent framework that generates
+  diverse, verifiable synthetic MLE environments from a small number of seed tasks,
+  preserving the structural and technical complexity of real-world problems while
+  constraining datasets to micro-scale (each task is paired with only 50–200 training
+  samples).
+
+  - Furthermore, the trained policy generalizes across unseen agentic scaffolds, achieving
+  up to 32.4% better HumanRank score on MLE-Dojo.
+
+  - Date:April 7, 2026 Correspondence:Yuhang, Lizhu, Zhuokai, Hong at{zyhang, lizhu,
+  zhuokai, hong}@meta.com 1 Introduction Large Language Models (LLMs) have demonstrated
+  exceptional reasoning capabilities, particularly when optimized through Reinforcement
+  Learning with Verifiable Rewards (RLVR) (Guo et al., 2025).
+
+  - However, as these models are deployed to solve increasingly complex problems,
+  machine learning engineering (MLE) has emerged as a challenging frontier.
+
+  - Unlike simple question answering, MLE tasks inherently cannot be resolved in a
+  single turn; they require an agent to iteratively propose ideas, write code, execute
+  it, analyze environment feedback, and adjust its strategy over multiple attempts.
+
+  - Most existing work on applying LLM agents to MLE tasks focuses on developing complex
+  agent scaffolding to improve task performance (Toledo et al., 2025; Liu et al.,
+  2025a), but these framework-level enhancements do not fundamentally improve the
+  agent’s intrinsic reasoning abilities.
+
+
+  ## Evidence To Verify
+
+
+  - Exact contributions, datasets, metrics, and baselines.
+
+  - Quantitative results and claims from figures or tables.
+
+
+  ## Limitations
+
+
+  - However, as these models are deployed to solve increasingly complex problems,
+  machine learning engineering (MLE) has emerged as a challenging frontier.
+
+  - For similar long-horizon challenges, such as software engineering (SWE) (Jimenez
+  et al., 2024) and web search (Zhou et al., 2023), previous works have successfully
+  utilized trajectory-wise reinforcement learning (RL) to enhance LLM reasoning (Wu
+  et al., 2025a; Luo et al., 2025; Wu et al., 2025b; Chen et al., 2025).
+
+  - However, extending these frameworks to MLE introduces a severe computational bottleneck:
+  each rollout step requires training and evaluating ML models to derive environmental
+  rewards renders standard on-policy RL prohibitively slow (Cai et al., 2026).
+
+  - 3 Preliminaries 3.1 MLE as a Sequential Decision Process We formalize the MLE
+  task as a sequential decision process and review GRPO (Shao et al., 2024), the RLVR
+  algorithm we employ, along with the specific challenges that arise when applying
+  it to multi-turn agentic settings.
+
+
+  ## Related Papers
+
+
+  - Cross-reference with other papers in `papers/`.
+
+  '
+review_notes: []
+agent_reviews: []
+agent_reviewed_at: null
+created_at: '2026-06-09T08:00:30.484502+00:00'
+updated_at: '2026-06-10T00:38:36.811210+00:00'

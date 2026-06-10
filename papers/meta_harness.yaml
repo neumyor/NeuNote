@@ -1,0 +1,204 @@
+id: meta_harness
+title: 'Meta-Harness: End-to-End Optimization of Model Harnesses'
+authors:
+- Yoonho Lee
+- Roshen Nair
+- Qizheng Zhang
+- Kangwook Lee
+- Omar Khattab
+- Chelsea Finn
+year: 2026
+venue: arXiv preprint
+doi: 10.1145/3591300
+arxiv_id: '2603.28052'
+source_pdf: originals/papers/meta_harness_end_to_end_optimization_of_model_harnesses.pdf
+pages: 26
+tags:
+- agent
+- harness
+- mle_agent
+status: profiled
+confidence: medium
+reading_status: unread
+priority: normal
+needs_review: true
+abstract: 'The performance of large language model (LLM) systems depends not only
+  on model weights, but also on theirharness: the code that determines what information
+  to store, retrieve, and present to the model. Yet harnesses are still designed largely
+  by hand, and existing text optimizers are poorly matched to this setting because
+  they compress feedback too aggressively: they are memoryless, condition only on
+  scalar scores, or restrict feedback to short templates or summaries. We introduceMeta-Harness,
+  an outer-loop system that searches over harness code for LLM applications. It uses
+  an agentic proposer that accesses the source code, scores, and execution traces
+  of all prior candidates through a fi'
+one_sentence: 'The performance of large language model (LLM) systems depends not only
+  on model weights, but also on theirharness: the code that determines what information
+  to store, retrieve, and present to the model. Yet harnesses are still designed largely
+  by hand, and existing text optimizers are poorly matched to this setting because
+  they compress feedback too aggressively: they are memoryless, condition only on
+  scalar scores, or restrict feedback to short templates or summaries. We introduceMeta-Harness,
+  an outer-loop system that searches over harness code for LLM applications. It uses
+  an agentic proposer that accesses the source code, scores, and execution traces
+  of all prior candidates through a fi'
+problem: On retrieval-augmented math reasoning, a single discovered harness improves
+  accuracy on 200 IMO-level problems by 4.7 points on average across five held-out
+  models.
+contributions:
+- We introduceMeta-Harness, an outer-loop system that searches over harness code for
+  LLM applications.
+method:
+- 'Abstract The performance of large language model (LLM) systems depends not only
+  on model weights, but also on theirharness: the code that determines what information
+  to store, retrieve, and present to the model.'
+- It uses an agentic proposer that accesses the source code, scores, and execution
+  traces of all prior candidates through a filesystem.
+- On retrieval-augmented math reasoning, a single discovered harness improves accuracy
+  on 200 IMO-level problems by 4.7 points on average across five held-out models.
+- On agentic coding, discovered harnesses surpass the best hand-engineered baselines
+  on TerminalBench-2.
+- 1 Introduction Changing the harness around a fixed large language model (LLM) can
+  produce a 6 × performance gap on the same benchmark [47].
+- Theharness—the code that determines what to store, retrieve, and show to the model—often
+  matters as much as the model itself.
+experiments:
+- On agentic coding, discovered harnesses surpass the best hand-engineered baselines
+  on TerminalBench-2.
+- 1 Introduction Changing the harness around a fixed large language model (LLM) can
+  produce a 6 × performance gap on the same benchmark [47].
+- (1)An agent reads a filesystem containing all prior candidates’ source code, execution
+  traces, and scores, and proposes a new harness.(2)We evaluate the proposed harness
+  on evaluation tasks.(3)All logs (proposed code, reasoning traces, evaluation scores)
+  are stored in the filesystem in a new directory, and the loop repeats.
+- Mtok/iter is our best estimate of the full context generated from one evaluation
+  of a text artifact in thelargest setting considered in each paper.
+- This paper considers settings that yield orders-of-magnitude more context per artifact
+  evaluation.
+limitations:
+- 'However, these methods are poorly matched to harness engineering because they typically
+  operate with short-horizon or heavily compressed feedback: some condition only on
+  the current candidate [31; 51; 53], others rely primarily on scalar scores [35;
+  12], and others restrict feedback to short templates or LLM-generated summaries
+  [1; 26].'
+- Compressed feedback often removes the information needed to trace downstream failures
+  to earlier harness decisions.
+- We address this limitation withMeta-Harness, an agentic harness for optimizing harnesses
+  via end-to-end search (Figure 2).
+- 'Rather than updating model weights, the system assigns credit at the harness level:
+  it uses experience from past rollouts to deliberately reason about which steps and
+  components are responsible for failures, then rewrites the external code that governs
+  future behavior.'
+notes: '# Meta-Harness: End-to-End Optimization of Model Harnesses
+
+
+  ## Metadata
+
+
+  - ID: `meta_harness`
+
+  - Source: `originals/papers/meta_harness_end_to_end_optimization_of_model_harnesses.pdf`
+
+  - Pages: 26
+
+  - Tags: agent, harness, mle_agent
+
+  - Status: enriched
+
+
+  ## One Sentence
+
+
+  The performance of large language model (LLM) systems depends not only on model
+  weights, but also on theirharness: the code that determines what information to
+  store, retrieve, and present to the model. Yet harnesses are still designed largely
+  by hand, and existing text optimizers are poorly matched to this setting because
+  they compress feedback too aggressively: they are memoryless, condition only on
+  scalar scores, or restrict feedback to short templates or summaries. We introduceMeta-Harness,
+  an outer-loop system that searches over harness code for LLM applications. It uses
+  an agentic proposer that accesses the source code, scores, and execution traces
+  of all prior candidates through a fi
+
+
+  ## Problem
+
+
+  On retrieval-augmented math reasoning, a single discovered harness improves accuracy
+  on 200 IMO-level problems by 4.7 points on average across five held-out models.
+
+
+  ## Core Idea
+
+
+  The performance of large language model (LLM) systems depends not only on model
+  weights, but also on theirharness: the code that determines what information to
+  store, retrieve, and present to the model. Yet harnesses are still designed largely
+  by hand, and existing text optimizers are poorly matched to this setting because
+  they compress feedback too aggressively: they are memoryless, condition only on
+  scalar scores, or restrict feedback to short templates or summaries. We introduceMeta-Harness,
+  an outer-loop system that searches over harness code for LLM applications. It uses
+  an agentic proposer that accesses the source code, scores, and execution traces
+  of all prior candidates through a fi
+
+
+  ## Method Notes
+
+
+  - Abstract The performance of large language model (LLM) systems depends not only
+  on model weights, but also on theirharness: the code that determines what information
+  to store, retrieve, and present to the model.
+
+  - It uses an agentic proposer that accesses the source code, scores, and execution
+  traces of all prior candidates through a filesystem.
+
+  - On retrieval-augmented math reasoning, a single discovered harness improves accuracy
+  on 200 IMO-level problems by 4.7 points on average across five held-out models.
+
+  - On agentic coding, discovered harnesses surpass the best hand-engineered baselines
+  on TerminalBench-2.
+
+  - 1 Introduction Changing the harness around a fixed large language model (LLM)
+  can produce a 6 × performance gap on the same benchmark [47].
+
+  - Theharness—the code that determines what to store, retrieve, and show to the model—often
+  matters as much as the model itself.
+
+
+  ## Evidence To Verify
+
+
+  - Exact contributions, datasets, metrics, and baselines.
+
+  - Quantitative results and claims from figures or tables.
+
+
+  ## Limitations
+
+
+  - However, these methods are poorly matched to harness engineering because they
+  typically operate with short-horizon or heavily compressed feedback: some condition
+  only on the current candidate [31; 51; 53], others rely primarily on scalar scores
+  [35; 12], and others restrict feedback to short templates or LLM-generated summaries
+  [1; 26].
+
+  - Compressed feedback often removes the information needed to trace downstream failures
+  to earlier harness decisions.
+
+  - We address this limitation withMeta-Harness, an agentic harness for optimizing
+  harnesses via end-to-end search (Figure 2).
+
+  - Rather than updating model weights, the system assigns credit at the harness level:
+  it uses experience from past rollouts to deliberately reason about which steps and
+  components are responsible for failures, then rewrites the external code that governs
+  future behavior.
+
+
+  ## Related Papers
+
+
+  - Cross-reference with other papers in `papers/`.
+
+  '
+review_notes: []
+agent_reviews: []
+agent_reviewed_at: null
+created_at: '2026-06-09T08:00:29.451309+00:00'
+updated_at: '2026-06-10T00:38:35.604557+00:00'

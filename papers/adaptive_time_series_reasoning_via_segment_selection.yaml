@@ -1,0 +1,104 @@
+id: adaptive_time_series_reasoning_via_segment_selection
+title: Adaptive Time Series Reasoning via Segment Selection
+authors:
+- Shvat Messica
+- Jiawen Zhang
+- Kevin Li
+- Theodoros Tsiligkaridis
+- Marinka Zitnik
+year: 2026
+venue: arXiv preprint
+doi: ''
+arxiv_id: '2602.18645'
+source_pdf: originals/papers/2602_18645v2.pdf
+pages: 22
+tags:
+- anomaly_detection
+- time_series
+- llm
+- tool_use
+- retrieval
+- forecasting
+- benchmark
+status: profiled
+confidence: medium
+reading_status: unread
+priority: normal
+needs_review: true
+abstract: Time series reasoning tasks often start with a natural language question
+  and require targeted analysis of a time series. Evidence may span the full series
+  or appear in a few short inter- vals, so the model must decide what to inspect.
+  Most existing approaches encode the entire time series into a fixed representation
+  before infer- ence, regardless of relevance. We introduce ARTIST, which formulates
+  time-series reasoning as a sequential decision problem. ARTIST in- terleaves reasoning
+  with adaptive temporal seg- ment selection. It adopts a controller-reasoner architecture
+  and uses reinforcement learning to train the controller role to select informative
+  seg- ments and the reasoner role to gen
+one_sentence: Time series reasoning tasks often start with a natural language question
+  and require targeted analysis of a time series. Evidence may span the full series
+  or appear in a few short inter- vals, so the model must decide what to inspect.
+  Most existing approaches encode the entire time series into a fixed representation
+  before infer- ence, regardless of relevance. We introduce ARTIST, which formulates
+  time-series reasoning as a sequential decision problem. ARTIST in- terleaves reasoning
+  with adaptive temporal seg- ment selection. It adopts a controller-reasoner architecture
+  and uses reinforcement learning to train the controller role to select informative
+  seg- ments and the reasoner role to gen
+problem: We introduce ARTIST, which formulates time-series reasoning as a sequential
+  decision problem.
+contributions:
+- We introduce ARTIST, which formulates time-series reasoning as a sequential decision
+  problem.
+- '*Equal contribution 1Department of Biomedical Informat- ics, Harvard Medical School,
+  Boston, MA, USA 2The Hong Kong University of Science and Technology (Guangzhou)
+  3Massachusetts Institute of Technology 4MIT Lincoln Labora- tory.'
+- Contributions.(1) We present adaptive segment selection for time series reasoning.
+- (2) We introduce a hier- archical, collaborative self-play RL post-training method
+  that separates segment selection from answer generation and trains each role with
+  learning signals aligned to its role.
+- Concretely, we introduce a latent sequence of intermediate stepsz= (z 1, .
+method:
+- Evidence may span the full series or appear in a few short inter- vals, so the model
+  must decide what to inspect.
+- During inference, the model actively acquires task-relevant information instead
+  of relying on a static summary of the full sequence.
+- We use a novel hierarchical policy optimization ap- proach for post-training that
+  allows the model to excel in both segment selection and question- answering behavior.
+- We evaluate ARTIST on six time-series reasoning benchmarks and compare it with large
+  language models, vision-language models, and prior time-series reasoning systems.
+- Introduction Time-series modeling has long been shaped by tasks such as forecasting
+  (Das et al., 2024; He et al., 2025a; Yang et al., 2025b; Wang et al., 2025b), classification
+  (Liu et al., 2025d;c; Tran et al., 2026), and anomaly detection (Sun et al., 2026;
+  Cai et al., 2026; Kim et al., 2025).
+- This emerging setting, known as time series reasoning (Chow et al., 2024b; Kong
+  et al., 2025b), asks models to answer natural language questions by identify- ing
+  and analyzing the task-relevant parts of a time series.
+experiments:
+- We evaluate ARTIST on six time-series reasoning benchmarks and compare it with large
+  language models, vision-language models, and prior time-series reasoning systems.
+- Across six benchmarks in clinical, financial, environmental, and gen- eral domain
+  time series reasoning, ARTIST outperforms large language models, vision-language
+  models, and prior time-series reasoning systems.
+- It achieves an average ac- curacy improvement of 6.46 percentage points over the
+  strongest comparator, with gains of up to 12.5 points on datasets requiring localized
+  or multi-segment reasoning.
+- Supervised fine-tuning alone yields an average accuracy in- crease of 5.65 points
+  over baselines, while reinforcement learning provides additional gains by optimizing
+  question- adaptive segment selection.
+- (3) On six benchmarks, ARTIST outperforms seven strong baselines.
+limitations:
+- Increas- ingly, however, real-world use cases begin with a natural- language question
+  rather than a predefined label or predic- tion horizon.
+- However, an analo- gous mechanism for time-series reasoning remains under- explored,
+  despite the strong need for adaptive localization in long time series.
+- Two challenges make question-adaptive segment selection difficult in time series
+  reasoning.
+- ARTIST’s controller-reasoner decomposition and reliability-based re- ward target
+  these challenges directly.
+notes: "# Reading Notes\n\n*Use this space for your own notes while reading the paper.\
+  \ The structured summary is available in the Summary section.*\n\n## Key takeaways\n\
+  \n- \n\n## Questions\n\n- \n\n## Connections to other papers\n\n- \n"
+review_notes: []
+agent_reviews: []
+agent_reviewed_at: null
+created_at: '2026-06-09T08:00:32.767467+00:00'
+updated_at: '2026-06-10T01:13:43.454755+00:00'

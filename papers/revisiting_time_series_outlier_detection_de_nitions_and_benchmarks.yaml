@@ -1,0 +1,209 @@
+id: revisiting_time_series_outlier_detection_de_nitions_and_benchmarks
+title: 'Revisiting Time Series Outlier Detection: Deﬁnitions and Benchmarks'
+authors:
+- Kwei-Herng Lai
+- Daochen Zha
+- Junjie Xu
+- Yue Zhao
+- Guanchu Wang
+- Xia Hu
+year: 2021
+venue: NeurIPS
+doi: 10.7910/DVN/EBCFKM
+arxiv_id: ''
+source_pdf: originals/papers/127_revisiting_time_series_outlier.pdf
+pages: 13
+tags:
+- time_series
+- benchmark
+status: profiled
+confidence: medium
+reading_status: unread
+priority: normal
+needs_review: true
+abstract: Time series outlier detection has been extensively studied with many advanced
+  algorithms proposed in the past decade. Despite these efforts, very few studies
+  have investigated how we should benchmark the existing algorithms. In particular,
+  using synthetic datasets for evaluation has become a common practice in the literature,
+  and thus it is crucial to have a general synthetic criterion to benchmark algorithms.
+  This is a non-trivial task because the existing synthetic methods are very different
+  in different applications and the outlier deﬁnitions are often ambiguous. To bridge
+  this gap, we propose a behavior-driven taxonomy for time series outliers and cate-
+  gorize outliers into point- and p
+one_sentence: Time series outlier detection has been extensively studied with many
+  advanced algorithms proposed in the past decade. Despite these efforts, very few
+  studies have investigated how we should benchmark the existing algorithms. In particular,
+  using synthetic datasets for evaluation has become a common practice in the literature,
+  and thus it is crucial to have a general synthetic criterion to benchmark algorithms.
+  This is a non-trivial task because the existing synthetic methods are very different
+  in different applications and the outlier deﬁnitions are often ambiguous. To bridge
+  this gap, we propose a behavior-driven taxonomy for time series outliers and cate-
+  gorize outliers into point- and p
+problem: However, it is non-trivial to properly generate synthetic datasets for time
+  series data due to the ambiguity of outlier deﬁnitions.
+contributions:
+- To bridge this gap, we propose a behavior-driven taxonomy for time series outliers
+  and cate- gorize outliers into point- and pattern-wise outliers with clear context
+  deﬁnitions.
+- 'Through answering these questions, we make the following contributions: • We propose
+  a behavior-driven taxonomy for time series outliers, illustrated in Figure 2b.'
+- • Following the behavior-driven taxonomy, we present a general synthetic criterion
+  based on the new deﬁnitions.
+- Then we propose a new taxonomy for point- and pattern-wise outliers with clear context
+  deﬁnitions.
+- In this subsection, we propose a new taxonomy, shown in Figure 2b.
+method:
+- Despite these efforts, very few studies have investigated how we should benchmark
+  the existing algorithms.
+- In particular, using synthetic datasets for evaluation has become a common practice
+  in the literature, and thus it is crucial to have a general synthetic criterion
+  to benchmark algorithms.
+- We further identify 4 multivariate real- world datasets from different domains and
+  benchmark 9 algorithms on the synthetic and the real-world datasets.
+- The datasets, pre- processing and synthetic scripts, and the algorithm implementations
+  are made pub- licly available at https://github.com/datamllab/tods/tree/benchmark.
+- Many algorithms have been proposed for time series outlier detection, including
+  prediction-based models such as auto-regression [ 6] and recurrent neural networks
+  [7], majority modeling approaches such as isolation forest [ 8] and autoencoder
+  [ 9], and discords analysis methods such as subsequence clustering [10] and matrix
+  proﬁle [11].
+- Despite these efforts of advancing algorithm design, very few studies have investigated
+  how we should benchmark the existing algorithms.
+experiments:
+- Despite these efforts, very few studies have investigated how we should benchmark
+  the existing algorithms.
+- In particular, using synthetic datasets for evaluation has become a common practice
+  in the literature, and thus it is crucial to have a general synthetic criterion
+  to benchmark algorithms.
+- Following the new taxonomy, we then present a general synthetic criterion and generate
+  35 synthetic datasets accordingly.
+- We further identify 4 multivariate real- world datasets from different domains and
+  benchmark 9 algorithms on the synthetic and the real-world datasets.
+- The datasets, pre- processing and synthetic scripts, and the algorithm implementations
+  are made pub- licly available at https://github.com/datamllab/tods/tree/benchmark.
+limitations:
+- However, it is non-trivial to properly generate synthetic datasets for time series
+  data due to the ambiguity of outlier deﬁnitions.
+- However, these three outliers will be all regarded as collective outlier under the
+  existing taxonomy.
+- For example, researchers have synthesized time series data with anomalous individual
+  points to simulate the failures or intrusions in domains such as electricity load
+  monitoring [ 14], edge device faults [2] and server intrusion monitoring [15].
+- With the hope that these insights could motivate future works, we have open-sourced
+  all the datasets, the pre-processing and synthetic scripts, and the algorithm implementation
+  in TODS [30].
+notes: '# Revisiting Time Series Outlier Detection: Deﬁnitions and Benchmarks
+
+
+  ## Metadata
+
+
+  - ID: `revisiting_time_series_outlier_detection_de_nitions_and_benchmarks`
+
+  - Source: `originals/papers/127_revisiting_time_series_outlier.pdf`
+
+  - Pages: 13
+
+  - Tags: time_series, benchmark
+
+  - Status: enriched
+
+
+  ## One Sentence
+
+
+  Time series outlier detection has been extensively studied with many advanced algorithms
+  proposed in the past decade. Despite these efforts, very few studies have investigated
+  how we should benchmark the existing algorithms. In particular, using synthetic
+  datasets for evaluation has become a common practice in the literature, and thus
+  it is crucial to have a general synthetic criterion to benchmark algorithms. This
+  is a non-trivial task because the existing synthetic methods are very different
+  in different applications and the outlier deﬁnitions are often ambiguous. To bridge
+  this gap, we propose a behavior-driven taxonomy for time series outliers and cate-
+  gorize outliers into point- and p
+
+
+  ## Problem
+
+
+  However, it is non-trivial to properly generate synthetic datasets for time series
+  data due to the ambiguity of outlier deﬁnitions.
+
+
+  ## Core Idea
+
+
+  Time series outlier detection has been extensively studied with many advanced algorithms
+  proposed in the past decade. Despite these efforts, very few studies have investigated
+  how we should benchmark the existing algorithms. In particular, using synthetic
+  datasets for evaluation has become a common practice in the literature, and thus
+  it is crucial to have a general synthetic criterion to benchmark algorithms. This
+  is a non-trivial task because the existing synthetic methods are very different
+  in different applications and the outlier deﬁnitions are often ambiguous. To bridge
+  this gap, we propose a behavior-driven taxonomy for time series outliers and cate-
+  gorize outliers into point- and p
+
+
+  ## Method Notes
+
+
+  - Despite these efforts, very few studies have investigated how we should benchmark
+  the existing algorithms.
+
+  - In particular, using synthetic datasets for evaluation has become a common practice
+  in the literature, and thus it is crucial to have a general synthetic criterion
+  to benchmark algorithms.
+
+  - We further identify 4 multivariate real- world datasets from different domains
+  and benchmark 9 algorithms on the synthetic and the real-world datasets.
+
+  - The datasets, pre- processing and synthetic scripts, and the algorithm implementations
+  are made pub- licly available at https://github.com/datamllab/tods/tree/benchmark.
+
+  - Many algorithms have been proposed for time series outlier detection, including
+  prediction-based models such as auto-regression [ 6] and recurrent neural networks
+  [7], majority modeling approaches such as isolation forest [ 8] and autoencoder
+  [ 9], and discords analysis methods such as subsequence clustering [10] and matrix
+  proﬁle [11].
+
+  - Despite these efforts of advancing algorithm design, very few studies have investigated
+  how we should benchmark the existing algorithms.
+
+
+  ## Evidence To Verify
+
+
+  - Exact contributions, datasets, metrics, and baselines.
+
+  - Quantitative results and claims from figures or tables.
+
+
+  ## Limitations
+
+
+  - However, it is non-trivial to properly generate synthetic datasets for time series
+  data due to the ambiguity of outlier deﬁnitions.
+
+  - However, these three outliers will be all regarded as collective outlier under
+  the existing taxonomy.
+
+  - For example, researchers have synthesized time series data with anomalous individual
+  points to simulate the failures or intrusions in domains such as electricity load
+  monitoring [ 14], edge device faults [2] and server intrusion monitoring [15].
+
+  - With the hope that these insights could motivate future works, we have open-sourced
+  all the datasets, the pre-processing and synthetic scripts, and the algorithm implementation
+  in TODS [30].
+
+
+  ## Related Papers
+
+
+  - Cross-reference with other papers in `papers/`.
+
+  '
+review_notes: []
+agent_reviews: []
+agent_reviewed_at: null
+created_at: '2026-06-09T13:15:25.698369+00:00'
+updated_at: '2026-06-10T00:38:36.344668+00:00'

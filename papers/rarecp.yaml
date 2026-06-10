@@ -1,0 +1,212 @@
+id: rarecp
+title: 'RareCP: Regime-Aware Retrieval for Efficient Conformal Prediction'
+authors:
+- Manuel Heurich
+- Maximilian Granz
+- Tim Landgraf
+year: 2026
+venue: arXiv preprint
+doi: 10.1007/b106715
+arxiv_id: '2605.08857'
+source_pdf: originals/papers/rarecp_regime_aware_retrieval_for_efficient_conformal_prediction.pdf
+pages: 51
+tags:
+- retrieval
+- conformal_prediction
+- time_series
+status: profiled
+confidence: medium
+reading_status: unread
+priority: normal
+needs_review: true
+abstract: 'Recent advances in uncertainty quantification for time series forecasting
+  show that conformal prediction can provide reliable prediction intervals, yet standard
+  conformal methods are often inefficient under temporal dependence, drift, and heterogeneous
+  error behavior. Existing methods typically either update miscover- age rates over
+  time or learn unconstrained calibration weights, without explicitly separating two
+  central sources of nonstationarity: smoothly drifting error distribu- tions and
+  co-existing distinct error regimes. We introduceRareCP, a regime-aware retrieval
+  method for adaptive conformal time series prediction. RareCP learns local calibration
+  representations through a mixture'
+one_sentence: 'Recent advances in uncertainty quantification for time series forecasting
+  show that conformal prediction can provide reliable prediction intervals, yet standard
+  conformal methods are often inefficient under temporal dependence, drift, and heterogeneous
+  error behavior. Existing methods typically either update miscover- age rates over
+  time or learn unconstrained calibration weights, without explicitly separating two
+  central sources of nonstationarity: smoothly drifting error distribu- tions and
+  co-existing distinct error regimes. We introduceRareCP, a regime-aware retrieval
+  method for adaptive conformal time series prediction. RareCP learns local calibration
+  representations through a mixture'
+problem: However, the sequential structure of time series data fundamentally violates
+  exchangeability, introducing substantial challenges for CP in forecasting [3, 4].
+contributions:
+- We introduceRareCP, a regime-aware retrieval method for adaptive conformal time
+  series prediction.
+- • Retrieval conformal prediction with an explicit efficiency-coverage trade-off.We
+  introduce sparse residual retrieval for conformal calibration and analyze its effect
+  through a local-CDF framework.
+- The solution, we propose, is to scale the parameters in the time dimension by allowing
+  the current test target more control over the retrieved similarites while preventing
+  similarity collapse.
+- 5 Conclusion We introducedRareCP, a backbone-agnostic conformal adapter for time
+  series forecasting that calibrates prediction intervals by retrieving residuals
+  from locally relevant error regimes.
+- 'Its main contribution is a learned local retrieval mechanism: sparse top-k retrieval
+  selects relevant calibration contexts produced by time-conditioned local experts
+  that are build for the structural bias of the residual distributions of time series
+  forecasting models.'
+method:
+- We introduceRareCP, a regime-aware retrieval method for adaptive conformal time
+  series prediction.
+- On the GIFT-Eval benchmark, RareCP improves interval efficiency over recent conformal
+  baselines and foundation model uncertainty estimates while maintaining empirical
+  coverage.
+- Ablations confirm that regime-specific experts, drift-adaptive kernels, sparse retrieval,
+  and teacher anchoring each contribute to the final performance.
+- Conformal Prediction (CP) offers a powerful, model-agnostic UQ framework that provides
+  finite- sample coverage guarantees without distributional requirements, under the
+  exchangeability assump- tion that the joint distribution of samples is invariant
+  under reordering [2].
+- These properties have led to widespread adoption across diverse domains, including
+  image classification, graph-based modeling, and natural language processing.
+- We address these limitations withRareCP, a regime-aware retrieval adapter for conformal
+  time series prediction.
+experiments:
+- Given a new forecasting context, RareCP re- trieves the top-k most relevant calibration
+  examples, assigns similarity weights, and forms a weighted conformal quantile over
+  their signed residuals, yielding asym- metric prediction intervals.
+- On the GIFT-Eval benchmark, RareCP improves interval efficiency over recent conformal
+  baselines and foundation model uncertainty estimates while maintaining empirical
+  coverage.
+- The retrieved residuals define local lower and upper conformal quantiles, yielding
+  asymmetric prediction intervals that adapt to temporal drift and recurring error
+  regimes (see Figure 1).
+- Given a point forecast and its recent history, RareCP retrieves past calibration
+  residuals from similar forecasting contexts, forms a local signed-residual distribution,
+  and converts its lower and upper quantiles into an asymmetric prediction interval.
+- Dataset-conditioned retrieval experts produce normalized query and calibration keys,
+  retrieve a sparse top k support by cosine similarity, and assign temperature-softmax
+  weights over the retrieved residuals.
+limitations:
+- However, the sequential structure of time series data fundamentally violates exchangeability,
+  introducing substantial challenges for CP in forecasting [3, 4].
+- However, adaptive methods typically react through changes in the target miscoverage
+  level, while weighted approaches often rely on fixed or non adaptive similarity
+  weighting schemes.
+- We address these limitations withRareCP, a regime-aware retrieval adapter for conformal
+  time series prediction.
+- We leave a detailed split-ablation to future work and evaluate RareCP under the
+  data-efficient protocol in Section 4.2.
+notes: '# RareCP: Regime-Aware Retrieval for Efficient Conformal Prediction
+
+
+  ## Metadata
+
+
+  - ID: `rarecp`
+
+  - Source: `originals/papers/rarecp_regime_aware_retrieval_for_efficient_conformal_prediction.pdf`
+
+  - Pages: 51
+
+  - Tags: retrieval, conformal_prediction, time_series
+
+  - Status: enriched
+
+
+  ## One Sentence
+
+
+  Recent advances in uncertainty quantification for time series forecasting show that
+  conformal prediction can provide reliable prediction intervals, yet standard conformal
+  methods are often inefficient under temporal dependence, drift, and heterogeneous
+  error behavior. Existing methods typically either update miscover- age rates over
+  time or learn unconstrained calibration weights, without explicitly separating two
+  central sources of nonstationarity: smoothly drifting error distribu- tions and
+  co-existing distinct error regimes. We introduceRareCP, a regime-aware retrieval
+  method for adaptive conformal time series prediction. RareCP learns local calibration
+  representations through a mixture
+
+
+  ## Problem
+
+
+  However, the sequential structure of time series data fundamentally violates exchangeability,
+  introducing substantial challenges for CP in forecasting [3, 4].
+
+
+  ## Core Idea
+
+
+  Recent advances in uncertainty quantification for time series forecasting show that
+  conformal prediction can provide reliable prediction intervals, yet standard conformal
+  methods are often inefficient under temporal dependence, drift, and heterogeneous
+  error behavior. Existing methods typically either update miscover- age rates over
+  time or learn unconstrained calibration weights, without explicitly separating two
+  central sources of nonstationarity: smoothly drifting error distribu- tions and
+  co-existing distinct error regimes. We introduceRareCP, a regime-aware retrieval
+  method for adaptive conformal time series prediction. RareCP learns local calibration
+  representations through a mixture
+
+
+  ## Method Notes
+
+
+  - We introduceRareCP, a regime-aware retrieval method for adaptive conformal time
+  series prediction.
+
+  - On the GIFT-Eval benchmark, RareCP improves interval efficiency over recent conformal
+  baselines and foundation model uncertainty estimates while maintaining empirical
+  coverage.
+
+  - Ablations confirm that regime-specific experts, drift-adaptive kernels, sparse
+  retrieval, and teacher anchoring each contribute to the final performance.
+
+  - Conformal Prediction (CP) offers a powerful, model-agnostic UQ framework that
+  provides finite- sample coverage guarantees without distributional requirements,
+  under the exchangeability assump- tion that the joint distribution of samples is
+  invariant under reordering [2].
+
+  - These properties have led to widespread adoption across diverse domains, including
+  image classification, graph-based modeling, and natural language processing.
+
+  - We address these limitations withRareCP, a regime-aware retrieval adapter for
+  conformal time series prediction.
+
+
+  ## Evidence To Verify
+
+
+  - Exact contributions, datasets, metrics, and baselines.
+
+  - Quantitative results and claims from figures or tables.
+
+
+  ## Limitations
+
+
+  - However, the sequential structure of time series data fundamentally violates exchangeability,
+  introducing substantial challenges for CP in forecasting [3, 4].
+
+  - However, adaptive methods typically react through changes in the target miscoverage
+  level, while weighted approaches often rely on fixed or non adaptive similarity
+  weighting schemes.
+
+  - We address these limitations withRareCP, a regime-aware retrieval adapter for
+  conformal time series prediction.
+
+  - We leave a detailed split-ablation to future work and evaluate RareCP under the
+  data-efficient protocol in Section 4.2.
+
+
+  ## Related Papers
+
+
+  - Cross-reference with other papers in `papers/`.
+
+  '
+review_notes: []
+agent_reviews: []
+agent_reviewed_at: null
+created_at: '2026-06-09T08:00:30.066963+00:00'
+updated_at: '2026-06-10T00:38:36.479514+00:00'

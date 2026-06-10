@@ -1,0 +1,135 @@
+id: ptb_xl_a_large_publicly_available_electrocardiography_dataset
+title: PTB-XL, a large publicly available electrocardiography dataset
+authors:
+- Patrick Wagner
+- Nils Strodthoff
+- Ralf-Dieter Bousseljot
+- Dieter Kreiseler
+- Fatima I. Lunze
+- Wojciech Samek
+- Tobias Schaeffter
+year: 2020
+venue: Scientific Data
+doi: 10.1038/s41597-020-0495-6
+arxiv_id: ''
+source_pdf: originals/papers/s41597_020_0495_6.pdf
+pages: 15
+tags:
+- tool_use
+- benchmark
+status: profiled
+confidence: medium
+reading_status: unread
+priority: normal
+needs_review: false
+abstract: Electrocardiography (ECG) is a key non-invasive diagnostic tool for cardiovascular
+  diseases which is increasingly supported by algorithms based on machine learning.
+  Major obstacles for the development of automatic ECG interpretation algorithms are
+  both the lack of public datasets and well-defined benchmarking procedures to allow
+  comparisons of different algorithms. To address these issues, we put forward PTB-XL,
+  the to-date largest freely accessible clinical 12-lead ECG-waveform dataset comprising
+  21837 records from 18885 patients of 10 seconds length. The ECG-waveform data was
+  annotated by up to two cardiologists as a multi-label dataset, where diagnostic
+  labels were further aggregated into super and subclasses. The dataset covers a broad
+  range of diagnostic classes including, in particular, a large fraction of healthy
+  records. The combination with additional metadata on demographics, additional diagnostic
+  statements, diagnosis likelihoods, manually annotated signal properties as well
+  as suggested folds for splitting training and test sets turns the dataset into a
+  rich resource for the development and the evaluation of automatic ECG interpretation
+  algorithms.
+one_sentence: 1Scientific Data | (2020) 7:154 | https://doi.org/10.1038/s41597-020-0495-6
+  www.nature.com/scientificdata PtB-XL, a large publicly available electrocardiography
+  dataset Patrick Wagner1,2,3,6, Nils Strodthoff 2,6, Ralf-Dieter Bousseljot1, Dieter
+  Kreiseler1, Fatima I. Lunze4, Wojciech Samek 2 & tobias Schaeffter 1,3,5 ✉ Electrocardiography
+  (ECG) is a key non-invasive diagnostic tool for cardiovascular diseases which is
+  increasingly supported by algorithms based on machine learning. Major obstacles
+problem: Major obstacles for the development of automatic ECG interpretation algorithms
+  are both the lack of public datasets and well-defined benchmarking procedures to
+  allow comparison s of different algorithms.
+contributions:
+- Provides the to-date largest freely accessible clinical 12-lead ECG-waveform dataset
+  (21,837 records from 18,885 patients).
+- Offers multi-label annotations by up to two cardiologists with hierarchical organization
+  into 5 superclasses and 24 subclasses.
+- 'Includes rich metadata: demographics, diagnostic likelihoods, signal quality annotations,
+  and suggested cross-validation folds.'
+- Addresses the lack of public ECG datasets and standardized benchmarking procedures
+  for machine learning algorithms.
+method:
+- Converted raw ECG data from proprietary format to standard WFDB format at 16-bit
+  precision and 500 Hz (and 100 Hz) sampling frequencies.
+- Annotated records using SCP-ECG statements with likelihood information, validated
+  by up to two cardiologists; diagnostic labels hierarchically organized into 5 superclasses
+  and 24 subclasses.
+- Provided stratified cross-validation folds (strat_fold) to facilitate standardized
+  evaluation of machine learning algorithms.
+- Released rich metadata including demographics, signal quality annotations, and ECG
+  statements.
+experiments:
+- 1Scientific Data | (2020) 7:154 | https://doi.org/10.1038/s41597-020-0495-6 www.nature.com/scientificdata
+  PtB-XL, a large publicly available electrocardiography dataset Patrick Wagner1,2,3,6,
+  Nils Strodthoff 2,6, Ralf-Dieter Bousseljot1, Dieter Kreiseler1, Fatima I.
+- Major obstacles for the development of automatic ECG interpretation algorithms are
+  both the lack of public datasets and well-defined benchmarking procedures to allow
+  comparison s of different algorithms.
+- To address these issues, we put forward PTB-XL, the to-date largest freely accessible
+  clinical 12-lead ECG-waveform dataset comprising 21837 records from 18885 patients
+  of 10 seconds length.
+- The ECG-waveform data was annotated by up to two cardiologists as a multi-label
+  dataset, where diagnostic labels were further aggregated into super and subclasses.
+- the dataset covers a broad range of diagnostic classes including, in particular,
+  a large fraction of healthy records.
+limitations:
+- Most notably, this includes the PTB Diagnostic ECG Database 6, which was collected
+  during the course of the same long-term project at the PTB, which, however, shares
+  no records with the PTB-XL dataset.
+- The only exceptions in terms of freely accessible datasets with larger samples sizes
+  are the AF classification dataset 14 and the Chinese ICBEB Challenge 2018 dataset15,
+  which contain, however, either just single-lead ECGs or cover only a very limited
+  set of ECG statements.
+notes: "# Reading Notes\n\n*Use this space for your own notes while reading the paper.\
+  \ The structured summary is available in the Summary section.*\n\n## Key takeaways\n\
+  \n- \n\n## Questions\n\n- \n\n## Connections to other papers\n\n- \n"
+review_notes: []
+agent_reviews:
+- time: '2026-06-10T01:20:03.011266+00:00'
+  model: deepseek-v4-flash
+  notes:
+  - 'authors: [] → [''Patrick Wagner'', ''Nils Strodthoff'', ''Ralf-Dieter Bousseljo...'
+  - 'year: None → 2020'
+  - 'venue:  → Scientific Data'
+  - 'doi:  → 10.1038/s41597-020-0495-6'
+  - 'contributions: replaced 0 items → 4 items'
+  - Fixed authors list from empty to the seven authors listed in the PDF.
+  - Set year to 2020 based on DOI and journal header.
+  - Set venue to 'Scientific Data' as indicated on PDF.
+  - Set DOI from the visible link in the header.
+  - Replaced truncated abstract with full text from the first page.
+  - Rewrote one_sentence from garbled text to a concise summary of the core contribution.
+  - Filled contributions with specific claims from the paper.
+  - Cleaned method list to concise steps from Methods section.
+  - Cleaned experiments list to relevant evaluation points from the paper.
+  - Limitations left null as the paper does not explicitly state limitations in the
+    provided text.
+- time: '2026-06-10T01:22:55.931287+00:00'
+  model: deepseek-v4-flash
+  notes:
+  - 'abstract: expanded (was: ''1Scientific Data | (2020) 7:154 | https://doi.org/10.1038/s4...'')'
+  - 'method: replaced 4 items → 4 items'
+  - 'Corrected abstract: removed leading header text (journal info, author list) to
+    extract only the actual abstract paragraph.'
+  - 'Corrected one_sentence: replaced garbled text with a concise single-sentence
+    summary extracted from the abstract.'
+  - 'Corrected problem: fixed typo ''comparison s'' to ''comparisons''.'
+  - Replaced method entries with concise, factual bullet points describing the key
+    methodological steps (data conversion, annotation, cross-validation folds, metadata).
+  - Cleared experiments field (this dataset paper does not present experimental evaluations).
+  - Cleared limitations field because the current entries were not limitations of
+    PTB-XL but rather descriptions of other datasets; no explicit limitations section
+    found in the provided PDF text.
+  - Contributions field left unchanged; it already correctly summarizes the dataset's
+    key features.
+  - Title, authors, year, venue, doi, arxiv_id were correct and left unchanged.
+created_at: '2026-06-10T01:17:15.028892+00:00'
+updated_at: '2026-06-10T01:22:55.931306+00:00'
+agent_reviewed_at: '2026-06-10T01:22:55.931296+00:00'

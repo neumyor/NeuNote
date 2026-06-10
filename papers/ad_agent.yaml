@@ -1,0 +1,113 @@
+id: ad_agent
+title: 'AD-Agent: A Multi-agent Framework for End-to-end Anomaly Detection'
+authors:
+- Tiankai Yang
+- Junjun Liu
+- Wingchun Siu
+- Jiahang Wang
+- Zhuangzhuang Qian
+- Chanjuan Song
+- Cheng Cheng
+- Xiyang Hu
+- Yue Zhao
+year: 2025
+venue: Proceedings of the 14th International Joint Conference on Natural Language
+  Processing and the 4th Conference of the Asia-Pacific Chapter of the Association
+  for Computational Linguistics (IJCNLP-AACL)
+doi: ''
+arxiv_id: ''
+source_pdf: originals/papers/ad_agent_a_multi_agent_framework_for_end_to_end_anomaly_detection.pdf
+pages: 15
+tags:
+- anomaly_detection
+- time_series
+- llm
+- agent
+- multi_agent
+- tool_use
+status: profiled
+confidence: medium
+reading_status: unread
+priority: normal
+needs_review: true
+abstract: Anomaly detection (AD) is essential in areas such as fraud detection, network
+  monitoring, and scientific research. However, the diver- sity of data modalities
+  and the increasing num- ber of specialized AD libraries pose challenges for non-expert
+  users who lack in-depth library- specific knowledge and advanced programming skills.
+  To tackle this, we present AD-A GENT , an LLM-driven multi-agent framework that
+  turns natural-language instructions into fully executable AD pipelines. AD-A GENT
+  coordi- nates specialized agents for intent parsing, data preparation, library and
+  model selection, doc- umentation mining, and iterative code genera- tion and debugging.
+  Using a shared short-term workspace
+one_sentence: Anomaly detection (AD) is essential in areas such as fraud detection,
+  network monitoring, and scientific research. However, the diver- sity of data modalities
+  and the increasing num- ber of specialized AD libraries pose challenges for non-expert
+  users who lack in-depth library- specific knowledge and advanced programming skills.
+  To tackle this, we present AD-A GENT , an LLM-driven multi-agent framework that
+  turns natural-language instructions into fully executable AD pipelines. AD-A GENT
+  coordi- nates specialized agents for intent parsing, data preparation, library and
+  model selection, doc- umentation mining, and iterative code genera- tion and debugging.
+  Using a shared short-term workspace
+problem: However, the diver- sity of data modalities and the increasing num- ber of
+  specialized AD libraries pose challenges for non-expert users who lack in-depth
+  library- specific knowledge and advanced programming skills.
+contributions:
+- 'Unified multi-modal-library automation: first multi-agent framework that integrates
+  multiple domain-specific AD libraries (PyOD, PyGOD, TSLib), enabling end-to-end,
+  cross-modality pipeline construction from natural language.'
+- 'Modular, extensible, and long-lifecycle design: loosely coupled agents for reasoning,
+  retrieval, and generation that allow new libraries and tasks to be incorporated
+  with minimal changes.'
+- 'Accessible to non-experts: converts natural language instructions into executable
+  scripts and supports diverse data types, enabling users without programming skills
+  or specialized knowledge to start easily.'
+- 'Open-source release: system released at https://github.com/USC-FORTIS/AD-AGENT
+  as a practical, extensible platform for LLM-driven AD research and real-world applications.'
+method:
+- To tackle this, we present AD-A GENT , an LLM-driven multi-agent framework that
+  turns natural-language instructions into fully executable AD pipelines.
+- AD-A GENT coordi- nates specialized agents for intent parsing, data preparation,
+  library and model selection, doc- umentation mining, and iterative code genera-
+  tion and debugging.
+- Using a shared short-term workspace and a long-term cache, the agents integrate
+  popular AD libraries like PyOD, Py- GOD, and TSLib into a unified workflow.
+- Ex- periments demonstrate that AD-A GENT pro- duces reliable scripts and recommends
+  com- petitive models across libraries.
+- '[Processor] cardio.mat…[Selector] Select PyOD-VAE…[Info Miner] Querying doc…[Generator]
+  Generating code…[Reviewer] Validatingcode…[Generator] Saved code to … Figure 1:
+  Illustration of AD-A GENT : given a user re- quest, the multi-agent system coordinates
+  each stage to generate a runnable pipeline.'
+- These incidents show that small gaps in an AD pipeline can cause major financial
+  or security failures, showing the need for tooling that is both reliable and easy
+  to integrate.
+experiments:
+- Although these libraries acceler- ate experimentation, each introduces its own data
+  formats and APIs, so users must “juggle” incom- patible workflows before they can
+  run even base- line methods.
+- model selection, knowledge retrieval, code genera- tion and verification, and optional
+  evaluation and tuning.
+- Datasets in practice come in diverse formats (e.g., .csv, .mat, or even natural
+  language), and detection tasks may vary from supervised se- tups to zero-shot scenarios.
+- Inspired by recent advances in LLM-based 192 model selection (Qin et al., 2025;
+  Chen et al., 2024; Yang et al., 2024), it leverages the LLM’s knowl- edge of models
+  to provide context-aware sugges- tions tailored to the dataset and task.
+- The Evaluator runs the pipeline and summarizes detection results when ground truth
+  labels are available for the tar- get dataset.
+limitations:
+- However, the diver- sity of data modalities and the increasing num- ber of specialized
+  AD libraries pose challenges for non-expert users who lack in-depth library- specific
+  knowledge and advanced programming skills.
+- These incidents show that small gaps in an AD pipeline can cause major financial
+  or security failures, showing the need for tooling that is both reliable and easy
+  to integrate.
+- While AD-A GENT demon- strates high overall reliability, a few recurring fail- ure
+  modes remain.
+- Some failures arise from un- addressed internal data constraints.
+notes: "# Reading Notes\n\n*Use this space for your own notes while reading the paper.\
+  \ The structured summary is available in the Summary section.*\n\n## Key takeaways\n\
+  \n- \n\n## Questions\n\n- \n\n## Connections to other papers\n\n- \n"
+review_notes: []
+agent_reviews: []
+agent_reviewed_at: null
+created_at: '2026-06-09T07:57:25.575799+00:00'
+updated_at: '2026-06-10T01:13:41.046837+00:00'

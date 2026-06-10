@@ -1,0 +1,198 @@
+id: signalmc_med_a_multimodal_benchmark_for_evaluating_biosignal_foundation_models_o
+title: 'SignalMC-MED: A Multimodal Benchmark for Evaluating Biosignal Foundation Models
+  on Single-Lead ECG and PPG'
+authors:
+- Fredrik K. Gustafsson
+- Xiao Gu
+- Mattia Carletti
+- Patitapaban Palo
+- David W. Eyre
+- David A. Clifton
+year: 2026
+venue: arXiv preprint
+doi: ''
+arxiv_id: '2603.09940'
+source_pdf: originals/papers/2603_09940v1.pdf
+pages: 37
+tags:
+- time_series
+- benchmark
+- representation_learning
+status: profiled
+confidence: medium
+reading_status: unread
+priority: normal
+needs_review: true
+abstract: Recent biosignal foundation models (FMs) have demon- strated promising performance
+  across diverse clinical pre- diction tasks, yet systematic evaluation on long-duration
+  multimodal data remains limited. We introduce SignalMC- MED, a benchmark for evaluating
+  biosignal FMs on syn- chronized single-lead electrocardiogram (ECG) and photo- plethysmogram
+  (PPG) data. Derived from the MC-MED dataset, SignalMC-MED comprises 22,256 visits
+  with 10- minute overlapping ECG and PPG signals, and includes 20 clinically relevant
+  tasks spanning prediction of demo- graphics, emergency department disposition, laboratory
+  value regression, and detection of prior ICD-10 diagnoses. Using this benchmark,
+  we perform
+one_sentence: Recent biosignal foundation models (FMs) have demon- strated promising
+  performance across diverse clinical pre- diction tasks, yet systematic evaluation
+  on long-duration multimodal data remains limited. We introduce SignalMC- MED, a
+  benchmark for evaluating biosignal FMs on syn- chronized single-lead electrocardiogram
+  (ECG) and photo- plethysmogram (PPG) data. Derived from the MC-MED dataset, SignalMC-MED
+  comprises 22,256 visits with 10- minute overlapping ECG and PPG signals, and includes
+  20 clinically relevant tasks spanning prediction of demo- graphics, emergency department
+  disposition, laboratory value regression, and detection of prior ICD-10 diagnoses.
+  Using this benchmark, we perform
+problem: However, systematic evaluation on realistic, multimodal bedside data remains
+  limited.
+contributions:
+- We introduce SignalMC- MED, a benchmark for evaluating biosignal FMs on syn- chronized
+  single-lead electrocardiogram (ECG) and photo- plethysmogram (PPG) data.
+- To address these gaps, we introduceSignalMC-MED, a clinically grounded benchmark
+  derived from the MC- MED dataset [14, 15], comprising 22,256 adult emergency department
+  visits with 10-minute synchronized ECG and PPG signals (Figure 1).
+- Our study provides three key contributions:(1) We in- troduce a large-scale multimodal
+  benchmark for rigorous evaluation of biosignal FMs on synchronized ECG and PPG signals
+  collected in routine emergency care.
+method:
+- 'SignalMC-MED: A Multimodal Benchmark for Evaluating Biosignal Foundation Models
+  on Single-Lead ECG and PPG Fredrik K.'
+- We introduce SignalMC- MED, a benchmark for evaluating biosignal FMs on syn- chronized
+  single-lead electrocardiogram (ECG) and photo- plethysmogram (PPG) data.
+- Using this benchmark, we perform a systematic evalua- tion of representative time-series
+  and biosignal FMs across ECG-only, PPG-only, and ECG + PPG settings.
+- We find that domain-specific biosignal FMs consistently outperform general time-series
+  models, and that multimodal ECG + PPG fusion yields robust improvements over unimodal
+  in- puts.
+- Moreover, using the full 10-minute signal consistently outperforms shorter segments,
+  and larger model variants do not reliably outperform smaller ones.
+- Together, these results establish SignalMC-MED as a standardized benchmark and provide
+  practical guidance for evaluating and deploying biosignal FMs.
+experiments:
+- 'SignalMC-MED: A Multimodal Benchmark for Evaluating Biosignal Foundation Models
+  on Single-Lead ECG and PPG Fredrik K.'
+- We introduce SignalMC- MED, a benchmark for evaluating biosignal FMs on syn- chronized
+  single-lead electrocardiogram (ECG) and photo- plethysmogram (PPG) data.
+- Derived from the MC-MED dataset, SignalMC-MED comprises 22,256 visits with 10- minute
+  overlapping ECG and PPG signals, and includes 20 clinically relevant tasks spanning
+  prediction of demo- graphics, emergency department disposition, laboratory value
+  regression, and detection of prior ICD-10 diagnoses.
+- Using this benchmark, we perform a systematic evalua- tion of representative time-series
+  and biosignal FMs across ECG-only, PPG-only, and ECG + PPG settings.
+- Hand-crafted ECG domain features provide a strong baseline and offer comple- mentary
+  value when combined with learned FM representa- tions.
+limitations:
+- However, systematic evaluation on realistic, multimodal bedside data remains limited.
+- However, the poor performance of PaPaGei even in the PPG-only setting shows that
+  modality- specific pretraining alone does not guarantee strong perfor- mance.
+- These findings suggest that effective multimodal integration remains a non-trivial
+  design challenge.
+- Future work should ex- tend the evaluation to continuous monitoring scenarios with
+  hours or days of data per patient to better assess long-term temporal modeling.
+notes: '# SignalMC-MED: A Multimodal Benchmark for Evaluating Biosignal Foundation
+  Models on Single-Lead ECG and PPG
+
+
+  ## Metadata
+
+
+  - ID: `signalmc_med_a_multimodal_benchmark_for_evaluating_biosignal_foundation_models_o`
+
+  - Source: `originals/papers/2603_09940v1.pdf`
+
+  - Pages: 37
+
+  - Tags: time_series, benchmark, representation_learning
+
+  - Status: enriched
+
+
+  ## One Sentence
+
+
+  Recent biosignal foundation models (FMs) have demon- strated promising performance
+  across diverse clinical pre- diction tasks, yet systematic evaluation on long-duration
+  multimodal data remains limited. We introduce SignalMC- MED, a benchmark for evaluating
+  biosignal FMs on syn- chronized single-lead electrocardiogram (ECG) and photo- plethysmogram
+  (PPG) data. Derived from the MC-MED dataset, SignalMC-MED comprises 22,256 visits
+  with 10- minute overlapping ECG and PPG signals, and includes 20 clinically relevant
+  tasks spanning prediction of demo- graphics, emergency department disposition, laboratory
+  value regression, and detection of prior ICD-10 diagnoses. Using this benchmark,
+  we perform
+
+
+  ## Problem
+
+
+  However, systematic evaluation on realistic, multimodal bedside data remains limited.
+
+
+  ## Core Idea
+
+
+  Recent biosignal foundation models (FMs) have demon- strated promising performance
+  across diverse clinical pre- diction tasks, yet systematic evaluation on long-duration
+  multimodal data remains limited. We introduce SignalMC- MED, a benchmark for evaluating
+  biosignal FMs on syn- chronized single-lead electrocardiogram (ECG) and photo- plethysmogram
+  (PPG) data. Derived from the MC-MED dataset, SignalMC-MED comprises 22,256 visits
+  with 10- minute overlapping ECG and PPG signals, and includes 20 clinically relevant
+  tasks spanning prediction of demo- graphics, emergency department disposition, laboratory
+  value regression, and detection of prior ICD-10 diagnoses. Using this benchmark,
+  we perform
+
+
+  ## Method Notes
+
+
+  - SignalMC-MED: A Multimodal Benchmark for Evaluating Biosignal Foundation Models
+  on Single-Lead ECG and PPG Fredrik K.
+
+  - We introduce SignalMC- MED, a benchmark for evaluating biosignal FMs on syn- chronized
+  single-lead electrocardiogram (ECG) and photo- plethysmogram (PPG) data.
+
+  - Using this benchmark, we perform a systematic evalua- tion of representative time-series
+  and biosignal FMs across ECG-only, PPG-only, and ECG + PPG settings.
+
+  - We find that domain-specific biosignal FMs consistently outperform general time-series
+  models, and that multimodal ECG + PPG fusion yields robust improvements over unimodal
+  in- puts.
+
+  - Moreover, using the full 10-minute signal consistently outperforms shorter segments,
+  and larger model variants do not reliably outperform smaller ones.
+
+  - Together, these results establish SignalMC-MED as a standardized benchmark and
+  provide practical guidance for evaluating and deploying biosignal FMs.
+
+
+  ## Evidence To Verify
+
+
+  - Exact contributions, datasets, metrics, and baselines.
+
+  - Quantitative results and claims from figures or tables.
+
+
+  ## Limitations
+
+
+  - However, systematic evaluation on realistic, multimodal bedside data remains limited.
+
+  - However, the poor performance of PaPaGei even in the PPG-only setting shows that
+  modality- specific pretraining alone does not guarantee strong perfor- mance.
+
+  - These findings suggest that effective multimodal integration remains a non-trivial
+  design challenge.
+
+  - Future work should ex- tend the evaluation to continuous monitoring scenarios
+  with hours or days of data per patient to better assess long-term temporal modeling.
+
+
+  ## Related Papers
+
+
+  - Cross-reference with other papers in `papers/`.
+
+  '
+review_notes: []
+agent_reviews: []
+agent_reviewed_at: null
+created_at: '2026-06-09T08:00:33.055143+00:00'
+updated_at: '2026-06-10T00:38:36.560629+00:00'

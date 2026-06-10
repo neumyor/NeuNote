@@ -1,0 +1,200 @@
+id: llm_anomaly_detection
+title: Large Language Models can Deliver Accurate and Interpretable Time Series Anomaly
+  Detection
+authors:
+- Jun Liu
+year: 2025
+venue: arXiv preprint
+doi: 10.1145/3711896.3737239
+arxiv_id: '2010.05073'
+source_pdf: originals/papers/large_language_models_can_deliver_accurate_and_interpretable_time_series_anomaly_detection.pdf
+pages: 12
+tags:
+- anomaly_detection
+- time_series
+- llm
+status: profiled
+confidence: medium
+reading_status: unread
+priority: normal
+needs_review: true
+abstract: Time series anomaly detection (TSAD) plays a crucial role in vari- ous industrial
+  applications. Traditional deep learning TSAD models require extensive training data
+  and operate as black boxes, lack- ing interpretability for detected anomalies. To
+  address these chal- lenges, we propose LLMAD1, a novel TSAD method that employs
+  Large Language Models (LLMs) to deliver accurate and interpretable TSAD results.
+  LLMAD applies in-context anomaly detection by re- trieving both positive and negative
+  similar time series segments, significantly enhancing LLMs’ effectiveness. Furthermore,LLMAD
+  employs the Anomaly Detection Chain-of-Thought approach to mimic expert logic for
+  its decision-making process.
+one_sentence: Time series anomaly detection (TSAD) plays a crucial role in vari- ous
+  industrial applications. Traditional deep learning TSAD models require extensive
+  training data and operate as black boxes, lack- ing interpretability for detected
+  anomalies. To address these chal- lenges, we propose LLMAD1, a novel TSAD method
+  that employs Large Language Models (LLMs) to deliver accurate and interpretable
+  TSAD results. LLMAD applies in-context anomaly detection by re- trieving both positive
+  and negative similar time series segments, significantly enhancing LLMs’ effectiveness.
+  Furthermore,LLMAD employs the Anomaly Detection Chain-of-Thought approach to mimic
+  expert logic for its decision-making process.
+problem: Traditional deep learning TSAD models require extensive training data and
+  operate as black boxes, lack- ing interpretability for detected anomalies.
+contributions:
+- To address these chal- lenges, we propose LLMAD1, a novel TSAD method that employs
+  Large Language Models (LLMs) to deliver accurate and interpretable TSAD results.
+- To harness the power of LLMs while addressing these challenges, we introduce LLMAD,
+  an LLM-based anomaly detection frame- work specifically tailored for TSAD, offering
+  high accuracy and interpretability.
+- 'Overall, this paper makes the following contributions: (1) We introduce LLMAD,
+  a LLM-based framework that accurately conducts TSAD while automatically generating
+  a comprehen- sive interpretation of its predictions to facilitate decision-making.'
+- 3 The Design of LLMAD 3.1 LLMAD in a Nutshell We present an overview of LLMAD in
+  Figure 2.
+- Mo del WSD KPI Yahoo A cc∗ Micro F1 Acc ∗ Micro F1 Acc ∗ Micro F1 Llama-3-70B 0.379
+  0.400 0.286 0.250 0.600 0.552 GPT-3.5 0.310 0.321 0.143 0.163 0.375 0.380 GPT-4
+  0.900 0.776 0.790 0.647 0.930 0.804 metric that aggregates the contributions of
+  all classes to compute the average metric, which is more robust to class imbalance.
+method:
+- Traditional deep learning TSAD models require extensive training data and operate
+  as black boxes, lack- ing interpretability for detected anomalies.
+- To address these chal- lenges, we propose LLMAD1, a novel TSAD method that employs
+  Large Language Models (LLMs) to deliver accurate and interpretable TSAD results.
+- 'Keywords Large Language Model; Time Series; Anomaly Detection ACM Reference Format:
+  Jun Liu, Chaoyun Zhang, Jiaxu Qian, Minghua Ma, Si Qin, Chetan Bansal, Qingwei Lin,
+  Saravan Rajmohan, and Dongmei Zhang.'
+- Models can Deliver Accurate and Interpretable Time Series Anomaly Detec- tion.
+- However, achieving this level of performance requires vast amounts of training data
+  to effectively model and understand anomaly patterns.
+- The remarkable achievements of Large Language Models (LLMs) in various domains [13–15]
+  have led to their application in time series tasks [16].
+experiments:
+- Experiments conducted on both offline datasets and through online deployment on
+  a large-scale cloud system at CompanyX in- dicate that our LLMAD achieves detection
+  performance comparable to state-of-the-art deep learning methods.
+- We conduct experiments on three mainstream public datasets as for the task of TSAD
+  [23–25], and also deploy it on a large-scale cloud system in CompanyX.
+- (3) We conduct extensive experiments on three public datasets.
+- Both quantitative and human evaluations suggest that LLMAD delivers highly accurate
+  TSAD while providing useful and read- able interpretative results at an acceptable
+  cost.
+- Then, it employs the AnoCoT to inject domain knowledge of anomaly rules, types,
+  and alarm levels tailored to the specific dataset and constructs the prompts fed
+  into the LLM (Section 3.3).
+limitations:
+- However, achieving this level of performance requires vast amounts of training data
+  to effectively model and understand anomaly patterns.
+- However, generating these interpretive reports typically requires extensive manual
+  analysis for each case, involving consultation of histori- cal data and handbooks.
+- Despite these opportunities, applying LLMs directly to TSAD poses several challenges.
+- To harness the power of LLMs while addressing these challenges, we introduce LLMAD,
+  an LLM-based anomaly detection frame- work specifically tailored for TSAD, offering
+  high accuracy and interpretability.
+notes: '# Large Language Models can Deliver Accurate and Interpretable Time Series
+  Anomaly Detection
+
+
+  ## Metadata
+
+
+  - ID: `llm_anomaly_detection`
+
+  - Source: `originals/papers/large_language_models_can_deliver_accurate_and_interpretable_time_series_anomaly_detection.pdf`
+
+  - Pages: 12
+
+  - Tags: anomaly_detection, time_series, llm
+
+  - Status: enriched
+
+
+  ## One Sentence
+
+
+  Time series anomaly detection (TSAD) plays a crucial role in vari- ous industrial
+  applications. Traditional deep learning TSAD models require extensive training data
+  and operate as black boxes, lack- ing interpretability for detected anomalies. To
+  address these chal- lenges, we propose LLMAD1, a novel TSAD method that employs
+  Large Language Models (LLMs) to deliver accurate and interpretable TSAD results.
+  LLMAD applies in-context anomaly detection by re- trieving both positive and negative
+  similar time series segments, significantly enhancing LLMs’ effectiveness. Furthermore,LLMAD
+  employs the Anomaly Detection Chain-of-Thought approach to mimic expert logic for
+  its decision-making process.
+
+
+  ## Problem
+
+
+  Traditional deep learning TSAD models require extensive training data and operate
+  as black boxes, lack- ing interpretability for detected anomalies.
+
+
+  ## Core Idea
+
+
+  Time series anomaly detection (TSAD) plays a crucial role in vari- ous industrial
+  applications. Traditional deep learning TSAD models require extensive training data
+  and operate as black boxes, lack- ing interpretability for detected anomalies. To
+  address these chal- lenges, we propose LLMAD1, a novel TSAD method that employs
+  Large Language Models (LLMs) to deliver accurate and interpretable TSAD results.
+  LLMAD applies in-context anomaly detection by re- trieving both positive and negative
+  similar time series segments, significantly enhancing LLMs’ effectiveness. Furthermore,LLMAD
+  employs the Anomaly Detection Chain-of-Thought approach to mimic expert logic for
+  its decision-making process.
+
+
+  ## Method Notes
+
+
+  - Traditional deep learning TSAD models require extensive training data and operate
+  as black boxes, lack- ing interpretability for detected anomalies.
+
+  - To address these chal- lenges, we propose LLMAD1, a novel TSAD method that employs
+  Large Language Models (LLMs) to deliver accurate and interpretable TSAD results.
+
+  - Keywords Large Language Model; Time Series; Anomaly Detection ACM Reference Format:
+  Jun Liu, Chaoyun Zhang, Jiaxu Qian, Minghua Ma, Si Qin, Chetan Bansal, Qingwei Lin,
+  Saravan Rajmohan, and Dongmei Zhang.
+
+  - Models can Deliver Accurate and Interpretable Time Series Anomaly Detec- tion.
+
+  - However, achieving this level of performance requires vast amounts of training
+  data to effectively model and understand anomaly patterns.
+
+  - The remarkable achievements of Large Language Models (LLMs) in various domains
+  [13–15] have led to their application in time series tasks [16].
+
+
+  ## Evidence To Verify
+
+
+  - Exact contributions, datasets, metrics, and baselines.
+
+  - Quantitative results and claims from figures or tables.
+
+
+  ## Limitations
+
+
+  - However, achieving this level of performance requires vast amounts of training
+  data to effectively model and understand anomaly patterns.
+
+  - However, generating these interpretive reports typically requires extensive manual
+  analysis for each case, involving consultation of histori- cal data and handbooks.
+
+  - Despite these opportunities, applying LLMs directly to TSAD poses several challenges.
+
+  - To harness the power of LLMs while addressing these challenges, we introduce LLMAD,
+  an LLM-based anomaly detection frame- work specifically tailored for TSAD, offering
+  high accuracy and interpretability.
+
+
+  ## Related Papers
+
+
+  - Cross-reference with other papers in `papers/`.
+
+  '
+review_notes: []
+agent_reviews: []
+agent_reviewed_at: null
+created_at: '2026-06-09T08:00:29.110090+00:00'
+updated_at: '2026-06-10T00:38:35.454769+00:00'

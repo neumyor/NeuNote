@@ -1,0 +1,11 @@
+{
+  "name": "paper-agent-kb",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "bun scripts/dev.ts"
+  },
+  "devDependencies": {
+    "typescript": "^5.8.3"
+  }
+}

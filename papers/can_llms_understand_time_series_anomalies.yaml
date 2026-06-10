@@ -1,0 +1,88 @@
+id: can_llms_understand_time_series_anomalies
+title: Can LLMs Understand Time Series Anomalies?
+authors:
+- Zihao Zhou
+- Rose Yu
+year: 2025
+venue: ICLR 2025
+doi: 10.1145/3534678.3539339
+arxiv_id: '2404.14219'
+source_pdf: originals/papers/can_llms_understand_time_series_anomalies.pdf
+pages: 39
+tags:
+- anomaly_detection
+- time_series
+- llm
+status: profiled
+confidence: medium
+reading_status: unread
+priority: normal
+needs_review: true
+abstract: 'Large Language Models (LLMs) have gained popularity in time series forecast-
+  ing, but their potential for anomaly detection remains largely unexplored. Our study
+  investigates whether LLMs can understand and detect anomalies in time series data,
+  focusing on zero-shot and few-shot scenarios. Inspired by conjec- tures about LLMs’
+  behavior from time series forecasting research, we formu- late key hypotheses about
+  LLMs’ capabilities in time series anomaly detection. We design and conduct principled
+  experiments to test each of these hypotheses. Our investigation reveals several
+  surprising findings about LLMs for time series: (1) LLMs understand time series
+  better as images rather than as text, (2'
+one_sentence: 'Large Language Models (LLMs) have gained popularity in time series
+  forecast- ing, but their potential for anomaly detection remains largely unexplored.
+  Our study investigates whether LLMs can understand and detect anomalies in time
+  series data, focusing on zero-shot and few-shot scenarios. Inspired by conjec- tures
+  about LLMs’ behavior from time series forecasting research, we formu- late key hypotheses
+  about LLMs’ capabilities in time series anomaly detection. We design and conduct
+  principled experiments to test each of these hypotheses. Our investigation reveals
+  several surprising findings about LLMs for time series: (1) LLMs understand time
+  series better as images rather than as text, (2'
+problem: However, the effectiveness of LLMs in time series analysis remains a subject
+  of debate.
+contributions:
+- In this paper, we present the first comprehensive investigation into LLMs’ understanding
+  of time series data through the lens of anomaly detection.
+- To test this hypothesis, we propose an experiment comparing LLM performance on original
+  time series text and pooled textual representations (reduced size by interpolation).
+method:
+- (4) LLMs’ behaviors and performance in time series analysisvary significantly across
+  different models .
+- 1 I NTRODUCTION The remarkable progress in large language models (LLMs) has led
+  to their application in various domains, including time series analysis.
+- While some researchers argue that LLMs can leverage their pretrained knowledge to
+  un- derstand time series patterns (Gruver et al., 2023), others suggest that simpler
+  models can match or outperform LLMs (Tan et al., 2024).
+- To address this question, we must look beyond models’ predictive performance.
+- Forecasting typically hinges on metrics like MSE, which can overlook deeper model
+  understanding.
+- A model that simply outputs a nearly constant line might still achieve a passable
+  MSE but reveals little about its capacity to interpret dynamics.
+experiments:
+- We design and conduct principled experiments to test each of these hypotheses.
+- All synthetic dataset generators, final prompts, and evaluation scripts have been
+  made available in https://github.com/rose-stl-lab/anomllm.
+- Forecasting typically hinges on metrics like MSE, which can overlook deeper model
+  understanding.
+- (2024b) introduced Time-MMD, a multi-domain, multimodal time series dataset for
+  LLM finetuning.
+- However, recent studies have highlighted significant flaws in current time series
+  anomaly detection benchmarks and evaluation practices (Wu & Keogh, 2021; Huet et
+  al., 2022; Sarfraz et al., 2024).
+limitations:
+- However, the effectiveness of LLMs in time series analysis remains a subject of
+  debate.
+- We provide empirical evidence to challenge existing conjectures and 1 Published
+  as a conference paper at ICLR 2025 claims about LLMs’ time series understanding.
+- 'Our findings reveal a more nuanced understanding of LLMs’ capabilities and limitations
+  in time series data, including: • Visual Advantage: LLMs perform significantly better
+  in anomaly detection when processing time series data as images rather than text
+  tokens.'
+- However, these prevailing beliefs about LLMs’ pattern extrapolation capabilities
+  and interpretable predictions remain controversial.
+notes: "# Reading Notes\n\n*Use this space for your own notes while reading the paper.\
+  \ The structured summary is available in the Summary section.*\n\n## Key takeaways\n\
+  \n- \n\n## Questions\n\n- \n\n## Connections to other papers\n\n- \n"
+review_notes: []
+agent_reviews: []
+agent_reviewed_at: null
+created_at: '2026-06-09T08:16:10.881219+00:00'
+updated_at: '2026-06-10T01:13:59.021954+00:00'

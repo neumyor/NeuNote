@@ -1,0 +1,112 @@
+id: argos
+title: 'ARGOS: Agentic Time-Series Anomaly Detection with Autonomous Rule Generation
+  via Large Language Models'
+authors:
+- Yile Gu
+- Yifan Xiong
+- Jonathan Mace
+- Yuting Jiang
+- Yigong Hu
+- Baris Kasikci
+- Peng Cheng
+year: 2021
+venue: arXiv preprint
+doi: ''
+arxiv_id: '2501.14170'
+source_pdf: originals/papers/argos_agentic_time_series_anomaly_detection_with_autonomous_rule_generation_via_large_language_models.pdf
+pages: 20
+tags:
+- anomaly_detection
+- time_series
+- llm
+- agent
+- multi_agent
+status: profiled
+confidence: medium
+reading_status: unread
+priority: normal
+needs_review: true
+abstract: Observability in cloud infrastructure is critical for service providers,
+  driving the widespread adoption of anomaly de- tection systems for monitoring metrics.
+  However, existing systems often struggle to simultaneously achieve explain- ability,
+  reproducibility, and autonomy, which are three indis- pensable properties for production
+  use. We introduce AR- GOS, an agentic system for detecting time-series anomalies
+  in cloud infrastructure by leveraging large language mod- els (LLMs). ARGOS proposes
+  to use explainable and repro- ducible anomaly rules as intermediate representation
+  and em- ploys LLMs to autonomously generate such rules. The sys- tem will efficiently
+  train error-free and accuracy
+one_sentence: Observability in cloud infrastructure is critical for service providers,
+  driving the widespread adoption of anomaly de- tection systems for monitoring metrics.
+  However, existing systems often struggle to simultaneously achieve explain- ability,
+  reproducibility, and autonomy, which are three indis- pensable properties for production
+  use. We introduce AR- GOS, an agentic system for detecting time-series anomalies
+  in cloud infrastructure by leveraging large language mod- els (LLMs). ARGOS proposes
+  to use explainable and repro- ducible anomaly rules as intermediate representation
+  and em- ploys LLMs to autonomously generate such rules. The sys- tem will efficiently
+  train error-free and accuracy
+problem: However, existing systems often struggle to simultaneously achieve explain-
+  ability, reproducibility, and autonomy, which are three indis- pensable properties
+  for production use.
+contributions:
+- We introduce AR- GOS, an agentic system for detecting time-series anomalies in cloud
+  infrastructure by leveraging large language mod- els (LLMs).
+- To address these challenges, we propose ARGOS , a time- series anomaly detection
+  system that autonomously generates rules using LLMs.
+- 'In summary, our contributions are as follows: • We show that current state-of-the-art
+  time-series anomaly detection systems fall short in simultaneously achieving explainability,
+  reproducibility, and autonomy.'
+- • We propose ARGOS , a time-series anomaly detection sys- tem that autonomously
+  trains and deploys anomaly detec- tion rules through an LLM-based agentic pipeline.
+- Instead, we propose to use LLMs in a training phase before the deployment to gener-
+  ate anomaly detection rules from time-series data collected and labeled offline.
+method:
+- We introduce AR- GOS, an agentic system for detecting time-series anomalies in cloud
+  infrastructure by leveraging large language mod- els (LLMs).
+- ARGOS proposes to use explainable and repro- ducible anomaly rules as intermediate
+  representation and em- ploys LLMs to autonomously generate such rules.
+- The sys- tem will efficiently train error-free and accuracy-guaranteed anomaly rules
+  through multiple collaborative agents and de- ploy the trained rules for low-cost
+  online anomaly detection.
+- For instance, Google’s Borg [60] features robust monitoring tools that track task
+  health and performance metrics, automatically restarting failed tasks and scaling
+  up to tens of thousands of machines.
+- 1 illustrates a real-world interruption, where distributed model training on 256
+  A100 GPUs encountered a network hang issue [44].
+- Monitors equipped with manually-written anomaly rules failed to detect the issue
+  in time, which was only mitigated after human intervention at timestamp 17:50 by
+  terminating training, resulting in significant waste of resources and time.
+experiments:
+- Through evaluation results, we demonstrate that ARGOS out- performs state-of-the-art
+  methods, increasing F1 scores by up to 9.5% and 28.3% on public anomaly detection
+  datasets and an internal dataset collected from Microsoft, respectively.
+- To minimize the negative consequences of service inter- ruptions, early-detection
+  of anomalies in metrics monitor- ing is crucial, as such metrics provide real-time
+  insights into the health and performance of cloud services.
+- For instance, Google’s Borg [60] features robust monitoring tools that track task
+  health and performance metrics, automatically restarting failed tasks and scaling
+  up to tens of thousands of machines.
+- The system should also produce consistent results for the same input metrics, ensuring
+  that when an alarm is triggered in production, OCEs can reproduce it in a different
+  environment and conduct fur- ther root cause analysis.
+- The system also needs to be frequently updated as data distributions shift when
+  new metrics or dominant workloads are introduced [5, 32].
+limitations:
+- However, existing systems often struggle to simultaneously achieve explain- ability,
+  reproducibility, and autonomy, which are three indis- pensable properties for production
+  use.
+- 1 Introduction Ensuring the reliability and availability of cloud services is a
+  key challenge for service providers [8, 19, 31, 32, 71], as downtime or interruptions
+  can severely impact both customer experience and business operations.
+- For instance, Google’s Borg [60] features robust monitoring tools that track task
+  health and performance metrics, automatically restarting failed tasks and scaling
+  up to tens of thousands of machines.
+- However, detecting anomalies in time with high accuracy is challenging due to the
+  variety of anomalies.
+notes: "# Reading Notes\n\n*Use this space for your own notes while reading the paper.\
+  \ The structured summary is available in the Summary section.*\n\n## Key takeaways\n\
+  \n- \n\n## Questions\n\n- \n\n## Connections to other papers\n\n- \n"
+review_notes: []
+agent_reviews: []
+agent_reviewed_at: null
+created_at: '2026-06-09T08:00:27.626657+00:00'
+updated_at: '2026-06-10T01:13:41.632755+00:00'

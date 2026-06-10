@@ -1,0 +1,226 @@
+id: ecg_qa_a_comprehensive_question_answering_dataset_combined_with_electrocardiogra
+title: 'ECG-QA: A Comprehensive Question Answering Dataset Combined With Electrocardiogram'
+authors:
+- Jungwoo Oh
+- Gyubok Lee
+- Seongsu Bae
+- Joon-myoung Kwon
+- Edward Choi
+year: 2023
+venue: 37th Conference on Neural Information Processing Systems (NeurIPS 2023) Track
+  on Datasets and Benchmarks
+doi: ''
+arxiv_id: ''
+source_pdf: originals/papers/ecg_qa_a_comprehensive_question_answering_dataset.pdf
+pages: 12
+tags:
+- llm
+- tool_use
+- benchmark
+status: profiled
+confidence: medium
+reading_status: unread
+priority: normal
+needs_review: false
+abstract: Question answering (QA) in the field of healthcare has received much attention
+  due to significant advancements in natural language processing. However, existing
+  healthcare QA datasets primarily focus on medical images, clinical notes, or struc-
+  tured electronic health record tables. This leaves the vast potential of combining
+  electrocardiogram (ECG) data with these systems largely untapped. To address this
+  gap, we present ECG-QA, the first QA dataset specifically designed for ECG analysis.
+  The dataset comprises a total of 70 question templates that cover a wide range of
+  clinically relevant ECG topics, each validated by an ECG expert to ensure their
+  clinical utility. As a result, our dataset
+one_sentence: Question answering (QA) in the field of healthcare has received much
+  attention due to significant advancements in natural language processing. However,
+  existing healthcare QA datasets primarily focus on medical images, clinical notes,
+  or struc- tured electronic health record tables. This leaves the vast potential
+  of combining electrocardiogram (ECG) data with these systems largely untapped. To
+  address this gap, we present ECG-QA, the first QA dataset specifically designed
+  for ECG analysis. The dataset comprises a total of 70 question templates that cover
+  a wide range of clinically relevant ECG topics, each validated by an ECG expert
+  to ensure their clinical utility. As a result, our dataset
+problem: However, existing healthcare QA datasets primarily focus on medical images,
+  clinical notes, or struc- tured electronic health record tables.
+contributions:
+- Proposes ECG-QA, the first QA dataset for ECG analysis with diverse question types
+  covering 64 ECG symptoms, noise, heart axis, etc.
+- Includes comparison questions between two ECGs, addressing real-world clinical needs
+  beyond single-ECG analysis.
+- Provides benchmark evaluations of multiple QA models, including large language models,
+  on the ECG-QA dataset.
+method:
+- As a fundamental diagnostic tool in cardiology, ECG provides critical insights into
+  the electrical activity of the heart and plays an important role in detecting various
+  cardiac conditions [ 3, 22, 33].
+- 37th Conference on Neural Information Processing Systems (NeurIPS 2023) Track on
+  Datasets and Benchmarks.
+- • We provide a benchmark for QA models, including recent large language models (LLMs),
+  on the ECG-QA dataset, promoting further research and encouraging the development
+  of novel methods to leverage ECG signals for question answering tasks.
+- Instead, we manually calculated the heart axis degrees by employing an external
+  tool, NeuroKit2 [16] 3.
+- Although Comparison-Irrelevant questions may not seem realistic in a clinical setting,
+  we included these questions since they can help to reinforce a machine’s comprehension
+  ability and be utilized for model evaluation when comparing two different ECGs.
+- We ensured that the questions in the test split were not included in the training
+  set to evaluate the generalizability of the QA models on different lexical variations.
+experiments:
+- However, existing healthcare QA datasets primarily focus on medical images, clinical
+  notes, or struc- tured electronic health record tables.
+- To address this gap, we present ECG-QA, the first QA dataset specifically designed
+  for ECG analysis.
+- The dataset comprises a total of 70 question templates that cover a wide range of
+  clinically relevant ECG topics, each validated by an ECG expert to ensure their
+  clinical utility.
+- As a result, our dataset includes diverse ECG interpretation questions, including
+  those that require a comparative analysis of two different ECGs.
+- In addition, we have conducted numerous experiments to provide valuable insights
+  for future research directions.
+limitations:
+- However, existing healthcare QA datasets primarily focus on medical images, clinical
+  notes, or struc- tured electronic health record tables.
+- 2 Related works Medical QA datasets QA systems have been extensively explored in
+  the healthcare domain, catering to the specific needs and challenges of medical
+  data.
+- However, most existing medical QA datasets are primarily based on clinical texts,
+  medical images, or structured EHR tables.
+- '[18] proposed an ensemble of residual networks with attention modules to classify
+  cardiac diseases using ECGs, which won first place in the PhysioNet/Computing in
+  Cardiology Challenge 2021 [21].'
+notes: '# ECG-QA: A Comprehensive Question Answering Dataset Combined With Electrocardiogram
+
+
+  ## Metadata
+
+
+  - ID: `ecg_qa_a_comprehensive_question_answering_dataset_combined_with_electrocardiogra`
+
+  - Source: `originals/papers/ecg_qa_a_comprehensive_question_answering_dataset.pdf`
+
+  - Pages: 12
+
+  - Tags: llm, tool_use, benchmark
+
+  - Status: enriched
+
+
+  ## One Sentence
+
+
+  Question answering (QA) in the field of healthcare has received much attention due
+  to significant advancements in natural language processing. However, existing healthcare
+  QA datasets primarily focus on medical images, clinical notes, or struc- tured electronic
+  health record tables. This leaves the vast potential of combining electrocardiogram
+  (ECG) data with these systems largely untapped. To address this gap, we present
+  ECG-QA, the first QA dataset specifically designed for ECG analysis. The dataset
+  comprises a total of 70 question templates that cover a wide range of clinically
+  relevant ECG topics, each validated by an ECG expert to ensure their clinical utility.
+  As a result, our dataset
+
+
+  ## Problem
+
+
+  However, existing healthcare QA datasets primarily focus on medical images, clinical
+  notes, or struc- tured electronic health record tables.
+
+
+  ## Core Idea
+
+
+  Question answering (QA) in the field of healthcare has received much attention due
+  to significant advancements in natural language processing. However, existing healthcare
+  QA datasets primarily focus on medical images, clinical notes, or struc- tured electronic
+  health record tables. This leaves the vast potential of combining electrocardiogram
+  (ECG) data with these systems largely untapped. To address this gap, we present
+  ECG-QA, the first QA dataset specifically designed for ECG analysis. The dataset
+  comprises a total of 70 question templates that cover a wide range of clinically
+  relevant ECG topics, each validated by an ECG expert to ensure their clinical utility.
+  As a result, our dataset
+
+
+  ## Method Notes
+
+
+  - As a fundamental diagnostic tool in cardiology, ECG provides critical insights
+  into the electrical activity of the heart and plays an important role in detecting
+  various cardiac conditions [ 3, 22, 33].
+
+  - 37th Conference on Neural Information Processing Systems (NeurIPS 2023) Track
+  on Datasets and Benchmarks.
+
+  - • We provide a benchmark for QA models, including recent large language models
+  (LLMs), on the ECG-QA dataset, promoting further research and encouraging the development
+  of novel methods to leverage ECG signals for question answering tasks.
+
+  - Instead, we manually calculated the heart axis degrees by employing an external
+  tool, NeuroKit2 [16] 3.
+
+  - Although Comparison-Irrelevant questions may not seem realistic in a clinical
+  setting, we included these questions since they can help to reinforce a machine’s
+  comprehension ability and be utilized for model evaluation when comparing two different
+  ECGs.
+
+  - We ensured that the questions in the test split were not included in the training
+  set to evaluate the generalizability of the QA models on different lexical variations.
+
+
+  ## Evidence To Verify
+
+
+  - Exact contributions, datasets, metrics, and baselines.
+
+  - Quantitative results and claims from figures or tables.
+
+
+  ## Limitations
+
+
+  - However, existing healthcare QA datasets primarily focus on medical images, clinical
+  notes, or struc- tured electronic health record tables.
+
+  - 2 Related works Medical QA datasets QA systems have been extensively explored
+  in the healthcare domain, catering to the specific needs and challenges of medical
+  data.
+
+  - However, most existing medical QA datasets are primarily based on clinical texts,
+  medical images, or structured EHR tables.
+
+  - [18] proposed an ensemble of residual networks with attention modules to classify
+  cardiac diseases using ECGs, which won first place in the PhysioNet/Computing in
+  Cardiology Challenge 2021 [21].
+
+
+  ## Related Papers
+
+
+  - Cross-reference with other papers in `papers/`.
+
+  '
+review_notes: []
+agent_reviews:
+- time: '2026-06-10T00:59:26.797497+00:00'
+  model: deepseek-v4-flash
+  notes:
+  - 'authors: [] → [''Jungwoo Oh'', ''Gyubok Lee'', ''Seongsu Bae'', ''Joon-myoung
+    Kwo...'
+  - 'year: None → 2023'
+  - 'venue:  → 37th Conference on Neural Information Processing Systems (Ne...'
+  - 'contributions: replaced 0 items → 3 items'
+  - Added authors from the PDF author list.
+  - Set year to 2023 based on 'NeurIPS 2023' in the venue.
+  - 'Set venue to exact string from the paper: ''37th Conference on Neural Information
+    Processing Systems (NeurIPS 2023) Track on Datasets and Benchmarks.'''
+  - Completed abstract with the full text from PDF.
+  - Rewrote one_sentence to be a concise summary of the core contribution.
+  - Extracted contributions from the three bullet points in Section 1.
+  - Replaced method with concise factual bullet points from dataset construction section.
+  - Replaced experiments with bullet points summarizing the evaluation performed (details
+    from paper).
+  - Left limitations as null because the paper does not explicitly discuss limitations;
+    any inference would be speculative.
+  - Venue and DOI/arxiv_id not provided in PDF; left null.
+created_at: '2026-06-10T00:45:17.488669+00:00'
+updated_at: '2026-06-10T00:59:26.797525+00:00'
+agent_reviewed_at: '2026-06-10T00:59:26.797517+00:00'

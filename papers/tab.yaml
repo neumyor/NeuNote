@@ -1,0 +1,201 @@
+id: tab
+title: 'TAB: Unified Benchmarking of Time Series Anomaly Detection Methods'
+authors:
+- Xiangfei Qiu
+- Zhe Li
+- Wanghui Qiu
+- Shiyan Hu
+- Lekui Zhou
+- Xingjian Wu
+- Zhengyu Li
+- Chenjuan Guo
+- Aoying Zhou
+- Zhenli Sheng
+- Jilin Hu
+- Christian S. Jensen
+- Bin Yang
+year: 2025
+venue: arXiv preprint
+doi: 10.14778/3746405.3746407
+arxiv_id: '2506.18046'
+source_pdf: originals/papers/tab_unified_benchmarking_of_time_series_anomaly_detection_methods.pdf
+pages: 15
+tags:
+- anomaly_detection
+- time_series
+- benchmark
+status: profiled
+confidence: medium
+reading_status: unread
+priority: normal
+needs_review: true
+abstract: Time series anomaly detection (TSAD) plays an important role in many domains
+  such as finance, transportation, and healthcare. With the ongoing instrumentation
+  of reality, more time series data will be available, leading also to growing demands
+  for TSAD. While many TSAD methods already exist, new and better methods are still
+  desirable. However, effective progress hinges on the availabil- ity of reliable
+  means of evaluating new methods and comparing them with existing methods. We address
+  deficiencies in current evaluation procedures related to datasets and experimental
+  settings and protocols. Specifically, we propose a new time series anomaly detection
+  benchmark, called TAB. First, TAB encomp
+one_sentence: Time series anomaly detection (TSAD) plays an important role in many
+  domains such as finance, transportation, and healthcare. With the ongoing instrumentation
+  of reality, more time series data will be available, leading also to growing demands
+  for TSAD. While many TSAD methods already exist, new and better methods are still
+  desirable. However, effective progress hinges on the availabil- ity of reliable
+  means of evaluating new methods and comparing them with existing methods. We address
+  deficiencies in current evaluation procedures related to datasets and experimental
+  settings and protocols. Specifically, we propose a new time series anomaly detection
+  benchmark, called TAB. First, TAB encomp
+problem: However, effective progress hinges on the availabil- ity of reliable means
+  of evaluating new methods and comparing them with existing methods.
+contributions:
+- Specifically, we propose a new time series anomaly detection benchmark, called TAB.
+- To address the three challenges covered above, we propose a Time series Anomaly
+  detection Benchmark (TAB).
+- 'In summary, we make the following main contributions: • We present TAB, a unified
+  and extensible TSAD evaluation benchmark.'
+method:
+- Specifically, we propose a new time series anomaly detection benchmark, called TAB.
+- 'TAB: Unified Benchmarking of Time Series Anomaly Detection Methods.'
+- To address the three challenges covered above, we propose a Time series Anomaly
+  detection Benchmark (TAB).
+- '(5) Diversified evaluation metrics: TAB covers Label-based and Score-based metrics
+  to ensure a comprehensive assessment of model performance.'
+- 'In summary, we make the following main contributions: • We present TAB, a unified
+  and extensible TSAD evaluation benchmark.'
+- github.io/OpenTS/Benchmarks/overview/ that covers time se- ries pre-trained and
+  LLM-based methods.
+experiments:
+- We address deficiencies in current evaluation procedures related to datasets and
+  experimental settings and protocols.
+- Specifically, we propose a new time series anomaly detection benchmark, called TAB.
+- First, TAB encompasses 29 public multivariate datasets and 1,635 univariate time
+  series from different domains to facilitate more comprehensive evaluations on diverse
+  datasets.
+- Third, TAB features a unified and automated evaluation pipeline that enables fair
+  and easy evaluation of TSAD methods.
+- 'TAB: Unified Benchmarking of Time Series Anomaly Detection Methods.'
+limitations:
+- However, effective progress hinges on the availabil- ity of reliable means of evaluating
+  new methods and comparing them with existing methods.
+- For example, financial firms aim to identify unusual transactions in time to prevent
+  financial fraud, and manufacturing companies are eager to predict the impending
+  malfunction of devices so that they can be replaced before they fail.
+- Second, few of the most recent studies adopt consistent experi- mental settings
+  and evaluation protocols, thus failing to offer reli- able results to real-world
+  applications .
+- However, even random methods have a good chance to predict at least one point in
+  larger anomaly windows, the effect being that they can easily reach the performance
+  of complex methods or even outperform them [47].
+notes: '# TAB: Unified Benchmarking of Time Series Anomaly Detection Methods
+
+
+  ## Metadata
+
+
+  - ID: `tab`
+
+  - Source: `originals/papers/tab_unified_benchmarking_of_time_series_anomaly_detection_methods.pdf`
+
+  - Pages: 15
+
+  - Tags: anomaly_detection, time_series, benchmark
+
+  - Status: enriched
+
+
+  ## One Sentence
+
+
+  Time series anomaly detection (TSAD) plays an important role in many domains such
+  as finance, transportation, and healthcare. With the ongoing instrumentation of
+  reality, more time series data will be available, leading also to growing demands
+  for TSAD. While many TSAD methods already exist, new and better methods are still
+  desirable. However, effective progress hinges on the availabil- ity of reliable
+  means of evaluating new methods and comparing them with existing methods. We address
+  deficiencies in current evaluation procedures related to datasets and experimental
+  settings and protocols. Specifically, we propose a new time series anomaly detection
+  benchmark, called TAB. First, TAB encomp
+
+
+  ## Problem
+
+
+  However, effective progress hinges on the availabil- ity of reliable means of evaluating
+  new methods and comparing them with existing methods.
+
+
+  ## Core Idea
+
+
+  Time series anomaly detection (TSAD) plays an important role in many domains such
+  as finance, transportation, and healthcare. With the ongoing instrumentation of
+  reality, more time series data will be available, leading also to growing demands
+  for TSAD. While many TSAD methods already exist, new and better methods are still
+  desirable. However, effective progress hinges on the availabil- ity of reliable
+  means of evaluating new methods and comparing them with existing methods. We address
+  deficiencies in current evaluation procedures related to datasets and experimental
+  settings and protocols. Specifically, we propose a new time series anomaly detection
+  benchmark, called TAB. First, TAB encomp
+
+
+  ## Method Notes
+
+
+  - Specifically, we propose a new time series anomaly detection benchmark, called
+  TAB.
+
+  - TAB: Unified Benchmarking of Time Series Anomaly Detection Methods.
+
+  - To address the three challenges covered above, we propose a Time series Anomaly
+  detection Benchmark (TAB).
+
+  - (5) Diversified evaluation metrics: TAB covers Label-based and Score-based metrics
+  to ensure a comprehensive assessment of model performance.
+
+  - In summary, we make the following main contributions: • We present TAB, a unified
+  and extensible TSAD evaluation benchmark.
+
+  - github.io/OpenTS/Benchmarks/overview/ that covers time se- ries pre-trained and
+  LLM-based methods.
+
+
+  ## Evidence To Verify
+
+
+  - Exact contributions, datasets, metrics, and baselines.
+
+  - Quantitative results and claims from figures or tables.
+
+
+  ## Limitations
+
+
+  - However, effective progress hinges on the availabil- ity of reliable means of
+  evaluating new methods and comparing them with existing methods.
+
+  - For example, financial firms aim to identify unusual transactions in time to prevent
+  financial fraud, and manufacturing companies are eager to predict the impending
+  malfunction of devices so that they can be replaced before they fail.
+
+  - Second, few of the most recent studies adopt consistent experi- mental settings
+  and evaluation protocols, thus failing to offer reli- able results to real-world
+  applications .
+
+  - However, even random methods have a good chance to predict at least one point
+  in larger anomaly windows, the effect being that they can easily reach the performance
+  of complex methods or even outperform them [47].
+
+
+  ## Related Papers
+
+
+  - Cross-reference with other papers in `papers/`.
+
+  '
+review_notes: []
+agent_reviews: []
+agent_reviewed_at: null
+created_at: '2026-06-09T08:00:30.802660+00:00'
+updated_at: '2026-06-10T00:38:36.965299+00:00'

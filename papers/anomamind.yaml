@@ -1,0 +1,134 @@
+id: anomamind
+title: 'AnomaMind: Agentic Time Series Anomaly Detection with Tool-Augmented Reasoning'
+authors:
+- Xiaoyu Tao
+- Yuchong Wu
+- Mingyue Cheng
+- Ze Guo
+- Tian Gao
+year: 2026
+venue: arXiv preprint
+doi: ''
+arxiv_id: '2602.13807'
+source_pdf: originals/papers/anomamind_agentic_time_series_anomaly_detection_with_tool_augmented_reasoning.pdf
+pages: 15
+tags:
+- anomaly_detection
+- time_series
+- llm
+- agent
+- tool_use
+status: profiled
+confidence: medium
+reading_status: unread
+priority: normal
+needs_review: false
+abstract: Time series anomaly detection is critical in many real-world appli- cations,
+  where effective solutions must localize anomalous regions and support reliable decision-making
+  under complex settings. How- ever, most existing methods frame anomaly detection
+  as a purely discriminative prediction task with fixed feature inputs, rather than
+  an evidence-driven diagnostic process. As a result, they often strug- gle when anomalies
+  exhibit strong context dependence or diverse patterns. We argue that these limitations
+  stem from the lack of adaptive feature preparation, reasoning-aware detection, and
+  it- erative refinement during inference. To address these challenges, we propose
+  AnomaMind, an agentic ti
+one_sentence: Time series anomaly detection is critical in many real-world appli-
+  cations, where effective solutions must localize anomalous regions and support reliable
+  decision-making under complex settings. How- ever, most existing methods frame anomaly
+  detection as a purely discriminative prediction task with fixed feature inputs,
+  rather than an evidence-driven diagnostic process. As a result, they often strug-
+  gle when anomalies exhibit strong context dependence or diverse patterns. We argue
+  that these limitations stem from the lack of adaptive feature preparation, reasoning-aware
+  detection, and it- erative refinement during inference. To address these challenges,
+  we propose AnomaMind, an agentic ti
+problem: We argue that these limitations stem from the lack of adaptive feature preparation,
+  reasoning-aware detection, and it- erative refinement during inference.
+contributions:
+- To address these challenges, we propose AnomaMind, an agentic time series anomaly
+  detection framework that reformulates anomaly detection as a sequential decision-making
+  process.
+- To address these challenges, we propose AnomaMind, an agentic time series anomaly
+  detection framework that explicitly formu- lates anomaly detection as a sequential
+  decision-making process.
+- 'Our main contributions are summarized as follows: • We reformulate the task of
+  TSAD as a sequential decision- making problem, moving beyond discriminative formula-
+  tions toward an evidence-driven diagnostic process.'
+- • We proposeAnomaMind, an agentic time series anomaly detection framework that realizes
+  this reformulation through a structured coarse-to-fine workflow, tool-augmented
+  adap- tive feature preparation, and a hybrid inference mechanism that combines general-purpose
+  reasoning with task-specific anomaly decision learning.
+- 4 The Proposed AnomaMind Building on the sequential decision-making formulation
+  and evidence- driven reasoning introduced earlier, we present AnomaMind, an agentic
+  framework for time series anomaly detection.
+method:
+- To address these challenges, we propose AnomaMind, an agentic time series anomaly
+  detection framework that reformulates anomaly detection as a sequential decision-making
+  process.
+- AnomaMind operates through a struc- tured workflow that progressively localizes
+  anomalous intervals in a coarse-to-fine manner, augments detection through multi-turn
+  tool interactions for adaptive feature preparation, and refines anomaly decisions
+  via self-reflection.
+- The workflow is supported by a set of reusable tool engines, enabling context-aware
+  diagnostic analysis.
+- A key design of AnomaMind is an explicitly designed hybrid inference mechanism for
+  tool-augmented anomaly detection.
+- In this mech- anism, general-purpose models are responsible for autonomous tool
+  interaction and self-reflective refinement, while core anomaly detection decisions
+  are learned through reinforcement learning under verifiable workflow-level feedback,
+  enabling task-specific optimization within a flexible reasoning framework.
+- 'ACM ISBN 978-1-4503-XXXX-X/2018/06 https://doi.org/XXXXXXX.XXXXXXX Keywords Anomaly
+  Detection, Agentic Workflow, Tool-augmented Reasoning ACM Reference Format: Xiaoyu
+  Tao, Yuchong Wu, Mingyue Cheng, Ze Guo, and Tian Gao.'
+experiments:
+- • We conduct extensive experiments across diverse time series anomaly detection
+  settings, demonstrating that AnomaMind consistently improves detection performance
+  and validating the effectiveness of agentic, tool-augmented reasoning for TSAD.
+- 5 Experiments In this section, we introduce the experimental settings, followed
+  by the main results, exploratory analyses, and finally a case study.
+- 'Table 1: Statistics of time series anomaly detection datasets with different annotation
+  levels.'
+- Dataset All Points Test Points Train Points Anomalies Category YAHOO 404,092 75,000
+  120,000 0.6% P&Seq TODS 75,000 35,000 40,000 6.3% P&Seq IOPS 655,131 61,800 81,400
+  1.3% Seq WSD 1,936,340 65,700 120,000 0.6% Seq 5.1 Experimental Settings 5.1.1 Datasets.Table
+  1 summarizes the statistics and annotation granularity of the datasets used in our
+  experiments.
+- The Yahoo [24] dataset released by Yahoo Labs consists of real and synthetic time
+  series derived from production traffic.
+limitations:
+- We argue that these limitations stem from the lack of adaptive feature preparation,
+  reasoning-aware detection, and it- erative refinement during inference.
+- To address these challenges, we propose AnomaMind, an agentic time series anomaly
+  detection framework that reformulates anomaly detection as a sequential decision-making
+  process.
+- We argue that these limitations stem from a fundamental mis- match between how anomaly
+  detection is commonly formulated and how it is carried out in practice [11].
+- However, such iterative and adaptive processes are difficult to capture within conventional
+  model-centric formulations, which treat anomaly detection as a static mapping from
+  inputs to anomaly scores and provide limited support for dynamic reasoning or decision
+  revision during infer- ence [27, 36].
+notes: "# Reading Notes\n\n*Use this space for your own notes while reading the paper.\
+  \ The structured summary is available in the Summary section.*\n\n## Key takeaways\n\
+  \n- \n\n## Questions\n\n- \n\n## Connections to other papers\n\n- \n"
+review_notes: []
+agent_reviews:
+- time: '2026-06-10T01:13:58.913834+00:00'
+  model: deepseek-v4-flash
+  notes:
+  - Provided full abstract text from the PDF (previous version was truncated).
+  - Replaced one_sentence with a concise single-sentence summary of the core contribution,
+    extracted from the abstract.
+  - 'Refined problem statement to focus on the core limitation described in the introduction:
+    discriminative formulation vs. evidence-driven diagnostic process.'
+  - Cleaned contributions to match the three numbered contributions listed in the
+    paper (removed duplicates and non-contribution text).
+  - Summarized method into three bullet points highlighting the workflow, tools, and
+    hybrid inference mechanism.
+  - Condensed experiments into bullet points based on the paper's experiment summary
+    and dataset table.
+  - Set limitations to null because the provided PDF pages do not contain any explicit
+    limitations of the proposed method (only limitations of existing methods).
+  - No changes to title, authors, year, venue, DOI, arXiv ID as they matched the PDF
+    verifiably (year 2026, venue arXiv preprint, no real DOI, arxiv_id 2602.13807).
+agent_reviewed_at: '2026-06-10T01:13:58.913843+00:00'
+created_at: '2026-06-09T08:00:27.328569+00:00'
+updated_at: '2026-06-10T01:13:58.913845+00:00'
