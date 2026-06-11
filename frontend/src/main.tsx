@@ -106,13 +106,27 @@ function App() {
   const [jobs, setJobs] = useState<Job[]>([]);
   const [duplicates, setDuplicates] = useState<DuplicateGroup[]>([]);
   const [selectedPaperId, _setSelectedPaperId] = useState("");
-  const [selectedPaper, setSelectedPaper] = useState<Paper | null>(null);
+  const [selectedPaper, _setSelectedPaper] = useState<Paper | null>(null);
   // Wrap setSelectedPaperId so the ref updates *synchronously* in the same
   // tick as the state setter, with no useEffect-induced render-cycle delay.
   const selectedPaperIdRef = useRef(selectedPaperId);
   const setSelectedPaperId = (id: string) => {
     selectedPaperIdRef.current = id;
     _setSelectedPaperId(id);
+  };
+  // Mirror selectedPaper the same way: async callbacks (translatePaper,
+  // updatePaper, ...) need the *latest* paper object when they spread it,
+  // not a stale-closure snapshot from the render they were defined in.
+  const selectedPaperRef = useRef<Paper | null>(selectedPaper);
+  const setSelectedPaper = (p: Paper | null) => {
+    selectedPaperRef.current = p;
+    _setSelectedPaper(p);
+  };
+  // Guard: only write selectedPaper if the user is still viewing the same
+  // paper. Async fetches that resolve after the user has navigated away
+  // must not clobber the now-current view.
+  const setSelectedPaperIfCurrent = (paperId: string, p: Paper | null) => {
+    if (selectedPaperIdRef.current === paperId) setSelectedPaper(p);
   };
   // Monotonic sequence number for openProfile() calls. A stale fetch that
   // resolves after a newer click must not clobber the newer paper's state.
@@ -367,8 +381,11 @@ function App() {
         `/api/papers/${encodeURIComponent(paperId)}/translate`,
         { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ root: savedRoot }) }
       );
-      if (selectedPaper && selectedPaper.id === paperId) {
-        setSelectedPaper({ ...selectedPaper, translations: data.translations });
+      // Spread from selectedPaperRef (live) so concurrent fields updated by
+      // loadPapers during the await aren't clobbered. Guard on id to avoid
+      // clobbering a different paper the user has navigated to.
+      if (selectedPaperIdRef.current === paperId && selectedPaperRef.current) {
+        setSelectedPaper({ ...selectedPaperRef.current, translations: data.translations });
       }
       await loadPapers();
     } catch (err) {
@@ -423,7 +440,8 @@ function App() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ root: savedRoot, ...patch }),
       });
-      setSelectedPaper(data.paper);
+      // Guard: don't clobber selectedPaper if the user has navigated away.
+      setSelectedPaperIfCurrent(paperId, data.paper);
       await loadPapers();
     } catch (err) {
       setError(String((err as Error).message ?? err));
