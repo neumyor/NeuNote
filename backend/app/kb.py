@@ -151,15 +151,25 @@ def save_paper(root: Path, paper: dict[str, Any]) -> None:
     path = paper_path(root, paper_id)
     # Atomic write via temp file
     tmp_fd, tmp_path = tempfile_mod.mkstemp(suffix=".yaml", prefix=".paper_", dir=str(path.parent))
+    closed = False
     try:
         os.write(tmp_fd, content.encode("utf-8"))
         os.fsync(tmp_fd)
         os.close(tmp_fd)
+        closed = True
         os.replace(tmp_path, str(path))
     except Exception:
-        os.close(tmp_fd)
+        # Only close the fd if the try block didn't get a chance to.
+        if not closed:
+            try:
+                os.close(tmp_fd)
+            except OSError:
+                pass
         if os.path.exists(tmp_path):
-            os.unlink(tmp_path)
+            try:
+                os.unlink(tmp_path)
+            except OSError:
+                pass
         raise
 
 
@@ -697,11 +707,19 @@ def create_session(root: Path, title: str | None = None) -> dict[str, Any]:
 
 
 def load_session(root: Path, session_id: str | None) -> dict[str, Any]:
+    """Load a session by id, or create a new one if id is missing.
+
+    If an id is provided but no such session file exists, return an empty
+    stub *without* creating a file on disk — silently materialising a
+    session for an unknown id would fill logs/chat_sessions/ with garbage.
+    Callers that want a persisted session for an unknown id should call
+    create_session() explicitly.
+    """
     if not session_id:
         return create_session(root)
     path = session_path(root, session_id)
     if not path.exists():
-        return create_session(root)
+        return {"id": session_id, "title": "Unknown", "messages": []}
     return json.loads(path.read_text(encoding="utf-8"))
 
 
@@ -925,14 +943,15 @@ def library_stats(root: Path) -> dict[str, Any]:
     for p in papers:
         for t in p.get("tags", []):
             tags.add(t)
-    duplicates = find_duplicates(root)
+    # Note: duplicate counts live in /api/duplicates, called on demand.
+    # They were intentionally removed from here because find_duplicates is
+    # O(n^2) in title comparisons and was being recomputed on every
+    # /api/papers call (page load). The frontend never read stats.duplicate_*.
     return {
         "papers": len(papers),
         "needs_review": sum(1 for p in papers if p.get("needs_review")),
         "profiled": sum(1 for p in papers if p.get("status") == "profiled"),
         "tags": len(tags),
-        "duplicate_groups": len(duplicates),
-        "duplicate_papers": sum(g["duplicate_count"] for g in duplicates),
     }
 
 

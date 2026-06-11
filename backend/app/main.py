@@ -50,11 +50,42 @@ DEFAULT_ROOT = Path(os.environ.get("KB_DEFAULT_ROOT", Path.cwd())).resolve()
 app = FastAPI(title="NeuNote")
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
+    # NOTE: allow_origins=["*"] with allow_credentials=True is rejected by
+    # browsers per the CORS spec (it implies sending cookies cross-origin
+    # with no allow-list). The frontend never sends cookies anyway — all
+    # auth is body-borne — so we drop credentials and keep a wide open
+    # origin list for the localhost dev case.
+    allow_origins=os.environ.get("KB_ALLOWED_ORIGINS", "*").split(","),
+    allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+# ── startup: warm the translation cache so the first /translate doesn't hang ──
+
+def _preload_translation_model() -> None:
+    """Download Argos en→zh model in background. Idempotent & best-effort.
+
+    Argos model download is hundreds of MB and synchronous. Without this
+    preload, the first /api/papers/{id}/translate request hangs for as
+    long as it takes, which most clients will time out on. We try once at
+    boot in a daemon thread; the real /translate handler still calls
+    _ensure_model() so a failed preload is recovered on the next call.
+    """
+    import logging
+    from .translate import _ensure_model
+    try:
+        _ensure_model()
+    except Exception as exc:  # noqa: BLE001 — best effort, log and move on
+        logging.getLogger("neunote.translate").warning(
+            "Translation model preload failed (will retry on first use): %s", exc)
+
+
+@app.on_event("startup")
+def _on_startup() -> None:
+    import threading
+    threading.Thread(target=_preload_translation_model, daemon=True).start()
 
 # ── parallel job executor ─────────────────────────────────────────────
 
@@ -190,13 +221,23 @@ def api_paper_pdf(paper_id: str, root: str | None = None) -> FileResponse:
     except FileNotFoundError as exc:
         raise HTTPException(status_code=404, detail=str(exc))
     source = paper.get("source_pdf")
-    if not source:
+    if not source or not isinstance(source, str):
         raise HTTPException(status_code=404, detail="No source PDF.")
+    # Defence in depth: a paper YAML can be hand-edited, so source_pdf
+    # could in principle point anywhere. Containment check guards against
+    # serving files outside the knowledge base.
     pdf_path = (kb_root / source).resolve()
+    try:
+        pdf_path.relative_to(kb_root)
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Invalid PDF path.")
     if not pdf_path.exists():
         raise HTTPException(status_code=404, detail="PDF file unavailable.")
+    # Sanitize the filename for the Content-Disposition header to avoid
+    # header injection via embedded quotes / newlines in the path name.
+    safe_name = pdf_path.name.replace('"', "").replace("\r", "").replace("\n", "")
     return FileResponse(pdf_path, media_type="application/pdf",
-                        headers={"Content-Disposition": f'inline; filename="{pdf_path.name}"'})
+                        headers={"Content-Disposition": f'inline; filename="{safe_name}"'})
 
 
 # ── upload ────────────────────────────────────────────────────────────

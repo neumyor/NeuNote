@@ -1199,4 +1199,8 @@ function SettingsPage(props: {
 
 // ── mount ────────────────────────────────────────────────────────────
 
-createRoot(document.getElementById("root")!).render(<App />);
+const rootEl = document.getElementById("root");
+if (!rootEl) {
+  throw new Error('NeuNote: <div id="root"> missing from index.html — cannot mount.');
+}
+createRoot(rootEl).render(<App />);
