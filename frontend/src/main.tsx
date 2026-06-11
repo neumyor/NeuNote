@@ -1016,7 +1016,7 @@ function TagEditor(props: {
       <div className="chip-row">
         {local.map((t) => (
           <span className="chip" key={t}>
-            {t}
+            <span className="chip-text">{t}</span>
             <button
               className="chip-x"
               type="button"
