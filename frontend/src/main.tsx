@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { createRoot } from "react-dom/client";
 import {
   ArrowDownUp,
@@ -105,8 +105,18 @@ function App() {
   const [stats, setStats] = useState<Stats>({ papers: 0, needs_review: 0, profiled: 0, tags: 0, duplicate_groups: 0, duplicate_papers: 0 });
   const [jobs, setJobs] = useState<Job[]>([]);
   const [duplicates, setDuplicates] = useState<DuplicateGroup[]>([]);
-  const [selectedPaperId, setSelectedPaperId] = useState("");
+  const [selectedPaperId, _setSelectedPaperId] = useState("");
   const [selectedPaper, setSelectedPaper] = useState<Paper | null>(null);
+  // Wrap setSelectedPaperId so the ref updates *synchronously* in the same
+  // tick as the state setter, with no useEffect-induced render-cycle delay.
+  const selectedPaperIdRef = useRef(selectedPaperId);
+  const setSelectedPaperId = (id: string) => {
+    selectedPaperIdRef.current = id;
+    _setSelectedPaperId(id);
+  };
+  // Monotonic sequence number for openProfile() calls. A stale fetch that
+  // resolves after a newer click must not clobber the newer paper's state.
+  const openProfileSeq = useRef(0);
   const [query, setQuery] = useState("");
   const [selectedTag, setSelectedTag] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
@@ -226,8 +236,12 @@ function App() {
     const data = await request<{ papers: Paper[]; stats: Stats }>(`/api/papers${params}`);
     setPapers(data.papers);
     setStats(data.stats);
-    if (selectedPaperId) {
-      const next = data.papers.find((p) => p.id === selectedPaperId) ?? null;
+    // Read the live id from the ref so that this interval-driven refresh
+    // syncs whichever paper the user is *currently* viewing, not whichever
+    // paper they were viewing when the interval was registered.
+    const liveId = selectedPaperIdRef.current;
+    if (liveId) {
+      const next = data.papers.find((p) => p.id === liveId) ?? null;
       setSelectedPaper(next);
     }
     void loadDuplicates(kbRoot);
@@ -310,6 +324,9 @@ function App() {
   }
 
   async function openProfile(paperId: string) {
+    // Bump the sequence; any earlier in-flight call will see the mismatch
+    // when its fetch resolves and bail out instead of clobbering state.
+    const seq = ++openProfileSeq.current;
     setBusy("profile");
     setError("");
     setSelectedPaperId(paperId);
@@ -317,11 +334,13 @@ function App() {
     try {
       const params = savedRoot ? `?root=${encodeURIComponent(savedRoot)}` : "";
       const data = await request<{ paper: Paper }>(`/api/papers/${encodeURIComponent(paperId)}${params}`);
+      if (seq !== openProfileSeq.current) return; // stale, newer click won
       setSelectedPaper(data.paper);
     } catch (err) {
+      if (seq !== openProfileSeq.current) return; // stale, don't surface error
       setError(String((err as Error).message ?? err));
     } finally {
-      setBusy("");
+      if (seq === openProfileSeq.current) setBusy("");
     }
   }
 
