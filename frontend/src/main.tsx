@@ -1,5 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { createRoot } from "react-dom/client";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 import {
   ArrowDownUp,
   ArrowLeft,
@@ -445,6 +447,7 @@ function App() {
       await loadPapers();
     } catch (err) {
       setError(String((err as Error).message ?? err));
+      throw err;
     } finally {
       setBusy("");
     }
@@ -535,6 +538,7 @@ function App() {
             updatePaper={updatePaper}
             deletePaper={deletePaper} openPdf={openPdf}
             paperJob={selectedPaperId ? paperJobs.get(selectedPaperId) : undefined}
+            tagCounts={tagCounts}
           />
         )}
         {page === "jobs" && (
@@ -884,29 +888,449 @@ function EmptyState({ title, body }: { title: string; body: string }) {
   );
 }
 
+// ── shared helpers (Layer 1) ─────────────────────────────────────
+
+type ReviewNote = { text: string; created_at?: string | null };
+
+function normalizeReviewNotes(input: unknown): ReviewNote[] {
+  if (!Array.isArray(input)) return [];
+  return input.map((item) => {
+    if (typeof item === "string") return { text: item, created_at: null };
+    if (item && typeof item === "object") {
+      const o = item as Record<string, unknown>;
+      return {
+        text: String(o.text ?? ""),
+        created_at: (o.created_at as string | null | undefined) ?? null,
+      };
+    }
+    return { text: String(item), created_at: null };
+  });
+}
+
+function reviewNotesEqual(a: ReviewNote[], b: ReviewNote[]): boolean {
+  if (a.length !== b.length) return false;
+  for (let i = 0; i < a.length; i++) {
+    if (a[i].text !== b[i].text) return false;
+    if ((a[i].created_at ?? null) !== (b[i].created_at ?? null)) return false;
+  }
+  return true;
+}
+
+function tagSetEqual(a: string[], b: string[]): boolean {
+  if (a.length !== b.length) return false;
+  const s = new Set(a);
+  for (const x of b) if (!s.has(x)) return false;
+  return true;
+}
+
+function slugifyTag(raw: string): string {
+  return raw.trim().toLowerCase().replace(/\s+/g, "_");
+}
+
+function nowIso(): string {
+  return new Date().toISOString();
+}
+
+function formatReviewTime(iso: string | null | undefined): string {
+  if (!iso) return "时间未知";
+  const d = new Date(iso);
+  if (isNaN(d.getTime())) return "时间未知";
+  const now = new Date();
+  const sameDay = d.toDateString() === now.toDateString();
+  if (sameDay) return `今天 ${d.toTimeString().slice(0, 5)}`;
+  const sameYear = d.getFullYear() === now.getFullYear();
+  return sameYear
+    ? `${d.getMonth() + 1}/${d.getDate()} ${d.toTimeString().slice(0, 5)}`
+    : `${d.getFullYear()}/${d.getMonth() + 1}/${d.getDate()}`;
+}
+
+function computeNoteStats(text: string): { words: number; minutes: number } {
+  const stripped = text.replace(/```[\s\S]*?```/g, "").replace(/[#>*_`~\-]/g, " ");
+  const cjk = (text.match(/[\u4e00-\u9fff\u3400-\u4dbf]/g) || []).length;
+  const asciiWords = stripped.split(/\s+/).filter(Boolean).length;
+  const words = cjk + asciiWords;
+  const minutes = Math.max(1, Math.round(cjk / 300 + asciiWords / 200));
+  return { words, minutes };
+}
+
+// ── TagEditor (chip-based, debounced auto-save, autocomplete) ─────
+
+function TagEditor(props: {
+  tags: string[];
+  knownTags: string[];
+  busy: boolean;
+  onCommit: (next: string[]) => void;
+}) {
+  const [local, setLocal] = useState<string[]>(props.tags);
+  const [input, setInput] = useState("");
+  const [focused, setFocused] = useState(false);
+  const lastSentRef = useRef<string[]>(props.tags);
+
+  useEffect(() => {
+    if (tagSetEqual(local, lastSentRef.current)) return;
+    const t = window.setTimeout(() => {
+      lastSentRef.current = local;
+      props.onCommit(local);
+    }, 500);
+    return () => window.clearTimeout(t);
+  }, [local]);
+
+  const suggestions = useMemo(() => {
+    const q = input.trim().toLowerCase();
+    if (!q || !focused) return [];
+    return props.knownTags
+      .filter((t) => t !== q && t.startsWith(q) && !local.includes(t))
+      .slice(0, 6);
+  }, [input, props.knownTags, local, focused]);
+
+  function commit(next: string[]) {
+    const dedup = Array.from(new Set(next.map(slugifyTag).filter(Boolean)));
+    setLocal(dedup);
+  }
+
+  function addTag(raw: string) {
+    const t = slugifyTag(raw);
+    if (!t || local.includes(t)) { setInput(""); return; }
+    commit([...local, t]);
+    setInput("");
+  }
+
+  function removeTag(t: string) {
+    commit(local.filter((x) => x !== t));
+  }
+
+  function onKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
+    if (e.key === "Enter" || e.key === ",") {
+      e.preventDefault();
+      addTag(input);
+    } else if (e.key === "Backspace" && !input && local.length) {
+      e.preventDefault();
+      removeTag(local[local.length - 1]);
+    } else if (e.key === "Escape") {
+      setInput("");
+    }
+  }
+
+  return (
+    <div className="tag-editor">
+      <div className="chip-row">
+        {local.map((t) => (
+          <span className="chip" key={t}>
+            {t}
+            <button
+              className="chip-x"
+              type="button"
+              onClick={() => removeTag(t)}
+              aria-label={`remove ${t}`}
+            >×</button>
+          </span>
+        ))}
+        <input
+          className="chip-input"
+          value={input}
+          onChange={(e) => setInput(e.target.value)}
+          onKeyDown={onKeyDown}
+          onFocus={() => setFocused(true)}
+          onBlur={() => { setFocused(false); if (input.trim()) addTag(input); }}
+          placeholder={local.length ? "" : "添加标签…"}
+        />
+      </div>
+      {suggestions.length > 0 && (
+        <ul className="chip-suggestions" role="listbox">
+          {suggestions.map((s) => (
+            <li key={s}>
+              <button
+                type="button"
+                onMouseDown={(e) => e.preventDefault()}
+                onClick={() => addTag(s)}
+              >{s}</button>
+            </li>
+          ))}
+        </ul>
+      )}
+      <div className="chip-hint">
+        {props.busy ? "保存中…" : "Enter / 逗号 添加 · Backspace 删除 · Esc 取消"}
+      </div>
+    </div>
+  );
+}
+
+// ── ReviewNotesEditor (timestamps, delete, edit, search) ──────────
+
+function ReviewNotesEditor(props: {
+  notes: ReviewNote[];
+  busy: boolean;
+  onCommit: (next: ReviewNote[]) => void;
+}) {
+  const [local, setLocal] = useState<ReviewNote[]>(props.notes);
+  const [input, setInput] = useState("");
+  const [editingIdx, setEditingIdx] = useState<number | null>(null);
+  const [editingText, setEditingText] = useState("");
+  const [filter, setFilter] = useState("");
+  const lastSentRef = useRef<ReviewNote[]>(props.notes);
+
+  useEffect(() => {
+    if (reviewNotesEqual(local, lastSentRef.current)) return;
+    const t = window.setTimeout(() => {
+      lastSentRef.current = local;
+      props.onCommit(local);
+    }, 500);
+    return () => window.clearTimeout(t);
+  }, [local]);
+
+  function add() {
+    const text = input.trim();
+    if (!text) return;
+    setLocal([...local, { text, created_at: nowIso() }]);
+    setInput("");
+  }
+
+  function removeAt(idx: number) {
+    if (!window.confirm("删除这条校阅札记？")) return;
+    setLocal(local.filter((_, i) => i !== idx));
+  }
+
+  function startEdit(idx: number) {
+    setEditingIdx(idx);
+    setEditingText(local[idx].text);
+  }
+
+  function commitEdit() {
+    if (editingIdx === null) return;
+    const text = editingText.trim();
+    if (!text) return;
+    const next = [...local];
+    next[editingIdx] = { ...next[editingIdx], text };
+    setLocal(next);
+    setEditingIdx(null);
+    setEditingText("");
+  }
+
+  const visible = useMemo(() => {
+    const q = filter.trim().toLowerCase();
+    if (!q) return local;
+    return local.filter((n) => n.text.toLowerCase().includes(q));
+  }, [local, filter]);
+
+  const ordered = useMemo(() => [...visible].reverse(), [visible]);
+
+  return (
+    <div className="review-notes-editor">
+      <div className="review-notes-input">
+        <textarea
+          value={input}
+          onChange={(e) => setInput(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
+              e.preventDefault();
+              add();
+            }
+          }}
+          rows={3}
+          placeholder="写一条校阅札记…  (Cmd/Ctrl + Enter 添加)"
+        />
+        <button type="button" onClick={add} disabled={!input.trim() || props.busy}>
+          添加札记
+        </button>
+      </div>
+      {local.length > 0 && (
+        <div className="review-notes-filter">
+          <Search size={14} />
+          <input
+            value={filter}
+            onChange={(e) => setFilter(e.target.value)}
+            placeholder="过滤札记…"
+          />
+        </div>
+      )}
+      {ordered.length === 0 ? (
+        local.length > 0 ? (
+          <p className="muted small">没有匹配的札记</p>
+        ) : (
+          <p className="muted small">还没有校阅札记。</p>
+        )
+      ) : (
+        <ul className="note-list">
+          {ordered.map((n) => {
+            const idx = local.indexOf(n);
+            const isEditing = editingIdx === idx;
+            return (
+              <li className="note-item" key={`${n.created_at ?? "x"}-${idx}`}>
+                {isEditing ? (
+                  <>
+                    <textarea
+                      className="note-edit-area"
+                      value={editingText}
+                      onChange={(e) => setEditingText(e.target.value)}
+                      rows={3}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) commitEdit();
+                        if (e.key === "Escape") { setEditingIdx(null); setEditingText(""); }
+                      }}
+                    />
+                    <div className="note-actions">
+                      <button type="button" onClick={commitEdit} disabled={!editingText.trim()}>保存</button>
+                      <button type="button" onClick={() => { setEditingIdx(null); setEditingText(""); }}>取消</button>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <div className="note-body">
+                      <p>{n.text}</p>
+                      <small className="note-meta">{formatReviewTime(n.created_at)}</small>
+                    </div>
+                    <div className="note-actions">
+                      <button type="button" className="ghost-button icon-button" onClick={() => startEdit(idx)} title="编辑" aria-label="edit">
+                        <RefreshCw size={12} />
+                      </button>
+                      <button type="button" className="danger-button icon-button" onClick={() => removeAt(idx)} title="删除" aria-label="delete">
+                        <Trash2 size={12} />
+                      </button>
+                    </div>
+                  </>
+                )}
+              </li>
+            );
+          })}
+        </ul>
+      )}
+    </div>
+  );
+}
+
+// ── NotesEditor (边注: debounced auto-save + markdown preview) ────
+
+type NotesStatus = "clean" | "dirty" | "saving" | "saved" | "error";
+type ViewMode = "edit" | "preview" | "split";
+
+function NotesEditor(props: {
+  notes: string;
+  busy: boolean;
+  onCommit: (next: string) => Promise<void> | void;
+}) {
+  const [local, setLocal] = useState<string>(props.notes);
+  const [status, setStatus] = useState<NotesStatus>("clean");
+  const [mode, setMode] = useState<ViewMode>("edit");
+  const lastSentRef = useRef<string>(props.notes);
+  const debounceRef = useRef<number | null>(null);
+  const fadeTimerRef = useRef<number | null>(null);
+
+  async function flush() {
+    if (debounceRef.current !== null) {
+      window.clearTimeout(debounceRef.current);
+      debounceRef.current = null;
+    }
+    if (local === lastSentRef.current) return;
+    setStatus("saving");
+    try {
+      await props.onCommit(local);
+      lastSentRef.current = local;
+      setStatus("saved");
+      if (fadeTimerRef.current) window.clearTimeout(fadeTimerRef.current);
+      fadeTimerRef.current = window.setTimeout(() => setStatus("clean"), 2000);
+    } catch {
+      setStatus("error");
+    }
+  }
+
+  useEffect(() => {
+    if (local === lastSentRef.current) return;
+    setStatus("dirty");
+    if (debounceRef.current !== null) window.clearTimeout(debounceRef.current);
+    debounceRef.current = window.setTimeout(() => {
+      debounceRef.current = null;
+      void flush();
+    }, 1200);
+  }, [local]);
+
+  useEffect(() => () => {
+    if (debounceRef.current !== null) window.clearTimeout(debounceRef.current);
+    if (fadeTimerRef.current !== null) window.clearTimeout(fadeTimerRef.current);
+  }, []);
+
+  const onKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.key === "s" && (e.metaKey || e.ctrlKey)) {
+      e.preventDefault();
+      void flush();
+    } else if (e.key === "Escape") {
+      (e.target as HTMLTextAreaElement).blur();
+    }
+  };
+
+  const stats = useMemo(() => computeNoteStats(local), [local]);
+
+  return (
+    <div className="notes-editor">
+      <div className="notes-toolbar">
+        <div className="notes-mode">
+          <button type="button" className={mode === "edit" ? "active" : ""} onClick={() => setMode("edit")}>
+            <FileText size={13} /> 编辑
+          </button>
+          <button type="button" className={mode === "preview" ? "active" : ""} onClick={() => setMode("preview")}>
+            <ExternalLink size={13} /> 预览
+          </button>
+          <button type="button" className={mode === "split" ? "active" : ""} onClick={() => setMode("split")}>
+            <Copy size={13} /> 分栏
+          </button>
+        </div>
+        <div className="notes-stats">
+          <span>{stats.words} 字 · ≈{stats.minutes} 分钟阅读</span>
+        </div>
+        <div className={`notes-status notes-status-${status}`}>
+          {status === "clean" && <span>·</span>}
+          {status === "dirty" && <span>● 未保存</span>}
+          {status === "saving" && <span><Loader2 className="spin" size={12} /> 保存中</span>}
+          {status === "saved" && <span><CheckCircle2 size={12} /> 已保存</span>}
+          {status === "error" && <span>✗ 失败</span>}
+        </div>
+      </div>
+      <div className={`notes-body notes-body-${mode}`}>
+        {(mode === "edit" || mode === "split") && (
+          <textarea
+            className="notes-textarea"
+            value={local}
+            onChange={(e) => setLocal(e.target.value)}
+            onKeyDown={onKeyDown}
+            placeholder="写下你的边注… 支持 Markdown（# 标题, - 列表, > 引用, **加粗**, `代码`）。Cmd/Ctrl+S 强制保存。"
+            rows={16}
+            spellCheck={false}
+          />
+        )}
+        {(mode === "preview" || mode === "split") && (
+          <div className="notes-preview markdown-body">
+            {local.trim()
+              ? <ReactMarkdown remarkPlugins={[remarkGfm]}>{local}</ReactMarkdown>
+              : <p className="muted small">暂无内容</p>}
+          </div>
+        )}
+      </div>
+      <div className="notes-footer">
+        <span className="muted small">Cmd/Ctrl + S 立即保存 · Esc 收起</span>
+        <button type="button" onClick={() => void flush()} disabled={status === "saving" || local === lastSentRef.current}>
+          {status === "saving" ? <Loader2 className="spin" size={14} /> : <RefreshCw size={14} />}
+          立即保存
+        </button>
+      </div>
+    </div>
+  );
+}
+
 // ── Profile ──────────────────────────────────────────────────────────
 
 function ProfilePage(props: {
   paper: Paper | null; busy: string;
   goBack: () => void; enrichPaper: (id: string) => void;
   translatePaper: (id: string) => void;
-  updatePaper: (id: string, patch: Record<string, unknown>) => void;
+  updatePaper: (id: string, patch: Record<string, unknown>) => Promise<void> | void;
   deletePaper: (id: string) => void; openPdf: (p: Paper) => void;
   paperJob?: Job;
+  tagCounts: [string, number][];
 }) {
   const paper = props.paper;
-  const [tagDraft, setTagDraft] = useState("");
-  const [reviewNote, setReviewNote] = useState("");
-  const [notesDraft, setNotesDraft] = useState("");
   const [showChinese, setShowChinese] = useState(false);
 
   useEffect(() => {
-    if (paper) {
-      setTagDraft((paper.tags ?? []).join(", "));
-      setReviewNote("");
-      setNotesDraft(paper.notes ?? "");
-      setShowChinese(false);
-    }
+    if (paper) setShowChinese(false);
   }, [paper?.id]);
 
   if (!paper || props.busy === "profile") {
@@ -1005,25 +1429,33 @@ function ProfilePage(props: {
               需要校阅
             </label>
             <label className="label-stack">
-              标签
-              <textarea value={tagDraft} onChange={(e) => setTagDraft(e.target.value)} rows={3} />
+              <span>标签</span>
+              <TagEditor
+                key={paper.id}
+                tags={paper.tags ?? []}
+                knownTags={props.tagCounts.map(([t]) => t)}
+                busy={props.busy === "save"}
+                onCommit={(next) => props.updatePaper(paper.id, { tags: next })}
+              />
             </label>
-            <button onClick={() => props.updatePaper(paper.id, { tags: splitTags(tagDraft) })} disabled={props.busy === "save"}>保存标签</button>
           </section>
           <section className="panel">
             <h2>校阅札记</h2>
-            <textarea value={reviewNote} onChange={(e) => setReviewNote(e.target.value)} rows={4} placeholder="添加一条简短校阅札记" />
-            <button onClick={() => { props.updatePaper(paper.id, { review_note: reviewNote }); setReviewNote(""); }} disabled={!reviewNote.trim() || props.busy === "save"}>
-              添加札记
-            </button>
-            <ul className="note-list">
-              {(paper.review_notes ?? []).map((note, i) => <li key={`note-${i}`}>{note}</li>)}
-            </ul>
+            <ReviewNotesEditor
+              key={paper.id}
+              notes={normalizeReviewNotes(paper.review_notes)}
+              busy={props.busy === "save"}
+              onCommit={(next) => props.updatePaper(paper.id, { review_notes: next })}
+            />
           </section>
           <section className="panel">
             <h2>边注</h2>
-            <textarea value={notesDraft} onChange={(e) => setNotesDraft(e.target.value)} rows={12} />
-            <button onClick={() => props.updatePaper(paper.id, { notes: notesDraft })} disabled={props.busy === "save"}>保存边注</button>
+            <NotesEditor
+              key={paper.id}
+              notes={paper.notes ?? ""}
+              busy={props.busy === "save"}
+              onCommit={(next) => props.updatePaper(paper.id, { notes: next })}
+            />
           </section>
           <section className="panel">
             <h2>档案信息</h2>

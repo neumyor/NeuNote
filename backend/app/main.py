@@ -178,7 +178,8 @@ class PaperUpdate(BaseModel):
     reading_status: str | None = None
     priority: str | None = None
     needs_review: bool | None = None
-    review_note: str | None = None
+    review_note: str | None = None  # legacy: appends a string entry
+    review_notes: list[dict[str, Any]] | None = None  # canonical: replaces the whole list
     notes: str | None = None
 
 
@@ -196,8 +197,17 @@ def api_update_paper(paper_id: str, update: PaperUpdate) -> dict[str, Any]:
         if value is not None:
             paper[key] = value
 
-    if update.review_note:
-        paper.setdefault("review_notes", []).append(update.review_note)
+    # review_notes canonical form: list of {text, created_at} dicts.
+    # The legacy `review_note` (singular str) field is kept for backward
+    # compatibility with any older callers; it now appends a dict so the
+    # canonical shape is preserved.
+    if update.review_notes is not None:
+        paper["review_notes"] = update.review_notes
+    elif update.review_note:
+        paper.setdefault("review_notes", []).append({
+            "text": update.review_note,
+            "created_at": now_iso(),
+        })
 
     save_paper(kb_root, paper)
     return {"root": str(kb_root), "paper": paper}
