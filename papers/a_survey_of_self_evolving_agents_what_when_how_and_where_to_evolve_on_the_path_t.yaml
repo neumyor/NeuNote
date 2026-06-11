@@ -162,9 +162,26 @@ agent_reviews:
   - Removed incorrect experiment and limitation entries (survey has no experiments).
   - 'Updated tags: removed ''retrieval'' (not a core theme), added ''multi_agent'',
     ''tool_use'', ''recursive_self_improvement'' based on paper''s coverage.'
+- time: '2026-06-11T05:38:31.283327+00:00'
+  model: deepseek-v4-flash
+  notes:
+  - 'authors: [''Huan-ang Gao'', ''Jiayi Geng'', ''Wenyue Hua'', ''Mengkang Hu'',
+    ... → [''Huan-ang Gao'', ''Jiayi Geng'', ''Wenyue Hua'', ''Mengkang Hu'', ...'
+  - 'year: 2026 → 2026'
+  - 'venue: Transactions on Machine Learning Research → Transactions on Machine Learning
+    Research'
+  - 'contributions: replaced 4 items → 4 items'
+  - 'method: replaced 6 items → 6 items'
+  - 'experiments: replaced 5 items → 5 items'
+  - 'limitations: replaced 4 items → 4 items'
+  - Corrected abstract to full text from PDF (was truncated).
+  - Title, authors, year, venue, one_sentence, problem, contributions, method, experiments,
+    limitations, and tags were verified against PDF and match current metadata; no
+    changes needed for those fields.
+  - DOI and arXiv ID are not provided in the PDF; left as null.
 created_at: '2026-06-10T06:36:19.548432+00:00'
-updated_at: '2026-06-10T06:37:15.515164+00:00'
-agent_reviewed_at: '2026-06-10T06:37:08.511983+00:00'
+updated_at: '2026-06-11T05:38:31.283410+00:00'
+agent_reviewed_at: '2026-06-11T05:38:31.283371+00:00'
 translations:
   abstract: 大型语言模型(LLMs)在各种任务中表现出了显著的能力,但基本上保持不变,无法使其内部参数适应新任务、不断发展的知识领域或动态互动环境。 由于LLMS越来越多地部署在无限制、互动的环境中,这种静态性质已成为一个关键的瓶颈,需要能够适应性地理性、采取行动和实时演变的代理人。
     这种范式的转变——从扩大静态模型到发展自我演变的代理人——引起了人们日益关注能够从数据、互动和经验中不断学习和适应的结构和方法。 这次调查对自我演化的代理人进行了第一次系统而全面的审查,围绕三个基本方面——什么是演化的,什么时候演化的,怎样演化的——组织现场.

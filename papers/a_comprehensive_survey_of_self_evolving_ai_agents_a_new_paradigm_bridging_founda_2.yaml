@@ -135,9 +135,14 @@ agent_reviews:
     in known tags); changed ''self_evolving'' concept to existing tag ''recursive_self_improvement''
     since the paper''s self-evolving agents are a form of recursive self-improvement.
     Avoided adding ''self_evolving'' as a new tag per conservative policy.'
+- time: '2026-06-11T05:38:11.364066+00:00'
+  model: deepseek-v4-flash
+  notes:
+  - Corrected abstract to full version from PDF text (previously truncated). All other
+    fields verified against source PDF and found accurate.
 created_at: '2026-06-10T06:34:47.936351+00:00'
-updated_at: '2026-06-10T06:35:12.625404+00:00'
-agent_reviewed_at: '2026-06-10T06:35:07.495222+00:00'
+updated_at: '2026-06-11T05:38:11.364081+00:00'
+agent_reviewed_at: '2026-06-11T05:38:11.364077+00:00'
 translations:
   abstract: 近期在大语言模型(LLMs)方面的进步,引起了对能够解决复杂,现实世界任务的AI代理越来越多的兴趣. 然而,大多数现有代理系统都依赖于部署后保持静态的手动设计配置,限制了其适应动态和不断变化的环境的能力.
     为了消除这一局限性,最近的研究探索了代理人演化技术,其目的是根据相互作用的数据和环境反馈自动加强代理人系统。 这一新兴方向为自我演化的AI代理奠定了基础,它将基础模型的静态能力与终身代理系统所要求的持续适应性相衔接.

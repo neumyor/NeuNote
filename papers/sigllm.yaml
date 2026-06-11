@@ -107,9 +107,25 @@ agent_reviews:
   - Updated abstract to the full text from the PDF.
   - Added 'forecasting' tag because the DETECTOR pipeline heavily leverages LLM forecasting
     ability.
-agent_reviewed_at: '2026-06-10T02:34:29.260438+00:00'
+- time: '2026-06-11T05:39:08.188472+00:00'
+  model: deepseek-v4-flash
+  notes:
+  - 'authors: [''Sarah Alnegheimish'', ''Linh Nguyen'', ''Laure Berti-Equille'',...
+    → [''Sarah Alnegheimish'', ''Linh Nguyen'', ''Laure Berti-Equille'',...'
+  - 'year: 2024 → 2024'
+  - 'arxiv_id: 2405.14755 → 2405.14755'
+  - 'contributions: replaced 4 items → 4 items'
+  - 'method: replaced 3 items → 3 items'
+  - 'experiments: replaced 4 items → 4 items'
+  - 'limitations: replaced 4 items → 4 items'
+  - Updated abstract to full text from PDF.
+  - Set venue to null because no venue is specified in the PDF (only arXiv preprint).
+  - Title left as null because the current title is not clearly wrong; only imperfect
+    capitalization, so not changed per policy.
+  - All other fields remain unchanged as they match the PDF evidence.
+agent_reviewed_at: '2026-06-11T05:39:08.188487+00:00'
 created_at: '2026-06-09T08:00:28.856648+00:00'
-updated_at: '2026-06-10T02:34:29.260442+00:00'
+updated_at: '2026-06-11T05:39:08.188491+00:00'
 translations:
   abstract: 最近的研究显示,大型语言模型有能力完成各种任务,包括时间序列预测. 这些模型的灵活性质允许它们被用于许多应用. 在本文中,我们介绍了对用于时间序列异常探测挑战性任务的大型语言模型的新研究.
     这个问题涉及到LLMS的两个新方面:模型需要将输入序列的一部分(或多个部分)确定为异常部分;以及它需要与时间序列数据而不是传统的文本输入工作. 我们引入SIGLLM,是使用大型语言模型进行时间序列异常探测的框架.

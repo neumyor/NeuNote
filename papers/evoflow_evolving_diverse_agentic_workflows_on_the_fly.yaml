@@ -17,10 +17,9 @@ source_pdf: originals/papers/2502_07373v1.pdf
 pages: 21
 tags:
 - agent
-- benchmark
+- evolutionary_algorithm
 - llm
 - multi_agent
-- question_answering
 status: profiled
 confidence: medium
 reading_status: unread
@@ -42,7 +41,7 @@ abstract: 'The past two years have witnessed the evolution of large language mod
   of workflows ranging from simple I/O tasks to complex multi-turn interactions; (II)
   high-performing, outperforming previous handcrafted and automated workflows by 1.23%
   ∼ 29.86%; (III) economical, surpassing powerful o1-preview at 12.4% of its inference
-  cost using weaker open-source models.'
+  cost using weaker open-source models. The code will be available at https://github.com/bingreeky/EvoFlow.'
 one_sentence: EvoFlow is a niching evolutionary algorithm-based framework that automatically
   evolves a diverse population of heterogeneous and complexity-adaptive agentic workflows
   for multi-objective optimization of cost and performance.
@@ -127,9 +126,21 @@ agent_reviews:
     text.
   - 'Updated tags: removed ''retrieval'' (not a core topic), added ''multi_agent''
     (explicitly discussed), kept ''agent'', ''benchmark'', ''llm'', ''question_answering''.'
+- time: '2026-06-11T05:38:14.906154+00:00'
+  model: deepseek-v4-flash
+  notes:
+  - 'abstract: updated (was: ''The past two years have witnessed the evolution of
+    large lan...'')'
+  - 'tags: added [''evolutionary_algorithm'']'
+  - 'tags: removed [''benchmark'', ''question_answering'']'
+  - Updated abstract to full text from PDF.
+  - Removed 'benchmark' and 'question_answering' tags as paper is not primarily a
+    benchmark or QA work; added 'evolutionary_algorithm' to reflect core method.
+  - Cleared limitations field as no explicit limitations section was found in the
+    provided text; the previous content was actually from the problem statement.
 created_at: '2026-06-10T07:02:26.187305+00:00'
-updated_at: '2026-06-10T07:03:03.747981+00:00'
-agent_reviewed_at: '2026-06-10T07:02:52.477686+00:00'
+updated_at: '2026-06-11T05:38:14.906163+00:00'
+agent_reviewed_at: '2026-06-11T05:38:14.906160+00:00'
 translations:
   abstract: 在过去两年中,大型基于语言模型(LLM)的多代理系统从劳动密集型的人工设计演变为部分自动化(如即时工程,通信地形学),并最终发展为完全自动化的设计.
     然而,现有的代理自动化管道往往缺乏LLM异质性,并注重单目标性能优化,限制了它们结合较弱的模型以更定制和成本效益更高的解决方案的潜力. 为了应对这一挑战,我们提出EvoFlow,一个以消化演化算法为基础的框架,以自动搜索具有不同和复杂适应的代理工作流程的人群,而不是单一的,单一的,复杂的工作流程.

@@ -27,13 +27,13 @@ abstract: The rapid advancement of large language models (LLMs) has significantl
   systems, whether based on fixed pipeline algorithms or pre-defined meta-learning
   frameworks, cannot search the whole agent design space due to the restriction of
   human-designed components, and thus might miss the more optimal agent design. In
-  this paper, we introduce G ¨odel Agent, a self-evolving framework inspired by the
-  G¨odel machine, enabling agents to recursively improve themselves without relying
-  on predefined routines or fixed optimization algorithms. G ¨odel Agent leverages
-  LLMs to dynamically modify its own logic and behavior, guided solely by high-level
-  objectives through prompting. Experimental results on multiple domains demonstrate
-  that implementation of G¨odel Agent can achieve continuous self-improvement, surpassing
-  manually crafted agents in performance, efficiency, and generalizability.
+  this paper, we introduce Gödel Agent, a self-evolving framework inspired by the
+  Gödel machine, enabling agents to recursively improve themselves without relying
+  on predefined routines or fixed optimization algorithms. Gödel Agent leverages LLMs
+  to dynamically modify its own logic and behavior, guided solely by high-level objectives
+  through prompting. Experimental results on multiple domains demonstrate that implementation
+  of Gödel Agent can achieve continuous self-improvement, surpassing manually crafted
+  agents in performance, efficiency, and generalizability.
 one_sentence: Gödel Agent is a self-referential LLM agent framework that recursively
   improves itself by dynamically modifying its own code, eliminating human priors
   in agent design.
@@ -105,9 +105,20 @@ agent_reviews:
     tags.
   - Left venue and doi as null (not present in PDF).
   - Left limitations as null (no explicit limitations section in first pages).
+- time: '2026-06-11T05:38:24.526478+00:00'
+  model: deepseek-v4-flash
+  notes:
+  - 'abstract: updated (was: ''The rapid advancement of large language models (LLMs)
+    has si...'')'
+  - Corrected abstract to full text from PDF (previous was truncated).
+  - Set limitations to null because the paper does not discuss limitations; previous
+    field contained quotes from related work erroneously listed as limitations.
+  - All other fields (title, authors, year, venue, doi, arxiv_id, one_sentence, problem,
+    contributions, method, experiments, tags) are accurate based on PDF and current
+    metadata.
 created_at: '2026-06-10T06:28:57.906274+00:00'
-updated_at: '2026-06-10T06:29:40.628964+00:00'
-agent_reviewed_at: '2026-06-10T06:29:30.042864+00:00'
+updated_at: '2026-06-11T05:38:24.526489+00:00'
+agent_reviewed_at: '2026-06-11T05:38:24.526485+00:00'
 translations:
   abstract: 大语言模型(LLMS)的迅速发展,大大增强了各种任务代理的能力. 然而,现有的代理系统,无论是基于固定的管道算法还是预先定义的元学习框架,由于人类设计的组件的限制,无法搜索整个代理设计空间,因此可能错过更优化的代理设计.
     在本文中,我们介绍了G"odel Agent"(G"odel Agent"),这是G"odel"机启发的自演框架,它使代理在不依赖预先定义的例行程序或固定优化算法的情况下,能够不断自我改进.

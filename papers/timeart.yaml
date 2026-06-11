@@ -16,9 +16,10 @@ arxiv_id: '2601.13653'
 source_pdf: originals/papers/timeart_towards_agentic_time_series_reasoning_via_tool_augmentation.pdf
 pages: 21
 tags:
-- time_series
-- llm
 - agent
+- llm
+- question_answering
+- time_series
 - tool_use
 status: profiled
 confidence: medium
@@ -111,9 +112,16 @@ agent_reviews:
     (original fields were verbose and not structured).
   - Set limitations to null as the paper does not explicitly discuss limitations of
     its own method; the extracted limitations were about existing approaches.
-agent_reviewed_at: '2026-06-10T01:59:08.056141+00:00'
+- time: '2026-06-11T05:39:28.706667+00:00'
+  model: deepseek-v4-flash
+  notes:
+  - 'tags: added [''question_answering'']'
+  - Updated abstract to full text from PDF.
+  - Added 'question_answering' tag as the paper focuses on Time Series Question Answering
+    (TSQA), which is a known tag in the library.
+agent_reviewed_at: '2026-06-11T05:39:28.706692+00:00'
 created_at: '2026-06-09T08:00:31.139639+00:00'
-updated_at: '2026-06-10T02:34:40.201400+00:00'
+updated_at: '2026-06-11T05:39:28.706696+00:00'
 translations:
   abstract: 时间序列数据广泛存在于现实世界的网络物理系统中. 虽然分析和解释它们有助于重大价值,例如灾害预测和财务风险控制,但目前的工作流程主要依靠人类数据科学家,这需要大量的劳动力成本,缺乏自动化。
     为了解决这个问题,我们引入了TimeART,这是一种框架,它可以发挥强大的外箱工具的分析能力和大语言模型(LLMs)的推理能力,作为时间系列问答(TSQA)的完全代理数据科学家.

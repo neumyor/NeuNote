@@ -23,7 +23,6 @@ pages: 10
 tags:
 - anomaly_detection
 - time_series
-- forecasting
 status: profiled
 confidence: medium
 reading_status: unread
@@ -119,9 +118,17 @@ agent_reviews:
   - All other fields (title, authors, year, venue, doi, arxiv_id, pages, one_sentence,
     problem, contributions, method, experiments, tags) were verified against the PDF
     and remain correct; no changes needed.
-agent_reviewed_at: '2026-06-10T02:34:41.799701+00:00'
+- time: '2026-06-11T05:39:03.302187+00:00'
+  model: deepseek-v4-flash
+  notes:
+  - 'tags: removed [''forecasting'']'
+  - Updated abstract to full text from PDF.
+  - Removed 'forecasting' tag as the paper focuses on anomaly detection, not forecasting.
+  - Cleared limitations field as it contained incorrect entries (restatements and
+    non-limitations).
+agent_reviewed_at: '2026-06-11T05:39:03.302230+00:00'
 created_at: '2026-06-09T13:15:25.826955+00:00'
-updated_at: '2026-06-10T02:34:41.799707+00:00'
+updated_at: '2026-06-11T05:39:03.302263+00:00'
 translations:
   abstract: 时间系列异常检测(AD)对网络系统起着关键作用. 各种网络系统依靠时间序列数据实时监测和识别异常,以及启动诊断和补救程序. 变形自动编码器(VAEs)近几十年来因其超强的调音能力而获得了人们的欢迎,这些调音能力对异常探测很有用.
     然而,我们的研究显示,基于VAE的方法在同时捕捉长期不同模式和详细短期趋势方面面临挑战。 为了应对这些挑战,我们提议采用频率增强条件变异自动编码器(FCVAE),这是一种新颖的无监督AD方法,用于统一时间序列.

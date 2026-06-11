@@ -51,18 +51,14 @@ contributions:
 - Provides a benchmark for QA models, including large language models (LLMs), on the
   ECG-QA dataset.
 method:
-- Constructed ECG-QA dataset from the PTB-XL database, filtering to 16,054 ECGs validated
-  by human cardiologists.
-- Split data by patient IDs into training (7.2), validation (0.8), and test (2.0)
-  sets to prevent leakage.
-- Defined 70 question templates covering 6 attribute types (SCP code, Noise, Stage
-  of infarction, Extra systole, Heart axis, Numeric feature) and four question types
-  (Single, Comparison-Consecutive, Comparison-Irrelevant, with Verify/Choose/Query
-  subtypes).
-- Generated template paraphrases to add lexical diversity.
-- Extracted grounded lead positions for form-related symptoms using regular expression
-  parsing of ECG reports.
-- Benchmarked QA models, including large language models (LLMs), on the ECG-QA dataset.
+- Constructed ECG-QA dataset by filtering 16,054 samples from PTB-XL (validated by
+  human, non-empty reports), splitting by patient ID (8:2 train-test, then 9:1 train-validation).
+- Designed 70 question templates across 6 attribute types (SCP code, Noise, Heart
+  axis, Stage of infarction, Extra systole, Numeric feature) and multiple question
+  types (Single-Verify/Choose/Query, Comparison-Consecutive-Verify/Query, Comparison-Irrelevant-Verify/Query).
+- Used regular expression parsing to extract lead positions for form-related symptoms
+  and NeuroKit2 to compute heart axis; questions validated by a board-certified medical
+  expert.
 experiments:
 - Conducted extensive experiments to evaluate QA models, including LLMs, on the ECG-QA
   dataset, providing insights for future research.
@@ -144,9 +140,24 @@ agent_reviews:
   - Removed 'tool_use' from tags as the paper does not involve tool use; added 'ecg',
     'time_series', and 'question_answering' as new tags reflecting the paper's domain
     and task.
+- time: '2026-06-11T05:38:36.419217+00:00'
+  model: deepseek-v4-flash
+  notes:
+  - 'authors: [''Jungwoo Oh'', ''Gyubok Lee'', ''Seongsu Bae'', ''Joon-myoung Kwo...
+    → [''Jungwoo Oh'', ''Gyubok Lee'', ''Seongsu Bae'', ''Joon-myoung Kwo...'
+  - 'year: 2023 → 2023'
+  - 'venue: 37th Conference on Neural Information Processing Systems (Ne... → 37th
+    Conference on Neural Information Processing Systems (Ne...'
+  - 'contributions: replaced 3 items → 3 items'
+  - 'method: replaced 6 items → 3 items'
+  - 'experiments: replaced 1 items → 1 items'
+  - Corrected abstract to full text from PDF.
+  - Replaced method with concise bullet points from dataset construction section.
+  - Set limitations to null as no explicit limitations section found in provided text.
+  - Kept all other fields unchanged.
 created_at: '2026-06-10T00:45:17.488669+00:00'
-updated_at: '2026-06-10T02:34:35.631444+00:00'
-agent_reviewed_at: '2026-06-10T02:34:35.631438+00:00'
+updated_at: '2026-06-11T05:38:36.419229+00:00'
+agent_reviewed_at: '2026-06-11T05:38:36.419224+00:00'
 translations:
   abstract: 由于自然语言处理的显著进步,保健领域的问答(QA)受到很大关注. 然而,现有的保健质量评估数据集主要侧重于医疗图像、临床说明或结构化的电子健康记录表。
     这就留下了将心电图数据与这些系统结合的巨大潜力。 为了弥补这一差距,我们提出了ECG-QA,这是第一个专门为ECG分析设计的QA数据集. 数据集共有70个问题模板,涵盖与临床有关的各种ECG专题,每个专题都由ECG专家验证,以确保其临床用途。

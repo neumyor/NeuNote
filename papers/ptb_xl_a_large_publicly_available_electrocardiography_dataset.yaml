@@ -16,6 +16,7 @@ source_pdf: originals/papers/s41597_020_0495_6.pdf
 pages: 15
 tags:
 - benchmark
+- ecg
 - time_series
 status: profiled
 confidence: medium
@@ -30,9 +31,9 @@ abstract: Electrocardiography (ECG) is a key non-invasive diagnostic tool for ca
   the to-date largest freely accessible clinical 12-lead ECG-waveform dataset comprising
   21837 records from 18885 patients of 10 seconds length. The ECG-waveform data was
   annotated by up to two cardiologists as a multi-label dataset, where diagnostic
-  labels were further aggregated into super and subclasses. the dataset covers a broad
+  labels were further aggregated into super and subclasses. The dataset covers a broad
   range of diagnostic classes including, in particular, a large fraction of healthy
-  records. the combination with additional metadata on demographics, additional diagnostic
+  records. The combination with additional metadata on demographics, additional diagnostic
   statements, diagnosis likelihoods, manually annotated signal properties as well
   as suggested folds for splitting training and test sets turns the dataset into a
   rich resource for the development and the evaluation of automatic ECG interpretation
@@ -165,9 +166,19 @@ agent_reviews:
   - Set 'limitations' to null because no self-reported limitations were found in the
     provided text; the previous field contained comparisons to other datasets, not
     limitations.
+- time: '2026-06-11T05:38:56.682230+00:00'
+  model: deepseek-v4-flash
+  notes:
+  - 'abstract: updated (was: ''Electrocardiography (ECG) is a key non-invasive diagnostic
+    t...'')'
+  - 'tags: added [''ecg'']'
+  - Corrected abstract to full version from PDF (was truncated).
+  - Added 'ecg' tag to reflect paper's core domain.
+  - Set experiments and limitations to null because the paper is a data descriptor
+    without explicit experimental sections or stated limitations.
 created_at: '2026-06-10T01:17:15.028892+00:00'
-updated_at: '2026-06-10T02:34:39.883129+00:00'
-agent_reviewed_at: '2026-06-10T02:34:39.883125+00:00'
+updated_at: '2026-06-11T05:38:56.682279+00:00'
+agent_reviewed_at: '2026-06-11T05:38:56.682273+00:00'
 translations:
   abstract: 电心学(ECG)是心血管疾病的关键非侵入性诊断工具,越来越多地得到基于机器学习的算法的支持. 开发自动ECG解析算法的主要障碍是,既缺乏公共数据集,也缺乏明确界定的基准程序,以便比较不同的算法.
     为了解决这些问题,我们提出了PTB-XL,这是迄今为止最大的可自由获取的临床12铅ECG波阵数据集,由18885名10秒长的病人的21837个记录组成。 ECG波形数据被多达两位心脏病学家作为多标签数据集注解,诊断标签被进一步归为超级和子类.

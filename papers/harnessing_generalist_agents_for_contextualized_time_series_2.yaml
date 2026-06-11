@@ -24,6 +24,7 @@ tags:
 - forecasting
 - harness
 - llm
+- open_endedness
 - time_series
 - tool_use
 status: profiled
@@ -127,9 +128,24 @@ agent_reviews:
     in Appendix A.
   - Added 'tool_use' tag because the method centers on executable temporal tools;
     kept existing tags as they accurately describe the paper.
+- time: '2026-06-11T05:38:52.908514+00:00'
+  model: deepseek-v4-flash
+  notes:
+  - 'authors: [''Zihao Li'', ''Kaifeng Jin'', ''Yuanchen Bei'', ''Jiaru Zou'', ''Av...
+    → [''Zihao Li'', ''Kaifeng Jin'', ''Yuanchen Bei'', ''Jiaru Zou'', ''Av...'
+  - 'year: 2026 → 2026'
+  - 'arxiv_id: 2606.05404 → 2606.05404'
+  - 'contributions: replaced 3 items → 3 items'
+  - 'method: replaced 3 items → 3 items'
+  - 'experiments: replaced 3 items → 3 items'
+  - 'limitations: replaced 3 items → 3 items'
+  - 'tags: added [''open_endedness'']'
+  - Corrected abstract with full text from PDF.
+  - Added tag 'open_endedness' based on paper's explicit framing of open-ended temporal
+    reasoning.
 created_at: '2026-06-10T06:33:24.676350+00:00'
-updated_at: '2026-06-10T06:33:58.585321+00:00'
-agent_reviewed_at: '2026-06-10T06:33:53.064772+00:00'
+updated_at: '2026-06-11T05:38:52.908523+00:00'
+agent_reviewed_at: '2026-06-11T05:38:52.908519+00:00'
 translations:
   abstract: 时间序列往往嵌入对整体建模至关重要的丰富背景. 此外,现实世界的从业者往往需要端到端的工作流程来分析时间动态,在时间动态中,广泛研究的任务如预测只是更广泛的解决方案循环中的一个步骤.
     虽然通论AI代理为复杂环境下的此类工作流程提供了一个很有希望的界面,但它们仍然主要在文本空间运行,与结构化的时间信号不完全一致. 在这部作品中,我们引入了TIMECLAW,这是一个时间序列的代理拉带框架,它为通论者LLM代理提供了时间序列-本土运行时间支持,以进行背景化的时间推理.

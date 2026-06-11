@@ -34,15 +34,15 @@ abstract: Anomaly detection (AD) is essential in areas such as fraud detection, 
   monitoring, and scientific research. However, the diversity of data modalities and
   the increasing number of specialized AD libraries pose challenges for non-expert
   users who lack in-depth library-specific knowledge and advanced programming skills.
-  To tackle this, we present AD-A GENT , an LLM-driven multi-agent framework that
-  turns natural-language instructions into fully executable AD pipelines. AD-A GENT
-  coordinates specialized agents for intent parsing, data preparation, library and
-  model selection, documentation mining, and iterative code generation and debugging.
-  Using a shared short-term workspace and a long-term cache, the agents integrate
-  popular AD libraries like PyOD, PyGOD, and TSLib into a unified workflow. Experiments
-  demonstrate that AD-A GENT produces reliable scripts and recommends competitive
-  models across libraries. The system is open-sourced to support further research
-  and practical applications in AD.
+  To tackle this, we present AD-AGENT, an LLM-driven multi-agent framework that turns
+  natural-language instructions into fully executable AD pipelines. AD-AGENT coordinates
+  specialized agents for intent parsing, data preparation, library and model selection,
+  documentation mining, and iterative code generation and debugging. Using a shared
+  short-term workspace and a long-term cache, the agents integrate popular AD libraries
+  like PyOD, PyGOD, and TSLib into a unified workflow. Experiments demonstrate that
+  AD-AGENT produces reliable scripts and recommends competitive models across libraries.
+  The system is open-sourced to support further research and practical applications
+  in AD.
 one_sentence: AD-Agent is an LLM-driven multi-agent framework that turns natural-language
   instructions into fully executable anomaly detection pipelines.
 problem: However, the diversity of data modalities and the increasing number of specialized
@@ -115,9 +115,17 @@ agent_reviews:
   - DOI and arXiv ID are not present in the provided PDF text; left as null.
   - One_sentence, problem, method, experiments, limitations, and tags remain as originally
     extracted; they are consistent with the paper content.
-agent_reviewed_at: '2026-06-10T02:34:28.052036+00:00'
+- time: '2026-06-11T05:38:05.235864+00:00'
+  model: deepseek-v4-flash
+  notes:
+  - 'abstract: updated (was: ''Anomaly detection (AD) is essential in areas such as
+    fraud d...'')'
+  - Updated abstract to the full text as it appears in the PDF. All other fields (title,
+    authors, year, venue, contributions, method, experiments, limitations, tags) were
+    verified against the source and are correct.
+agent_reviewed_at: '2026-06-11T05:38:05.235880+00:00'
 created_at: '2026-06-09T07:57:25.575799+00:00'
-updated_at: '2026-06-10T02:34:28.052039+00:00'
+updated_at: '2026-06-11T05:38:05.235885+00:00'
 translations:
   abstract: 异常检测在欺诈检测、网络监测和科学研究等领域至关重要。 然而,数据模式的多样性和专业化的反倾销图书馆数量的增加对缺乏深入的图书馆知识和高级编程技能的非专家用户提出了挑战。
     为了解决这一问题,我们提出了AD-A GENT,这是一个LLM驱动的多代理框架,将自然语言指令转化为完全可执行的AD管道。 AD-A GENT协调专门的代理,用于意向分析,数据准备,库和模型选择,文件挖掘,以及迭代代码生成和调试.

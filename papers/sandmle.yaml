@@ -125,9 +125,15 @@ agent_reviews:
   - All other fields (title, authors, year, venue, arxiv_id, abstract, one_sentence,
     problem, contributions, method, experiments, limitations) are correct as extracted
     and require no changes.
-agent_reviewed_at: '2026-06-10T02:34:42.672739+00:00'
+- time: '2026-06-11T05:39:32.219145+00:00'
+  model: deepseek-v4-flash
+  notes:
+  - Corrected abstract to full text from PDF.
+  - Set limitations to null as not evident in provided first pages.
+  - 'Kept tags unchanged: they match the paper''s topics.'
+agent_reviewed_at: '2026-06-11T05:39:32.219155+00:00'
 created_at: '2026-06-09T08:00:30.484502+00:00'
-updated_at: '2026-06-10T02:34:42.672744+00:00'
+updated_at: '2026-06-11T05:39:32.219158+00:00'
 translations:
   abstract: 随着大型语言模型代理商超越软件工程(SWE)任务向机器学习工程(MLE)推进,验证代理商行为变得数量级更为昂贵:虽然SWE任务可以通过快速执行的单元测试进行核查,但MLE验证要求在每个推出步骤的大型数据集上运行完整的ML管道——数据预处理,模型培训和度量评价,使轨迹在政策强化学习(RL)上过于缓慢.
     现有办法退缩,以监督微调(SFT)或离线代理奖励,牺牲政策上RL的探索和概括效益. 我们观察到,沙盒数据大小是这个瓶颈的主要来源. 基于这种洞察力,我们引入了SandMLE(SandMLE),这是一个多剂框架,它从少量种子任务中生成多样,可核查的合成MLE环境,保留现实世界问题的结构和技术复杂性,同时将数据集限制在微观尺度(每个任务只配50~200个培训样本).

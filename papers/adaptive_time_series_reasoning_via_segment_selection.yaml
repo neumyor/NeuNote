@@ -14,9 +14,8 @@ arxiv_id: '2602.18645'
 source_pdf: originals/papers/2602_18645v2.pdf
 pages: 22
 tags:
-- benchmark
 - llm
-- retrieval
+- question_answering
 - time_series
 status: profiled
 confidence: medium
@@ -133,9 +132,30 @@ agent_reviews:
   - 'Adjusted tags: removed ''anomaly_detection'', ''forecasting'', ''tool_use'' as
     they are not core to the paper''s contribution; kept ''time_series'', ''llm'',
     ''retrieval'', ''benchmark'' as most relevant.'
-agent_reviewed_at: '2026-06-10T02:34:30.253020+00:00'
+- time: '2026-06-11T05:38:37.432018+00:00'
+  model: deepseek-v4-flash
+  notes:
+  - 'authors: [''Shvat Messica'', ''Jiawen Zhang'', ''Kevin Li'', ''Theodoros Tsi...
+    → [''Shvat Messica'', ''Jiawen Zhang'', ''Kevin Li'', ''Theodoros Tsi...'
+  - 'year: 2026 → 2026'
+  - 'venue: Proceedings of the 43rd International Conference on Machine ... → Proceedings
+    of the 43rd International Conference on Machine ...'
+  - 'arxiv_id: 2602.18645 → 2602.18645'
+  - 'contributions: replaced 3 items → 3 items'
+  - 'method: replaced 3 items → 3 items'
+  - 'experiments: replaced 4 items → 4 items'
+  - 'tags: added [''question_answering'']'
+  - 'tags: removed [''benchmark'', ''retrieval'']'
+  - Removed tag 'benchmark' because paper evaluates on existing benchmarks, does not
+    introduce a new one.
+  - Removed tag 'retrieval' because segment selection is not retrieval from external
+    knowledge base.
+  - Added tag 'question_answering' as paper addresses time series QA.
+  - Set limitations to null because extracted entries are background challenges, not
+    limitations of the proposed method.
+agent_reviewed_at: '2026-06-11T05:38:37.432035+00:00'
 created_at: '2026-06-09T08:00:32.767467+00:00'
-updated_at: '2026-06-10T02:34:30.253025+00:00'
+updated_at: '2026-06-11T05:38:37.432043+00:00'
 translations:
   abstract: 时间序列推理任务往往从自然语言问题开始,需要对时间序列进行有针对性的分析. 证据可能跨越整个系列或短时间出现,所以模型必须决定检查什么. 多数现有方法将整个时间序列编码成一个固定的表述,然后再推论,无论相关性如何.
     我们引入了ARTIST,它将时间序列推理作为一个顺序决定问题. ARTIST 与适应性时间段选择互换推理. 它采用了控制器-理性架构,并利用强化学习来培训控制器角色来选择信息段和理性角色来生成部分有条件的推理痕迹和最终答案.

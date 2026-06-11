@@ -120,9 +120,41 @@ agent_reviews:
     extend...') which were not actual limitations; set to null.
   - Added 'ecg' tag (present in known tags list) and removed 'tool_use' as it is not
     supported by the paper content.
+- time: '2026-06-11T05:31:21.618232+00:00'
+  model: deepseek-v4-flash
+  notes:
+  - 'year: 2026 → 2026'
+  - 'venue: ICLR 2026 (under review) → ICLR 2026 (under review)'
+  - 'contributions: replaced 3 items → 3 items'
+  - 'method: replaced 4 items → 4 items'
+  - 'experiments: replaced 3 items → 3 items'
+  - 'Corrected title to Title Case: ''X-ECG: Explainable Foundation Model for Electrocardiogram''
+    (was ''X Ecg Explainable Foundation Model For Electrocardiogram'').'
+  - Updated abstract to full text from PDF (was truncated).
+  - Removed incorrect limitations entries ('To address this limitation, we introduce
+    X-ECG...' and '(2025) extend...' are not actual limitations). Set limitations
+    to null as no clear limitations are present in the provided PDF excerpt.
+  - Authors remain anonymous due to double-blind review; left as empty list.
+  - Other fields (year, venue, contributions, method, experiments, tags) are consistent
+    with evidence in the PDF.
+- time: '2026-06-11T05:39:22.337887+00:00'
+  model: deepseek-v4-flash
+  notes:
+  - 'Corrected title from ''X Ecg Explainable Foundation Model For Electrocardiogram''
+    to ''X-ECG: Explainable Foundation Model for Electrocardiogram'' in Title Case,
+    matching the paper''s header and standard formatting.'
+  - Kept year=2026 and venue='ICLR 2026 (under review)' as provided (year and venue
+    are correct).
+  - Replaced truncated abstract with the full abstract from the PDF.
+  - Removed the two entries under 'limitations' because they were not limitations
+    but text mis-attributed from the PDF; no limitations section is present in the
+    provided pages.
+  - All other fields (authors, doi, arxiv_id, one_sentence, problem, contributions,
+    method, experiments, tags) appear correct and match the PDF content; left as null
+    to indicate no change needed.
 created_at: '2026-06-10T00:45:17.685492+00:00'
-updated_at: '2026-06-10T02:35:02.768034+00:00'
-agent_reviewed_at: '2026-06-10T02:35:02.768032+00:00'
+updated_at: '2026-06-11T05:39:22.337895+00:00'
+agent_reviewed_at: '2026-06-11T05:39:22.337892+00:00'
 translations:
   abstract: 电心学(ECG)是评价心脏健康的一个成本效益高且可广泛使用的工具. 虽然已经开发了许多机器学习方法来帮助心脏病学家进行诊断,但许多人都缺乏解释性,因此难以理解为什么对某一疾病进行分类.
     为解决这一局限性,我们采用了X-ECG,一种解释性的ECG基础模型. 为了训练这个模型,我们首先对公共数据集的波级异常说明进行校验,使用一种基于规则的算法,根据既定的临床知识在ECG信号中发现异常波,间隔或段.

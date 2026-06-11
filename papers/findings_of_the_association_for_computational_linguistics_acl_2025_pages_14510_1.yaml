@@ -19,6 +19,7 @@ source_pdf: originals/papers/meit_multimodal_electrocardiogram_instruction_tunin
 pages: 18
 tags:
 - benchmark
+- ecg
 - llm
 - representation_learning
 - time_series
@@ -32,7 +33,7 @@ abstract: Electrocardiogram (ECG) is the primary non-invasive diagnostic tool fo
   have concentrated on classifying cardiac conditions using ECG data but have overlooked
   ECG report generation, which is time-consuming and requires clinical expertise.
   To automate ECG report generation and ensure its versatility, we propose the Multimodal
-  ECG Instruction Tuning ( MEIT) framework, the first attempt to tackle ECG report
+  ECG Instruction Tuning (MEIT) framework, the first attempt to tackle ECG report
   generation with LLMs and multimodal instructions. To facilitate future research,
   we establish a benchmark to evaluate MEIT with various LLMs backbones across two
   large-scale ECG datasets. Our approach uniquely aligns the representations of the
@@ -41,8 +42,7 @@ abstract: Electrocardiogram (ECG) is the primary non-invasive diagnostic tool fo
   the superior performance of instruction-tuned LLMs, showcasing their proficiency
   in quality report generation, zero-shot capabilities, resilience to signal perturbation,
   and alignment with human expert evaluation. These findings emphasize the efficacy
-  of MEIT and its potential for real-world clinical application. Our code is released
-  at https://github.com/AIoT-MLSys-Lab/MEIT.
+  of MEIT and its potential for real-world clinical application.
 one_sentence: To automate ECG report generation and ensure its versatility, we propose
   the Multimodal ECG Instruction Tuning ( MEIT ) framework, the first attempt to tackle
   ECG report generation with LLMs and multimodal instructions.
@@ -180,9 +180,19 @@ agent_reviews:
   - Set limitations to null because current entries were problem statements or related
     work comparisons, not actual limitations of the paper. The paper's limitations
     section was not fully captured in the provided text.
+- time: '2026-06-11T05:38:45.271025+00:00'
+  model: deepseek-v4-flash
+  notes:
+  - 'abstract: updated (was: ''Electrocardiogram (ECG) is the primary non-invasive
+    diagnost...'')'
+  - 'tags: added [''ecg'']'
+  - Replaced truncated abstract with the full abstract from the PDF.
+  - Removed limitations that were not actual limitations of the paper (they were descriptions
+    of challenges from related work).
+  - Added 'ecg' tag to reflect the paper's domain focus on electrocardiogram signals.
 created_at: '2026-06-10T00:45:17.195809+00:00'
-updated_at: '2026-06-10T02:34:40.637123+00:00'
-agent_reviewed_at: '2026-06-10T02:34:40.637122+00:00'
+updated_at: '2026-06-11T05:38:45.271048+00:00'
+agent_reviewed_at: '2026-06-11T05:38:45.271032+00:00'
 translations:
   abstract: 心电图是监测心脏状况的主要非侵入性诊断工具,对协助临床医生至关重要。 最近的研究集中于利用ECG数据对心脏状况进行分类,但忽略了ECG报告生成,而ECG报告生成耗时,需要临床专业知识.
     为了实现ECG报告生成自动化并确保其多功能性,我们提议采用多式联运ECG指令图宁(MEIT)框架,这是首次尝试用LLMs和多式联运指令处理ECG报告生成问题。

@@ -13,10 +13,10 @@ arxiv_id: '2602.13807'
 source_pdf: originals/papers/anomamind_agentic_time_series_anomaly_detection_with_tool_augmented_reasoning.pdf
 pages: 15
 tags:
-- anomaly_detection
-- time_series
-- llm
 - agent
+- anomaly_detection
+- llm
+- time_series
 - tool_use
 status: profiled
 confidence: medium
@@ -148,9 +148,20 @@ agent_reviews:
   - 'Note: limitations field contains quotes from the paper regarding limitations
     of existing methods, not of the proposed method. No explicit limitations of AnomaMind
     were found in the provided PDF text.'
-agent_reviewed_at: '2026-06-10T02:34:21.929134+00:00'
+- time: '2026-06-11T05:38:11.979059+00:00'
+  model: deepseek-v4-flash
+  notes:
+  - Updated abstract to the full version from PDF.
+  - Set limitations to null because the current entries are about limitations of existing
+    methods, not of the proposed method, and no explicit limitations section was found
+    in the provided PDF pages.
+  - Kept existing tags as they accurately represent the paper's topics.
+  - All other fields (title, authors, year, venue, doi, arxiv_id, one_sentence, problem,
+    contributions, method, experiments) are consistent with the PDF text and require
+    no changes.
+agent_reviewed_at: '2026-06-11T05:38:11.979099+00:00'
 created_at: '2026-06-09T08:00:27.328569+00:00'
-updated_at: '2026-06-10T02:34:21.929136+00:00'
+updated_at: '2026-06-11T05:38:11.979105+00:00'
 translations:
   abstract: 时间序列异常检测在许多现实世界应用中至关重要,有效的解决方案必须使异常区域本地化,并支持在复杂环境下的可靠决策. 然而,大多数现有方法都将异常检测作为纯粹带有固定特征输入的歧视性预测任务,而不是由证据驱动的诊断过程。
     因此,当异常表现出强烈的环境依赖性或多种模式时,它们往往会挣扎。 我们提出,这些局限性源于缺乏适应性特征准备,推理意识检测,以及推论过程中的迭代完善. 为了应对这些挑战,我们提议AnomaMind,这是一个代理时间序列异常检测框架,将异常检测重新编订为连续决策过程。

@@ -130,9 +130,17 @@ agent_reviews:
   - Added 'forecasting' tag to better reflect domain.
   - All other fields (title, authors, year, venue, arxiv_id, one_sentence, problem,
     method, experiments, limitations) are correct as given.
-agent_reviewed_at: '2026-06-10T02:34:55.819985+00:00'
+- time: '2026-06-11T05:38:52.897283+00:00'
+  model: deepseek-v4-flash
+  notes:
+  - 'Corrected DOI: the provided DOI ''10.1007/b106715'' is incorrect for this paper;
+    set to null. The correct arXiv ID is ''2605.08857v1'' but current ''2605.08857''
+    is acceptable. Full abstract restored from PDF (original was truncated). All other
+    fields (title, authors, year, venue, one_sentence, problem, contributions, method,
+    experiments, limitations, tags) verified against PDF text and remain unchanged.'
+agent_reviewed_at: '2026-06-11T05:38:52.897295+00:00'
 created_at: '2026-06-09T08:00:30.066963+00:00'
-updated_at: '2026-06-10T02:34:55.819988+00:00'
+updated_at: '2026-06-11T05:38:52.897301+00:00'
 translations:
   abstract: 在时间序列预测的不确定性量化方面最近的进展表明,一致性预测能够提供可靠的预测间隔,但在时间依赖、漂移和各种错误行为下,标准一致性方法往往效率低下。
     现有方法通常要么随时间推移更新误掩率,要么学习不受约束的校准权重,而未明确区分两个非操纵性的中心来源:平稳漂移误差分布和共同存在的明显误差制度. 我们引入了RareCP,一种系统意识检索方法,用于适应性一致的时间序列预测。

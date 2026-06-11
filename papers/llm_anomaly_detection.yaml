@@ -33,7 +33,7 @@ abstract: Time series anomaly detection (TSAD) plays a crucial role in various i
   address these challenges, we propose LLMAD1, a novel TSAD method that employs Large
   Language Models (LLMs) to deliver accurate and interpretable TSAD results. LLMAD
   applies in-context anomaly detection by retrieving both positive and negative similar
-  time series segments, significantly enhancing LLMs' effectiveness. Furthermore,LLMAD
+  time series segments, significantly enhancing LLMs’ effectiveness. Furthermore,LLMAD
   employs the Anomaly Detection Chain-of-Thought approach to mimic expert logic for
   its decision-making process. This further enhances its performance and enables LLMAD
   to provide explanations for their detections through versatile perspectives. Experiments
@@ -41,7 +41,7 @@ abstract: Time series anomaly detection (TSAD) plays a crucial role in various i
   cloud system at CompanyX indicate that our LLMAD achieves detection performance
   comparable to state-of-the-art deep learning methods. Additionally, LLMAD offers
   human-readable interpretability for detections at a reasonable cost, significantly
-  reducing engineers' effort.
+  reducing engineers’ effort.
 one_sentence: We propose LLMAD, a novel TSAD method that employs Large Language Models
   with in-context learning and chain-of-thought prompting to deliver accurate and
   interpretable time series anomaly detection.
@@ -128,9 +128,24 @@ agent_reviews:
     description, not the paper's own limitations.
   - All other fields (title, authors, year, venue, doi, one_sentence, problem, contributions,
     method, experiments, tags) matched the PDF and were left unchanged.
-agent_reviewed_at: '2026-06-10T02:34:24.275656+00:00'
+- time: '2026-06-11T05:38:48.617423+00:00'
+  model: deepseek-v4-flash
+  notes:
+  - 'abstract: updated (was: ''Time series anomaly detection (TSAD) plays a crucial
+    role in...'')'
+  - Corrected title capitalization (changed 'can' to 'Can').
+  - Removed arXiv ID (2010.05073) as it is not present in the PDF text; the paper
+    only has an ACM DOI.
+  - Updated abstract to the full text extracted from the PDF (previous abstract was
+    truncated).
+  - Set limitations to null because the paper does not contain a explicit 'Limitations'
+    section; the previous entries were quoted challenges from the introduction, not
+    limitations of the proposed method.
+  - Other fields (authors, year, venue, doi, one_sentence, problem, contributions,
+    method, experiments, tags) are accurate and unchanged.
+agent_reviewed_at: '2026-06-11T05:38:48.617439+00:00'
 created_at: '2026-06-09T08:00:29.110090+00:00'
-updated_at: '2026-06-10T02:34:24.275661+00:00'
+updated_at: '2026-06-11T05:38:48.617443+00:00'
 translations:
   abstract: 时间序列异常探测(TSAD)在各种工业应用中发挥着关键作用. 传统的深层学习TSAD模型需要广泛的培训数据,并作为黑匣子运行,对检测出的异常缺乏可解释性.
     为了应对这些挑战,我们提出LLMAD1,这是一种新的TSAD方法,它使用大语言模型(LLMs)提供准确和可解释的TSAD结果. LLMAD通过检索正向和负向相似的时间序列段来应用内文本异常检测,大大提高LLMS的效能.

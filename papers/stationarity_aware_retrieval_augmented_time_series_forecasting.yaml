@@ -15,6 +15,7 @@ source_pdf: originals/papers/2606_04135v1_2.pdf
 pages: 12
 tags:
 - forecasting
+- non_stationarity
 - representation_learning
 - retrieval
 - time_series
@@ -135,9 +136,22 @@ agent_reviews:
   - All other fields (title, authors, year, venue, doi, arxiv_id, one_sentence, problem,
     method, experiments) remain as they were, as they are accurate based on the source
     text.
-agent_reviewed_at: '2026-06-10T02:34:49.146885+00:00'
+- time: '2026-06-11T05:39:15.077495+00:00'
+  model: deepseek-v4-flash
+  notes:
+  - 'tags: added [''non_stationarity'']'
+  - Updated abstract to the full text from the PDF (was previously truncated).
+  - Set limitations to null because the paper does not have an explicit limitations
+    section; the previous entries were not the paper's own limitations but rather
+    background/motivation statements.
+  - Added 'non_stationarity' tag because the paper heavily focuses on stationarity-aware
+    retrieval, a topic not covered by existing tags.
+  - All other fields (title, authors, year, venue, doi, arxiv_id, one_sentence, problem,
+    contributions, method, experiments) were verified against the PDF and required
+    no changes.
+agent_reviewed_at: '2026-06-11T05:39:15.077501+00:00'
 created_at: '2026-06-09T08:15:40.294893+00:00'
-updated_at: '2026-06-10T02:34:49.146889+00:00'
+updated_at: '2026-06-11T05:39:15.077503+00:00'
 translations:
   abstract: 时间序列预测依赖于历史规律,但现实世界系列往往表现出非站点性,制度变化对完全参数化的预测器构成挑战. 受Retrival-Augmented
     Generation(RAG)的启发,最近的工作通过检索相关历史段段并在推论时将其作为外部证据来增强预测器. 然而,由于现实世界时间序列的内在非定型性,一个高度相似的过去段并不一定意味着一个相似的未来,使得相似的仅是检索的不便和容易重复.

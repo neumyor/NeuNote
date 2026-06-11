@@ -129,9 +129,15 @@ agent_reviews:
   - Set limitations to null because the provided text contains quotes about other
     methods' limitations, not the paper's own limitations. The paper's limitations
     are not stated in the available PDF excerpt.
-agent_reviewed_at: '2026-06-10T02:34:41.412509+00:00'
+- time: '2026-06-11T05:38:54.906905+00:00'
+  model: deepseek-v4-flash
+  notes:
+  - Corrected abstract to full version from PDF; removed incorrect DOI (no evidence
+    in PDF); cleared limitations field as the provided text discusses limitations
+    of prior work, not of Meta-Harness itself; kept tags as is.
+agent_reviewed_at: '2026-06-11T05:38:54.906921+00:00'
 created_at: '2026-06-09T08:00:29.451309+00:00'
-updated_at: '2026-06-10T02:34:41.412510+00:00'
+updated_at: '2026-06-11T05:38:54.906925+00:00'
 translations:
   abstract: 大型语言模型(LLM)系统的性能不仅取决于模型的权重,也取决于它们的牵引力:决定哪些信息可以存储,检索,并呈现给模型的代码. 然而,绑带仍然在很大程度上是手工设计的,现有的文本优化器与这个设置不匹配,因为它们过于积极地压缩反馈:它们是无记忆的,仅以标分为条件,或者将反馈限制在短模板或摘要上.
     我们引入了Meta-Harness,一个外侧跳动系统,它搜索了LLM应用的带码. 它使用代理求婚者,通过文件系统访问所有先前候选人的源代码,分数和执行痕迹.

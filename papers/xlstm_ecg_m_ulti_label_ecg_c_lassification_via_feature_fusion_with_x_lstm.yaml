@@ -124,9 +124,23 @@ agent_reviews:
     to not change imperfectly formatted titles.
   - All other fields (authors, year, venue, doi, arxiv_id, one_sentence, problem,
     contributions, method, experiments) appear correct and were left as null (no change).
+- time: '2026-06-11T05:39:35.817391+00:00'
+  model: deepseek-v4-flash
+  notes:
+  - 'authors: [''Lei Kang'', ''Xuanshuo Fu'', ''Javier Vazquez-Corral'', ''Ernest...
+    → [''Lei Kang'', ''Xuanshuo Fu'', ''Javier Vazquez-Corral'', ''Ernest...'
+  - 'year: 2025 → 2025'
+  - 'arxiv_id: 2504.16101 → 2504.16101'
+  - 'contributions: replaced 3 items → 3 items'
+  - 'method: replaced 5 items → 5 items'
+  - 'experiments: replaced 3 items → 3 items'
+  - Corrected title formatting (removed extra spaces, proper case).
+  - Restored full abstract from PDF.
+  - Set limitations to null as paper does not provide explicit limitations in the
+    provided text.
 created_at: '2026-06-10T02:15:43.612055+00:00'
-updated_at: '2026-06-10T02:34:59.121356+00:00'
-agent_reviewed_at: '2026-06-10T02:34:59.121352+00:00'
+updated_at: '2026-06-11T05:39:35.817410+00:00'
+agent_reviewed_at: '2026-06-11T05:39:35.817406+00:00'
 translations:
   abstract: 心血管疾病仍然是全世界死亡的主要原因,突出表明迫切需要高效和准确的诊断工具。 心电图(ECGs)在诊断各种心脏状况时是不可或缺的;然而,其人工解析很耗时,容易出错.
     在本文中,我们提出xLSTM-ECG,这是一种新颖的方法,利用一个扩展的长短期内存(xLSTM)网络对ECG信号进行多标签分类,使用PTB-XL数据集. 就我们所知,这项工作是专门为多标签ECG分类而改编的xLSTM模块的首次设计和应用.

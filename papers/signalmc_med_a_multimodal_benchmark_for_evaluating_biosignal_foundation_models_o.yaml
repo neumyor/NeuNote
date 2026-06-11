@@ -15,9 +15,10 @@ arxiv_id: 2603.09940v1
 source_pdf: originals/papers/2603_09940v1.pdf
 pages: 37
 tags:
-- time_series
 - benchmark
+- ecg
 - representation_learning
+- time_series
 status: profiled
 confidence: medium
 reading_status: unread
@@ -120,9 +121,18 @@ agent_reviews:
   - All other fields (title, authors, year, venue, one_sentence, problem, contributions,
     method, experiments, limitations, tags) were accurate based on the PDF and left
     unchanged.
-agent_reviewed_at: '2026-06-10T02:34:48.270108+00:00'
+- time: '2026-06-11T05:38:55.560940+00:00'
+  model: deepseek-v4-flash
+  notes:
+  - 'tags: added [''ecg'']'
+  - Added tag 'ecg' to reflect the paper's focus on ECG and PPG biosignals.
+  - Verified arxiv_id (2603.09940v1) and year (2026) match PDF text.
+  - Venue confirmed as arXiv preprint; no DOI found.
+  - Title, authors, abstract, one_sentence, contributions, method, experiments, limitations
+    are accurate; no changes needed.
+agent_reviewed_at: '2026-06-11T05:38:55.560956+00:00'
 created_at: '2026-06-09T08:00:33.055143+00:00'
-updated_at: '2026-06-10T02:34:48.270113+00:00'
+updated_at: '2026-06-11T05:38:55.560961+00:00'
 translations:
   abstract: 最近的生物信号基础模型(FMs)表明,在各种临床预测任务中表现良好,但对长期多式联运数据的系统评价仍然有限。 我们采用了信号MC-MED,这是在同步单铅心电图(ECG)和光聚子图(PPG)数据上评价生物信号调频的基准。
     SignalMC-MED来自MC-MED数据集,包括22 256次访问和10分钟的ECG和PPG信号重叠,并包括20项临床相关任务,涉及人口预测、应急部门处置、实验室值回归和检测以前的ICD-10诊断。

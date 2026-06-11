@@ -113,9 +113,15 @@ agent_reviews:
   - Set limitations to null because current entries are general challenges from the
     introduction, not specific limitations of the proposed method. No limitations
     section was found in the provided PDF text.
-agent_reviewed_at: '2026-06-10T02:34:16.744657+00:00'
+- time: '2026-06-11T05:38:16.828515+00:00'
+  model: deepseek-v4-flash
+  notes:
+  - Corrected abstract to full text from PDF (was truncated).
+  - Removed limitations entries that were not actual limitations of the proposed method;
+    paper does not explicitly discuss limitations in the provided text.
+agent_reviewed_at: '2026-06-11T05:38:16.828525+00:00'
 created_at: '2026-06-09T08:00:28.165818+00:00'
-updated_at: '2026-06-10T02:34:16.744662+00:00'
+updated_at: '2026-06-11T05:38:16.828529+00:00'
 translations:
   abstract: 时间序列异常检测对广泛的应用至关重要. 它旨在识别时间序列中正常样本分布的异常样本. 这项任务最根本的挑战是学习一个能够有效区分异常现象的代表图。
     以重建为基础的方法仍然占主导地位,但以异常方式学习代表性可能因其巨大的异常损失而损害业绩。 另一方面,对比性学习旨在寻找一种能明确区分任何实例和其他实例的表述,这可以为时间序列异常检测带来更自然和更有希望的表述.
