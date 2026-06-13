@@ -9,8 +9,11 @@ import {
   BookOpenCheck,
   Bookmark,
   CheckCircle2,
+  ChevronDown,
+  ChevronRight,
   Clock3,
   Copy,
+  Bot,
   ExternalLink,
   FileText,
   FolderCog,
@@ -18,20 +21,25 @@ import {
   KeyRound,
   Library,
   Loader2,
+  MessageCircle,
   Play,
   RefreshCw,
   Search,
+  SendHorizontal,
   Settings,
   SlidersHorizontal,
   Sparkles,
+  Square,
   Tags,
   Trash2,
   Upload,
+  UserRound,
+  Wrench,
   XCircle,
 } from "lucide-react";
 import "./styles.css";
 
-type Page = "dashboard" | "library" | "profile" | "jobs" | "settings";
+type Page = "dashboard" | "library" | "profile" | "chat" | "jobs" | "settings";
 
 type Paper = {
   id: string;
@@ -93,6 +101,25 @@ type Job = {
   events?: { time: string; message: string }[];
 };
 
+type ChatToolCall = {
+  id: string;
+  name: string;
+  input?: unknown;
+  result?: unknown;
+  detail?: string;
+  resultDetail?: string;
+  isError?: boolean;
+  state: "running" | "done";
+};
+
+type ChatMessage = {
+  id: string;
+  role: "user" | "assistant";
+  content: string;
+  tools?: ChatToolCall[];
+  pending?: boolean;
+};
+
 const API = "";
 
 function App() {
@@ -140,6 +167,9 @@ function App() {
   const [busy, setBusy] = useState("");
   const [error, setError] = useState("");
   const [uploadProgress, setUploadProgress] = useState("");
+  const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
+  const [chatSessionId, setChatSessionId] = useState<string | null>(null);
+  const chatAbortRef = useRef<AbortController | null>(null);
 
   const activeJobCount = jobs.filter((j) => j.status === "queued" || j.status === "running").length;
 
@@ -503,6 +533,130 @@ function App() {
     window.open(`${API}/api/papers/${encodeURIComponent(paper.id)}/pdf${params}`, "_blank", "noopener,noreferrer");
   }
 
+  function openPaperChat(paper: Paper) {
+    setSelectedPaperId(paper.id);
+    setSelectedPaper(paper);
+    setChatMessages([]);
+    setChatSessionId(null);
+    setError("");
+    setPage("chat");
+  }
+
+  function stopChat() {
+    chatAbortRef.current?.abort();
+    chatAbortRef.current = null;
+    setBusy("");
+    setChatMessages((prev) => prev.map((m) => m.pending ? { ...m, pending: false } : m));
+  }
+
+  async function sendChatMessage(question: string) {
+    const paperId = selectedPaperIdRef.current;
+    if (!paperId || !question.trim() || busy === "chat") return;
+    const userMessage: ChatMessage = { id: `user-${Date.now()}`, role: "user", content: question.trim() };
+    const assistantId = `assistant-${Date.now()}`;
+    const assistantMessage: ChatMessage = { id: assistantId, role: "assistant", content: "", tools: [], pending: true };
+    setChatMessages((prev) => [...prev, userMessage, assistantMessage]);
+    setBusy("chat");
+    setError("");
+
+    const controller = new AbortController();
+    chatAbortRef.current = controller;
+    try {
+      const response = await fetch(`${API}/api/chat/stream`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          root: savedRoot,
+          session_id: chatSessionId,
+          paper_id: paperId,
+          question: question.trim(),
+          claude_api_key: claudeApiKey,
+          claude_endpoint: claudeEndpoint,
+          claude_model: claudeModel,
+        }),
+        signal: controller.signal,
+      });
+      if (!response.ok || !response.body) {
+        let detail = response.statusText;
+        try { detail = (await response.json()).detail ?? detail; } catch { /* */ }
+        throw new Error(detail);
+      }
+
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = "";
+      while (true) {
+        const { value, done } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+        const chunks = buffer.split("\n\n");
+        buffer = chunks.pop() ?? "";
+        for (const chunk of chunks) {
+          const dataLine = chunk.split("\n").find((line) => line.startsWith("data:"));
+          if (!dataLine) continue;
+          const payload = JSON.parse(dataLine.slice(5).trim()) as Record<string, any>;
+          if (payload.type === "session" && payload.session?.id) {
+            setChatSessionId(payload.session.id);
+          } else if (payload.type === "delta") {
+            setChatMessages((prev) => prev.map((m) => (
+              m.id === assistantId ? { ...m, content: m.content + String(payload.delta ?? "") } : m
+            )));
+          } else if (payload.type === "tool") {
+            const tool: ChatToolCall = {
+              id: String(payload.id ?? `${payload.name}-${Date.now()}`),
+              name: String(payload.name ?? "tool"),
+              input: payload.input,
+              detail: payload.detail,
+              state: "running",
+            };
+            setChatMessages((prev) => prev.map((m) => (
+              m.id === assistantId ? { ...m, tools: [...(m.tools ?? []), tool] } : m
+            )));
+          } else if (payload.type === "tool_result") {
+            const toolId = String(payload.tool_use_id ?? "");
+            setChatMessages((prev) => prev.map((m) => (
+              m.id === assistantId
+                ? {
+                    ...m,
+                    tools: (m.tools ?? []).map((tool) => (
+                      tool.id === toolId
+                        ? {
+                            ...tool,
+                            result: payload.result,
+                            resultDetail: payload.detail,
+                            isError: Boolean(payload.is_error),
+                            state: "done",
+                          }
+                        : tool
+                    )),
+                  }
+                : m
+            )));
+          } else if (payload.type === "done") {
+            if (payload.session?.id) setChatSessionId(payload.session.id);
+            setChatMessages((prev) => prev.map((m) => (
+              m.id === assistantId ? { ...m, pending: false } : m
+            )));
+          } else if (payload.type === "error") {
+            throw new Error(String(payload.detail ?? "Chat failed."));
+          }
+        }
+      }
+    } catch (err) {
+      if ((err as Error).name !== "AbortError") {
+        setError(String((err as Error).message ?? err));
+        setChatMessages((prev) => prev.map((m) => (
+          m.id === assistantId
+            ? { ...m, content: m.content || "抱歉，当前对话请求失败。", pending: false }
+            : m
+        )));
+      }
+    } finally {
+      if (chatAbortRef.current === controller) chatAbortRef.current = null;
+      setBusy("");
+    }
+  }
+
   return (
     <main className="app">
       <AppNav page={page} setPage={setPage} paperCount={stats.papers} jobCount={activeJobCount} />
@@ -534,11 +688,23 @@ function App() {
           <ProfilePage
             paper={selectedPaper} busy={busy}
             goBack={() => setPage("library")}
+            openChat={openPaperChat}
             enrichPaper={enrichPaper} translatePaper={translatePaper}
             updatePaper={updatePaper}
             deletePaper={deletePaper} openPdf={openPdf}
             paperJob={selectedPaperId ? paperJobs.get(selectedPaperId) : undefined}
             tagCounts={tagCounts}
+          />
+        )}
+        {page === "chat" && (
+          <PaperChatPage
+            paper={selectedPaper}
+            messages={chatMessages}
+            busy={busy}
+            goBack={() => setPage("profile")}
+            openPdf={openPdf}
+            sendMessage={sendChatMessage}
+            stopChat={stopChat}
           />
         )}
         {page === "jobs" && (
@@ -570,7 +736,7 @@ function AppNav({ page, setPage, paperCount, jobCount }: { page: Page; setPage: 
       </button>
       <nav>
         <button className={page === "dashboard" ? "active" : ""} onClick={() => setPage("dashboard")}><Gauge size={16} /> 档案总览</button>
-        <button className={page === "library" || page === "profile" ? "active" : ""} onClick={() => setPage("library")}><Library size={16} /> 文献档案</button>
+        <button className={page === "library" || page === "profile" || page === "chat" ? "active" : ""} onClick={() => setPage("library")}><Library size={16} /> 文献档案</button>
         <button className={page === "jobs" ? "active" : ""} onClick={() => setPage("jobs")}><Play size={16} /> 整理队列 {jobCount > 0 ? jobCount : ""}</button>
         <button className={page === "settings" ? "active" : ""} onClick={() => setPage("settings")}><Settings size={16} /> 设置</button>
       </nav>
@@ -1320,6 +1486,7 @@ function NotesEditor(props: {
 function ProfilePage(props: {
   paper: Paper | null; busy: string;
   goBack: () => void; enrichPaper: (id: string) => void;
+  openChat: (paper: Paper) => void;
   translatePaper: (id: string) => void;
   updatePaper: (id: string, patch: Record<string, unknown>) => Promise<void> | void;
   deletePaper: (id: string) => void; openPdf: (p: Paper) => void;
@@ -1357,6 +1524,9 @@ function ProfilePage(props: {
         <div className="page-heading-bar">
           <button className="ghost-button" onClick={props.goBack}><ArrowLeft size={16} /> Back</button>
           <div className="profile-actions">
+            <button className="chat-launch-button" onClick={() => props.openChat(paper)}>
+              <MessageCircle size={15} /> 论文 Chat
+            </button>
             <button className="action-button" onClick={() => props.openPdf(paper)}><ExternalLink size={15} /> 打开 PDF</button>
             <button className="action-button" onClick={() => props.enrichPaper(paper.id)} disabled={jobRunning}>
               {jobRunning ? <Loader2 className="spin" size={15} /> : <RefreshCw size={15} />}
@@ -1495,6 +1665,174 @@ function Info({ label, value }: { label: string; value: string }) {
 function splitTags(value: string): string[] {
   return [...new Set(value.split(",").map((t) => t.trim()).filter(Boolean))];
 }
+
+// ── Paper Chat ───────────────────────────────────────────────────────
+
+function PaperChatPage(props: {
+  paper: Paper | null;
+  messages: ChatMessage[];
+  busy: string;
+  goBack: () => void;
+  openPdf: (paper: Paper) => void;
+  sendMessage: (question: string) => Promise<void> | void;
+  stopChat: () => void;
+}) {
+  const [input, setInput] = useState("");
+  const scrollRef = useRef<HTMLDivElement | null>(null);
+  const composingRef = useRef(false);
+  const isStreaming = props.busy === "chat";
+
+  useEffect(() => {
+    scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
+  }, [props.messages]);
+
+  if (!props.paper) {
+    return <div className="loading-state"><Loader2 className="spin" size={20} /> Loading paper chat...</div>;
+  }
+
+  function send() {
+    const text = input.trim();
+    if (!text || isStreaming) return;
+    setInput("");
+    void props.sendMessage(text);
+  }
+
+  function onKeyDown(e: React.KeyboardEvent<HTMLTextAreaElement>) {
+    const native = e.nativeEvent as KeyboardEvent;
+    const isComposing = composingRef.current || native.isComposing || native.keyCode === 229;
+    if (e.key === "Enter" && !e.shiftKey && !isComposing) {
+      e.preventDefault();
+      send();
+    }
+  }
+
+  const suggestions = [
+    "用中文总结这篇论文的核心贡献和局限。",
+    "这篇论文的方法和实验设计是否有薄弱点？",
+    "帮我生成 5 个适合组会讨论的问题。",
+  ];
+
+  return (
+    <div className="chat-page">
+      <section className="chat-topbar">
+        <button className="ghost-button" onClick={props.goBack}><ArrowLeft size={16} /> 返回详情</button>
+        <div className="chat-title">
+          <p className="kicker">Paper Chat</p>
+          <h1>{props.paper.title || props.paper.id}</h1>
+          <p>{props.paper.id} · {props.paper.pages ?? "?"} pages</p>
+        </div>
+        <div className="chat-top-actions">
+          <button className="action-button" onClick={() => props.openPdf(props.paper!)}><ExternalLink size={15} /> PDF</button>
+        </div>
+      </section>
+
+      <section className="chat-shell">
+        <div className="chat-scroll" ref={scrollRef}>
+          {props.messages.length === 0 ? (
+            <div className="chat-empty">
+              <div className="chat-emblem"><MessageCircle size={28} /></div>
+              <h2>和这篇论文对话</h2>
+              <div className="chat-suggestions">
+                {suggestions.map((item) => (
+                  <button key={item} type="button" onClick={() => setInput(item)}>
+                    {item}
+                  </button>
+                ))}
+              </div>
+            </div>
+          ) : (
+            props.messages.map((message) => <ChatMessageView key={message.id} message={message} />)
+          )}
+        </div>
+        <div className="chat-composer-wrap">
+          <div className="chat-composer">
+            <textarea
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              onKeyDown={onKeyDown}
+              onCompositionStart={() => { composingRef.current = true; }}
+              onCompositionEnd={() => { composingRef.current = false; }}
+              placeholder="询问论文内容、方法、实验、局限或让 agent 校验 PDF…"
+              rows={1}
+              disabled={isStreaming}
+            />
+            {isStreaming ? (
+              <button type="button" className="chat-send-button" onClick={props.stopChat} aria-label="停止生成" title="停止生成">
+                <Square size={15} />
+              </button>
+            ) : (
+              <button type="button" className="chat-send-button" onClick={send} disabled={!input.trim()} aria-label="发送" title="发送">
+                <SendHorizontal size={16} />
+              </button>
+            )}
+          </div>
+        </div>
+      </section>
+    </div>
+  );
+}
+
+function ChatMessageView({ message }: { message: ChatMessage }) {
+  return (
+    <article className={`chat-message ${message.role}`}>
+      <div className="chat-avatar" aria-hidden="true">
+        {message.role === "assistant" ? <Bot size={17} /> : <UserRound size={17} />}
+      </div>
+      <div className="chat-bubble">
+        {message.role === "assistant" && (message.tools ?? []).map((tool) => (
+          <ToolCallView key={tool.id} tool={tool} />
+        ))}
+        {message.content ? (
+          <div className="markdown-body chat-markdown">
+            <ReactMarkdown remarkPlugins={[remarkGfm]}>{message.content}</ReactMarkdown>
+          </div>
+        ) : message.pending ? (
+          <div className="chat-thinking"><Loader2 className="spin" size={14} /> 思考中</div>
+        ) : null}
+      </div>
+    </article>
+  );
+}
+
+function ToolCallView({ tool }: { tool: ChatToolCall }) {
+  const [open, setOpen] = useState(false);
+  const inputText = stringifyToolPayload(tool.input ?? tool.detail);
+  const resultText = stringifyToolPayload(tool.result ?? tool.resultDetail);
+
+  return (
+    <div className={`tool-call ${tool.isError ? "failed" : ""}`}>
+      <button className="tool-call-head" type="button" onClick={() => setOpen(!open)}>
+        {open ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
+        <Wrench size={14} />
+        <span>{tool.name}</span>
+        <small>{tool.state === "running" ? "运行中" : tool.isError ? "失败" : "完成"}</small>
+      </button>
+      {open && (
+        <div className="tool-call-body">
+          <section>
+            <strong>参数</strong>
+            <pre>{inputText || "-"}</pre>
+          </section>
+          <section>
+            <strong>返回</strong>
+            <pre>{resultText || (tool.state === "running" ? "等待工具返回…" : "-")}</pre>
+          </section>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function stringifyToolPayload(value: unknown): string {
+  if (value === undefined || value === null || value === "") return "";
+  if (typeof value === "string") return value;
+  try {
+    return JSON.stringify(value, null, 2);
+  } catch {
+    return String(value);
+  }
+}
+
 
 // ── Jobs ─────────────────────────────────────────────────────────────
 

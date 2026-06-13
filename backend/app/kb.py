@@ -752,10 +752,16 @@ def list_sessions(root: Path) -> list[dict[str, Any]]:
 
 def append_session_message(root: Path, session: dict[str, Any],
                            role: str, content: str,
-                           contexts: list[dict[str, str]] | None = None) -> dict[str, Any]:
+                           contexts: list[dict[str, str]] | None = None,
+                           agent_steps: list[dict[str, Any]] | None = None,
+                           segments: list[dict[str, Any]] | None = None) -> dict[str, Any]:
     message: dict[str, Any] = {"role": role, "content": content, "created_at": now_iso()}
     if contexts:
         message["contexts"] = [{"path": c["path"]} for c in contexts]
+    if agent_steps:
+        message["agent_steps"] = agent_steps
+    if segments:
+        message["segments"] = segments
     session.setdefault("messages", []).append(message)
     if session.get("title") == "New chat" and role == "user":
         compact = " ".join(content.split())

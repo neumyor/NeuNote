@@ -103,7 +103,8 @@ def _describe_exception(exc: BaseException) -> str:
 
 async def run_agent_answer(root: Path, question: str,
                            session_id: str | None,
-                           config: dict[str, Any] | None = None) -> Iterable[dict[str, Any]]:
+                           config: dict[str, Any] | None = None,
+                           paper_id: str | None = None) -> Iterable[dict[str, Any]]:
     try:
         from claude_code_sdk import (
             AssistantMessage,
@@ -111,7 +112,9 @@ async def run_agent_answer(root: Path, question: str,
             ClaudeSDKClient,
             ResultMessage,
             TextBlock,
+            ToolResultBlock,
             ToolUseBlock,
+            UserMessage,
             create_sdk_mcp_server,
             tool,
         )
@@ -219,15 +222,37 @@ async def run_agent_answer(root: Path, question: str,
         f"{m.get('role')}: {m.get('content')}"
         for m in (session.get("messages") or [])[-8:]
     )
+    paper_scope = ""
+    if paper_id:
+        try:
+            scoped_paper = load_paper(root, paper_id)
+            paper_scope = f"""\
+Focused paper:
+- id: {scoped_paper.get('id')}
+- title: {scoped_paper.get('title') or paper_id}
+
+For this chat, start from papers/{paper_id}.yaml and keep the answer centered on this paper unless the user explicitly asks for broader library context.
+
+"""
+        except Exception:
+            paper_scope = f"""\
+Focused paper:
+- id: {paper_id}
+
+For this chat, try papers/{paper_id}.yaml first. If it is unavailable, explain that the selected paper could not be loaded.
+
+"""
+
     prompt = f"""Question:
 {question}
 
+{paper_scope}\
 Recent chat history:
 {history}
 
 Workflow:
-1. Read AGENT.md for rules. List papers/ to see what papers exist.
-2. Read relevant paper YAML files for context.
+1. Read AGENT.md for rules.
+2. If a focused paper is provided, read its paper YAML first. Otherwise list papers/ to see what papers exist.
 3. If critical evidence is missing from the paper YAML, use kb_extract_pdf_text for the relevant paper_id.
 4. Answer with citations to paper IDs and mention when PDF verification was used.
 5. Only write paper updates when correcting verified errors.
@@ -295,13 +320,44 @@ Workflow:
                         elif isinstance(block, ToolUseBlock):
                             tool_input = getattr(block, "input", None)
                             step = {
+                                "id": block.id,
                                 "kind": "tool",
                                 "title": block.name,
                                 "detail": _compact_json(tool_input) if tool_input is not None else "",
                             }
                             agent_steps.append(step)
                             segments.append({"type": "tool", **step})
-                            yield {"type": "tool", "name": block.name, "input": tool_input, "detail": step["detail"]}
+                            yield {"type": "tool", "id": block.id, "name": block.name, "input": tool_input, "detail": step["detail"]}
+                        elif isinstance(block, ToolResultBlock):
+                            tool_result = getattr(block, "content", None)
+                            detail = _compact_json(tool_result, limit=1400)
+                            if segments and segments[-1].get("type") == "tool" and segments[-1].get("id") == block.tool_use_id:
+                                segments[-1]["result"] = detail
+                                segments[-1]["is_error"] = bool(block.is_error)
+                            yield {
+                                "type": "tool_result",
+                                "tool_use_id": block.tool_use_id,
+                                "result": tool_result,
+                                "detail": detail,
+                                "is_error": bool(block.is_error),
+                            }
+                elif isinstance(message, UserMessage):
+                    content = message.content
+                    if isinstance(content, list):
+                        for block in content:
+                            if isinstance(block, ToolResultBlock):
+                                tool_result = getattr(block, "content", None)
+                                detail = _compact_json(tool_result, limit=1400)
+                                if segments and segments[-1].get("type") == "tool" and segments[-1].get("id") == block.tool_use_id:
+                                    segments[-1]["result"] = detail
+                                    segments[-1]["is_error"] = bool(block.is_error)
+                                yield {
+                                    "type": "tool_result",
+                                    "tool_use_id": block.tool_use_id,
+                                    "result": tool_result,
+                                    "detail": detail,
+                                    "is_error": bool(block.is_error),
+                                }
                 elif isinstance(message, ResultMessage):
                     if message.is_error:
                         yield {"type": "error", "detail": f"Claude Code ended with error: {message.subtype}"}
@@ -323,12 +379,13 @@ Workflow:
 
 
 def run_agent_answer_sync(root: Path, question: str, session_id: str | None,
-                          config: dict[str, Any] | None = None) -> Iterable[dict[str, Any]]:
+                          config: dict[str, Any] | None = None,
+                          paper_id: str | None = None) -> Iterable[dict[str, Any]]:
     output: queue.Queue[dict[str, Any] | None] = queue.Queue()
 
     def worker() -> None:
         async def produce() -> None:
-            async for item in run_agent_answer(root, question, session_id, config):
+            async for item in run_agent_answer(root, question, session_id, config, paper_id):
                 output.put(item)
             output.put(None)
 
