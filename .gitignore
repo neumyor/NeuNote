@@ -1,13 +1,21 @@
 # dependencies
 node_modules/
+frontend/node_modules/
 frontend/dist/
 frontend/tsconfig.tsbuildinfo
 backend/.venv/
 __pycache__/
+*.py[cod]
 .pytest_cache/
 .ruff_cache/
+.mypy_cache/
+.coverage
+coverage/
 
 # runtime config (contains API keys)
+.env
+.env.*
+!.env.example
 .kb_app_config.yaml
 backend/.kb_app_config.yaml
 metadata/app_config.yaml
@@ -26,4 +34,9 @@ backend/logs/update_log.md
 
 # large binary files
 originals/papers/
+backend/originals/papers/
+
+# OS/editor noise
 *.DS_Store
+.idea/
+.vscode/

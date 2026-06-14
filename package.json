@@ -1,9 +1,13 @@
 {
   "name": "neunote",
-  "private": true,
+  "version": "1.0.0",
+  "private": false,
+  "license": "MIT",
   "type": "module",
   "scripts": {
-    "dev": "bun scripts/dev.ts"
+    "dev": "bun scripts/dev.ts",
+    "build": "cd frontend && bun run build",
+    "check": "bun run build && cd backend && uv run python -m py_compile app/main.py app/kb.py app/agent_chat.py app/translate.py"
   },
   "devDependencies": {
     "typescript": "^5.8.3"

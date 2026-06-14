@@ -446,6 +446,7 @@ class AskRequest(BaseModel):
     root: str | None = None
     session_id: str | None = None
     paper_id: str | None = None
+    paper_ids: list[str] = Field(default_factory=list)
     claude_api_key: str | None = None
     claude_endpoint: str | None = None
     claude_model: str | None = None
@@ -460,7 +461,8 @@ def api_ask(request: AskRequest) -> dict[str, Any]:
     final_session = None
     for payload in run_agent_answer_sync(kb_root, request.question,
                                           request.session_id, request.model_dump(),
-                                          paper_id=request.paper_id):
+                                          paper_id=request.paper_id,
+                                          paper_ids=request.paper_ids):
         if payload.get("type") == "delta":
             parts.append(payload.get("delta", ""))
         elif payload.get("type") in ("session", "done"):
@@ -480,7 +482,8 @@ def api_chat_stream(request: AskRequest) -> StreamingResponse:
     def generate():
         for payload in run_agent_answer_sync(kb_root, request.question,
                                               request.session_id, request.model_dump(),
-                                              paper_id=request.paper_id):
+                                              paper_id=request.paper_id,
+                                              paper_ids=request.paper_ids):
             yield event(payload)
 
     return StreamingResponse(generate(), media_type="text/event-stream")

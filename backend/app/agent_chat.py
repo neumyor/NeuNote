@@ -154,7 +154,8 @@ def _describe_exception(exc: BaseException) -> str:
 async def run_agent_answer(root: Path, question: str,
                            session_id: str | None,
                            config: dict[str, Any] | None = None,
-                           paper_id: str | None = None) -> Iterable[dict[str, Any]]:
+                           paper_id: str | None = None,
+                           paper_ids: list[str] | None = None) -> Iterable[dict[str, Any]]:
     try:
         from claude_code_sdk import (
             AssistantMessage,
@@ -390,26 +391,23 @@ async def run_agent_answer(root: Path, question: str,
         f"{m.get('role')}: {m.get('content')}"
         for m in (session.get("messages") or [])[-8:]
     )
+    mentioned_ids: list[str] = []
+    for value in [paper_id, *(paper_ids or [])]:
+        if value and value not in mentioned_ids:
+            mentioned_ids.append(value)
+
     paper_scope = ""
-    if paper_id:
-        try:
-            scoped_paper = load_paper(root, paper_id)
-            paper_scope = f"""\
-Focused paper:
-- id: {scoped_paper.get('id')}
-- title: {scoped_paper.get('title') or paper_id}
-
-For this chat, start from papers/{paper_id}.yaml and keep the answer centered on this paper unless the user explicitly asks for broader library context.
-
-"""
-        except Exception:
-            paper_scope = f"""\
-Focused paper:
-- id: {paper_id}
-
-For this chat, try papers/{paper_id}.yaml first. If it is unavailable, explain that the selected paper could not be loaded.
-
-"""
+    if mentioned_ids:
+        lines = ["Mentioned papers:"]
+        for mentioned_id in mentioned_ids:
+            try:
+                scoped_paper = load_paper(root, mentioned_id)
+                lines.append(f"- id: {scoped_paper.get('id')}; title: {scoped_paper.get('title') or mentioned_id}")
+            except Exception:
+                lines.append(f"- id: {mentioned_id}; title: unavailable")
+        paper_scope = "\n".join(lines) + "\n\nFor this chat, start from the mentioned paper YAML files. Compare across mentioned papers when the user asks, and only broaden to the full library when explicitly requested.\n\n"
+    else:
+        paper_scope = "No papers are mentioned for this turn. Ask a general library question, or list papers/ when you need to discover relevant papers.\n\n"
 
     prompt = f"""Question:
 {question}
@@ -420,8 +418,8 @@ Recent chat history:
 
 Workflow:
 1. Read AGENT.md for rules.
-2. If a focused paper is provided, read its paper YAML first. Otherwise list papers/ to see what papers exist.
-3. If critical evidence is missing from the paper YAML, use kb_pdf_info and then kb_read_pdf_pages with precise pages or page ranges.
+2. If papers are mentioned, read each mentioned paper YAML first. Otherwise list papers/ only when the question requires discovering relevant papers.
+3. If critical evidence is missing from a mentioned or discovered paper YAML, use kb_pdf_info and then kb_read_pdf_pages with precise pages or page ranges.
 4. Use kb_render_pdf_pages for figures, tables, equations, screenshots, or layout-sensitive claims that text extraction cannot verify.
 5. Answer with citations to paper IDs and mention when PDF text or visual verification was used.
 6. Only write paper updates when correcting verified errors.
@@ -546,7 +544,7 @@ Tool UI:
                         yield {"type": "error", "detail": f"Claude Code ended with error: {message.subtype}"}
                         return
         answer = "".join(answer_parts).strip()
-        append_session_message(root, session, "user", question)
+        append_session_message(root, session, "user", question, paper_ids=mentioned_ids)
         append_session_message(root, session, "assistant", answer, agent_steps=agent_steps, segments=segments)
         yield {"type": "done", "answer": answer, "session": session}
     except Exception as exc:
@@ -563,12 +561,13 @@ Tool UI:
 
 def run_agent_answer_sync(root: Path, question: str, session_id: str | None,
                           config: dict[str, Any] | None = None,
-                          paper_id: str | None = None) -> Iterable[dict[str, Any]]:
+                          paper_id: str | None = None,
+                          paper_ids: list[str] | None = None) -> Iterable[dict[str, Any]]:
     output: queue.Queue[dict[str, Any] | None] = queue.Queue()
 
     def worker() -> None:
         async def produce() -> None:
-            async for item in run_agent_answer(root, question, session_id, config, paper_id):
+            async for item in run_agent_answer(root, question, session_id, config, paper_id, paper_ids):
                 output.put(item)
             output.put(None)
 

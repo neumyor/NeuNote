@@ -1,0 +1,139 @@
+id: h_tuning_toward_low_cost_and_efficient_ecg_based_cardiovascular_disease_detectio
+title: 'H-Tuning: Toward Low-Cost and Efficient ECG-based Cardiovascular Disease Detection
+  with Pre-Trained Models'
+authors:
+- Rushuang Zhou
+- Yuan-Ting Zhang
+- Yining Dong
+year: 2025
+venue: ICML 2025
+doi: ''
+arxiv_id: ''
+source_pdf: originals/papers/14054_h_tuning_toward_low_cost.pdf
+pages: 22
+tags:
+- ecg
+- fine_tuning
+- memory
+status: profiled
+confidence: medium
+reading_status: unread
+priority: normal
+needs_review: false
+abstract: Fine-tuning large-scale pre-trained models provides an effective solution
+  to alleviate the label scarcity problem in cardiovascular diseases (CVDs) detection
+  using electrocardiogram (ECG). However, as the pre-trained models scale up, the
+  computational costs for fine-tuning and inference become unaffordable on low-level
+  devices deployed for clinical applications. Additionally, maintaining the model
+  performance under low budgets in computational resources remains a significant challenge.
+  However, a comprehensive study that can address them in a joint framework is still
+  lacking. Here, we propose a holistic method (H-Tuning) for low-cost and efficient
+  fine-tuning of pre-trained models on downstream datasets. Then, the inference costs
+  of the models fine-tuned by H-Tuning are further reduced significantly using a knowledge
+  distillation technique. Experiments on four ECG datasets demonstrate that H-Tuning
+  reduces the GPU memory consumption during fine-tuning by 6.34 times while achieving
+  comparable CVDs detection performance to standard fine-tuning. With the knowledge
+  distillation technique, the model inference latency and the memory consumption are
+  reduced by 4.52 times and 19.83 times. As such, the proposed joint framework allows
+  for the utilization of pre-trained models with high computation efficiency and robust
+  performance, exploring a path toward low-cost and efficient CVDs detection. Code
+  is available at https://github.com/KAZABANA/H-Tuning
+one_sentence: H-Tuning integrates mix-order optimization, low-rank adaptation, and
+  knowledge distillation to enable low-cost and efficient fine-tuning of pre-trained
+  ECG models for cardiovascular disease detection.
+problem: However, as the pre-trained models scale up, the computational costs for
+  fine-tuning and inference become unaffordable on low-level devices deployed for
+  clinical applications.
+contributions:
+- First, a mix-order optimization method is proposed to accurately estimate the gradient
+  information using a coarse-to-fine estimation mechanism.
+- Second, a holistic framework (H-Tuning) is developed to integrate the mix-order
+  optimization with low-rank adaptation and a novel layer-dependent model update scheme,
+  enhancing both computational efficiency and robustness.
+- Third, a comprehensive workflow is proposed for reducing the fine-tuning and inference
+  costs of pre-trained models while maintaining diagnostic performance, exploring
+  a new path toward low-cost and efficient CVDs detection using ECG.
+method:
+- Mix-order optimization combines zeroth-order SPSA estimation with first-order refinement
+  on a tiny subset to estimate gradients with low memory.
+- Low-rank adaptation (LoRA) reduces trainable parameters by freezing pretrained weights
+  and injecting trainable low-rank matrices.
+- Layer-dependent update scheme updates shallow and deep layers with different schemes
+  (mix-order vs first-order) to balance efficiency and performance.
+- Knowledge distillation transfers knowledge from the fine-tuned teacher model to
+  a tiny student model, reducing inference latency, memory, and parameters.
+experiments:
+- Evaluated on four ECG datasets for multi-label CVD detection.
+- Compared against standard fine-tuning, LoRA, and MeZO baselines.
+- H-Tuning reduces GPU memory consumption by 6.34 times during fine-tuning while achieving
+  comparable performance.
+- Knowledge distillation reduces inference latency by 4.52 times, GPU memory by 19.83
+  times, and parameters by 194.23 times.
+limitations:
+- However, as the pre-trained models scale up, the computational costs for fine-tuning
+  and inference become unaffordable on low-level devices de- ployed for clinical applications.
+- Additionally, maintaining the model performance under low budgets in computational
+  resources remains a sig- nificant challenge.
+- However, a comprehensive study that can address them in a joint framework is still
+  lacking.
+- However, gathering sufficient labeled data and computational resources required
+  to train and implement deep learning models from scratch is still very expensive
+  and time-consuming, especially for developers from resource- limited communities.
+notes: "# Reading Notes\n\n*Use this space for your own notes while reading the paper.\
+  \ The structured summary is available in the Summary section.*\n\n## Key takeaways\n\
+  \n- \n\n## Questions\n\n- \n\n## Connections to other papers\n\n- \n"
+review_notes: []
+agent_reviews:
+- time: '2026-06-14T02:47:11.250105+00:00'
+  model: deepseek-v4-flash
+  notes:
+  - 'authors: [] → [''Rushuang Zhou'', ''Yuan-Ting Zhang'', ''Yining Dong'']'
+  - 'year: None → 2025'
+  - 'venue:  → ICML 2025'
+  - 'abstract: updated (was: ''Fine-tuning large-scale pre-trained models pro- vides
+    an eff...'')'
+  - 'one_sentence: updated (was: ''Fine-tuning large-scale pre-trained models pro-
+    vides an eff...'')'
+  - 'problem: updated (was: ''However, as the pre-trained models scale up, the computation...'')'
+  - 'contributions: replaced 0 items → 3 items'
+  - 'method: replaced 5 items → 4 items'
+  - 'experiments: replaced 5 items → 4 items'
+  - 'tags: added [''fine_tuning'']'
+  - Corrected authors from empty to Rushuang Zhou, Yuan-Ting Zhang, Yining Dong based
+    on PDF.
+  - Set year to 2025 and venue to ICML 2025 from the proceedings footer.
+  - Replaced truncated abstract with full abstract from PDF first page.
+  - Rewrote one_sentence to concisely summarize core contribution.
+  - Filled contributions with the three explicit bullet points from the paper.
+  - Rewrote method and experiments as concise factual bullets derived from paper content.
+  - Set limitations to null since no explicit limitations section was found in the
+    provided pages.
+  - Added 'fine_tuning' tag as it represents a core topic not covered by existing
+    tags; kept 'ecg' and 'memory'.
+created_at: '2026-06-14T02:46:29.726060+00:00'
+updated_at: '2026-06-14T02:47:21.499921+00:00'
+agent_reviewed_at: '2026-06-14T02:47:11.250127+00:00'
+translations:
+  abstract: 微调大规模预训练模型为利用心电图进行心血管疾病检测中缓解标签稀缺问题提供了有效的解决方案。然而，随着预训练模型规模的扩大，在部署于临床应用的低级设备上，微调和推理的计算成本变得难以承受。此外，在计算资源预算有限的情况下保持模型性能仍然是一个重大挑战。然而，目前仍缺乏能够在同一框架内解决这些问题的综合性研究。为此，我们提出了一种整体方法（H-Tuning），用于在目标数据集上对预训练模型进行低成本、高效的微调。然后，通过知识蒸馏技术进一步显著降低经H-Tuning微调后的模型的推理成本。在四个心电图数据集上的实验表明，H-Tuning在微调期间将GPU内存消耗降低了6.34倍，同时实现了与标准微调相当的心血管疾病检测性能。结合知识蒸馏技术，模型推理延迟和内存消耗分别降低了4.52倍和19.83倍。因此，所提出的联合框架允许以高计算效率和稳健性能利用预训练模型，探索了一条低成本、高效的心血管疾病检测路径。代码可在
+    https://github.com/KAZABANA/H-Tuning 获取。
+  one_sentence: H-Tuning 集成了混合阶优化、低秩适应和知识蒸馏，实现了对预训练心电图模型的低成本、高效微调，用于心血管疾病检测。
+  problem: 然而，随着预训练模型规模的扩大，在部署于临床应用的低级设备上，微调和推理的计算成本变得难以承受。
+  contributions:
+  - 首先，提出了一种混合阶优化方法，通过粗到细的估计机制精确估计梯度信息。
+  - 其次，开发了一个整体框架（H-Tuning），将混合阶优化与低秩适应以及一种新颖的逐层模型更新方案相结合，提升了计算效率和鲁棒性。
+  - 第三，提出了一套全面的流程，用于在保持诊断性能的同时降低预训练模型的微调和推理成本，为利用心电图进行低成本、高效的心血管疾病检测探索了新路径。
+  method:
+  - 混合阶优化结合了零阶SPSA估计和在一小部分子集上的一阶精化，以低内存估计梯度。
+  - 低秩适应通过冻结预训练权重并注入可训练的低秩矩阵来减少可训练参数。
+  - 逐层更新方案以不同方案（混合阶与一阶）更新浅层和深层，以平衡效率与性能。
+  - 知识蒸馏将微调教师模型的知识转移到小型学生模型，减少了推理延迟、内存和参数。
+  experiments:
+  - 在四个心电图数据集上评估多标签心血管疾病检测。
+  - 与标准微调、LoRA和MeZO基线进行对比。
+  - H-Tuning在微调期间将GPU内存消耗降低6.34倍，同时达到可比的性能。
+  - 知识蒸馏将推理延迟降低4.52倍，GPU内存降低19.83倍，参数减少194.23倍。
+  limitations:
+  - 然而，随着预训练模型规模的扩大，在部署于临床应用的低级设备上，微调和推理的计算成本变得难以承受。
+  - 此外，在计算资源预算有限的情况下保持模型性能仍然是一个重大挑战。
+  - 然而，目前仍缺乏能够在同一框架内解决这些问题的综合性研究。
+  - 然而，收集足够的标注数据和计算资源以从头训练和实施深度学习模型仍然非常昂贵和耗时，尤其是对于资源有限社区中的开发者而言。

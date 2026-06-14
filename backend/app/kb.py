@@ -773,10 +773,14 @@ def list_sessions(root: Path) -> list[dict[str, Any]]:
 
 def append_session_message(root: Path, session: dict[str, Any],
                            role: str, content: str,
+                           paper_ids: list[str] | None = None,
                            contexts: list[dict[str, str]] | None = None,
                            agent_steps: list[dict[str, Any]] | None = None,
                            segments: list[dict[str, Any]] | None = None) -> dict[str, Any]:
     message: dict[str, Any] = {"role": role, "content": content, "created_at": now_iso()}
+    if paper_ids:
+        message["paper_ids"] = paper_ids
+        session["paper_ids"] = paper_ids
     if contexts:
         message["contexts"] = [{"path": c["path"]} for c in contexts]
     if agent_steps:

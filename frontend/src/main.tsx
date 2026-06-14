@@ -6,6 +6,7 @@ import {
   ArrowDownUp,
   ArrowLeft,
   Archive,
+  BookOpen,
   BookOpenCheck,
   Bookmark,
   CheckCircle2,
@@ -107,6 +108,14 @@ type Job = {
   events?: { time: string; message: string }[];
 };
 
+type ChatSessionSummary = {
+  id: string;
+  title: string;
+  created_at?: string;
+  updated_at?: string;
+  message_count: number;
+};
+
 type ChatToolCall = {
   id: string;
   name: string;
@@ -126,6 +135,7 @@ type ChatMessage = {
   id: string;
   role: "user" | "assistant";
   content: string;
+  paperIds?: string[];
   tools?: ChatToolCall[];
   segments?: ChatSegment[];
   pending?: boolean;
@@ -181,6 +191,8 @@ function App() {
   const [uploadProgress, setUploadProgress] = useState("");
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
   const [chatSessionId, setChatSessionId] = useState<string | null>(null);
+  const [chatSessions, setChatSessions] = useState<ChatSessionSummary[]>([]);
+  const [mentionedPaperIds, setMentionedPaperIds] = useState<string[]>([]);
   const chatAbortRef = useRef<AbortController | null>(null);
 
   const activeJobCount = jobs.filter((j) => j.status === "queued" || j.status === "running").length;
@@ -294,6 +306,7 @@ function App() {
     await loadPapers(data.root);
     await loadJobs(data.root);
     await loadDuplicates(data.root);
+    await loadSessions(data.root);
   }
 
   async function loadPapers(kbRoot = savedRoot) {
@@ -318,6 +331,13 @@ function App() {
     const params = `?root=${encodeURIComponent(kbRoot)}`;
     const data = await request<{ jobs: Job[] }>(`/api/jobs${params}`);
     setJobs(data.jobs);
+  }
+
+  async function loadSessions(kbRoot = savedRoot) {
+    if (!kbRoot) return;
+    const params = `?root=${encodeURIComponent(kbRoot)}`;
+    const data = await request<{ sessions: ChatSessionSummary[] }>(`/api/sessions${params}`);
+    setChatSessions(data.sessions);
   }
 
   async function loadDuplicates(kbRoot = savedRoot) {
@@ -363,6 +383,7 @@ function App() {
       if (data.translation_engine) setTranslationEngine(data.translation_engine);
       await loadPapers(data.root);
       await loadJobs(data.root);
+      await loadSessions(data.root);
     } catch (err) {
       setError(String((err as Error).message ?? err));
     } finally {
@@ -562,12 +583,37 @@ function App() {
   }
 
   function openPaperChat(paper: Paper) {
-    setSelectedPaperId(paper.id);
-    setSelectedPaper(paper);
+    setMentionedPaperIds([paper.id]);
     setChatMessages([]);
     setChatSessionId(null);
     setError("");
     setPage("chat");
+  }
+
+  function openGeneralChat() {
+    setMentionedPaperIds([]);
+    setChatMessages([]);
+    setChatSessionId(null);
+    setError("");
+    setPage("chat");
+  }
+
+  async function loadChatSession(sessionId: string) {
+    setBusy("chat-session");
+    setError("");
+    try {
+      const params = savedRoot ? `?root=${encodeURIComponent(savedRoot)}` : "";
+      const data = await request<{ session: any }>(`/api/sessions/${encodeURIComponent(sessionId)}${params}`);
+      const messages = (data.session?.messages ?? []).map(sessionMessageToChatMessage);
+      setChatSessionId(data.session?.id ?? sessionId);
+      setChatMessages(messages);
+      setMentionedPaperIds(extractSessionPaperIds(data.session));
+      setPage("chat");
+    } catch (err) {
+      setError(String((err as Error).message ?? err));
+    } finally {
+      setBusy("");
+    }
   }
 
   function stopChat() {
@@ -578,9 +624,9 @@ function App() {
   }
 
   async function sendChatMessage(question: string) {
-    const paperId = selectedPaperIdRef.current;
-    if (!paperId || !question.trim() || busy === "chat") return;
-    const userMessage: ChatMessage = { id: `user-${Date.now()}`, role: "user", content: question.trim() };
+    if (!question.trim() || busy === "chat") return;
+    const paperIds = mentionedPaperIds;
+    const userMessage: ChatMessage = { id: `user-${Date.now()}`, role: "user", content: question.trim(), paperIds };
     const assistantId = `assistant-${Date.now()}`;
     const assistantMessage: ChatMessage = { id: assistantId, role: "assistant", content: "", tools: [], segments: [], pending: true };
     setChatMessages((prev) => [...prev, userMessage, assistantMessage]);
@@ -596,7 +642,7 @@ function App() {
         body: JSON.stringify({
           root: savedRoot,
           session_id: chatSessionId,
-          paper_id: paperId,
+          paper_ids: paperIds,
           question: question.trim(),
           claude_api_key: claudeApiKey,
           claude_endpoint: claudeEndpoint,
@@ -662,6 +708,7 @@ function App() {
             )));
           } else if (payload.type === "done") {
             if (payload.session?.id) setChatSessionId(payload.session.id);
+            void loadSessions();
             setChatMessages((prev) => prev.map((m) => (
               m.id === assistantId ? { ...m, pending: false } : m
             )));
@@ -687,7 +734,7 @@ function App() {
 
   return (
     <main className="app">
-      <AppNav page={page} setPage={setPage} paperCount={stats.papers} jobCount={activeJobCount} />
+      <AppNav page={page} setPage={setPage} openChat={openGeneralChat} paperCount={stats.papers} jobCount={activeJobCount} />
       <section className="page-shell">
         {error && <div className="error global-error">{error}</div>}
         {page === "dashboard" && (
@@ -725,11 +772,16 @@ function App() {
           />
         )}
         {page === "chat" && (
-          <PaperChatPage
-            paper={selectedPaper}
+          <ChatPage
+            papers={papers}
+            sessions={chatSessions}
+            activeSessionId={chatSessionId}
+            mentionedPaperIds={mentionedPaperIds}
+            setMentionedPaperIds={setMentionedPaperIds}
             messages={chatMessages}
             busy={busy}
-            goBack={() => setPage("profile")}
+            newChat={openGeneralChat}
+            openSession={loadChatSession}
             openPdf={openPdf}
             sendMessage={sendChatMessage}
             stopChat={stopChat}
@@ -756,7 +808,13 @@ function App() {
 
 // ── Nav ──────────────────────────────────────────────────────────────
 
-function AppNav({ page, setPage, paperCount, jobCount }: { page: Page; setPage: (p: Page) => void; paperCount: number; jobCount: number }) {
+function AppNav({ page, setPage, openChat, paperCount, jobCount }: {
+  page: Page;
+  setPage: (p: Page) => void;
+  openChat: () => void;
+  paperCount: number;
+  jobCount: number;
+}) {
   return (
     <header className="app-nav">
       <button className="brand-button" onClick={() => setPage("dashboard")}>
@@ -765,7 +823,8 @@ function AppNav({ page, setPage, paperCount, jobCount }: { page: Page; setPage: 
       </button>
       <nav>
         <button className={page === "dashboard" ? "active" : ""} onClick={() => setPage("dashboard")}><Gauge size={16} /> 档案总览</button>
-        <button className={page === "library" || page === "profile" || page === "chat" ? "active" : ""} onClick={() => setPage("library")}><Library size={16} /> 文献档案</button>
+        <button className={page === "library" || page === "profile" ? "active" : ""} onClick={() => setPage("library")}><Library size={16} /> 文献档案</button>
+        <button className={page === "chat" ? "active" : ""} onClick={openChat}><MessageCircle size={16} /> 对话</button>
         <button className={page === "jobs" ? "active" : ""} onClick={() => setPage("jobs")}><Play size={16} /> 整理队列 {jobCount > 0 ? jobCount : ""}</button>
         <button className={page === "settings" ? "active" : ""} onClick={() => setPage("settings")}><Settings size={16} /> 设置</button>
       </nav>
@@ -1695,30 +1754,100 @@ function splitTags(value: string): string[] {
   return [...new Set(value.split(",").map((t) => t.trim()).filter(Boolean))];
 }
 
-// ── Paper Chat ───────────────────────────────────────────────────────
+function sessionMessageToChatMessage(message: any, index: number): ChatMessage {
+  const role = message?.role === "assistant" ? "assistant" : "user";
+  const segments = Array.isArray(message?.segments)
+    ? message.segments.map((segment: any, segmentIndex: number): ChatSegment | null => {
+        if (segment?.type === "text") {
+          return {
+            id: `session-${index}-text-${segmentIndex}`,
+            type: "text",
+            content: String(segment.content ?? ""),
+          };
+        }
+        if (segment?.type === "tool") {
+          return {
+            id: String(segment.id ?? `session-${index}-tool-${segmentIndex}`),
+            type: "tool",
+            tool: {
+              id: String(segment.id ?? `session-${index}-tool-${segmentIndex}`),
+              name: String(segment.title ?? segment.name ?? "tool"),
+              detail: segment.detail,
+              resultDetail: segment.result,
+              isError: Boolean(segment.is_error),
+              state: segment.result ? "done" : "done",
+            },
+          };
+        }
+        return null;
+      }).filter(Boolean) as ChatSegment[]
+    : undefined;
+  return {
+    id: `${role}-${message?.created_at ?? index}`,
+    role,
+    content: String(message?.content ?? ""),
+    paperIds: Array.isArray(message?.paper_ids) ? message.paper_ids.filter(Boolean) : undefined,
+    segments,
+    pending: false,
+  };
+}
 
-function PaperChatPage(props: {
-  paper: Paper | null;
+function extractSessionPaperIds(session: any): string[] {
+  if (Array.isArray(session?.paper_ids)) return session.paper_ids.filter(Boolean);
+  const messages = Array.isArray(session?.messages) ? session.messages : [];
+  for (const message of [...messages].reverse()) {
+    if (Array.isArray(message?.paper_ids)) return message.paper_ids.filter(Boolean);
+  }
+  return [];
+}
+
+function formatDateShort(value?: string): string {
+  if (!value) return "未知时间";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return value.slice(0, 10);
+  return date.toLocaleDateString(undefined, { month: "short", day: "numeric" });
+}
+
+// ── Chat ─────────────────────────────────────────────────────────────
+
+function ChatPage(props: {
+  papers: Paper[];
+  sessions: ChatSessionSummary[];
+  activeSessionId: string | null;
+  mentionedPaperIds: string[];
+  setMentionedPaperIds: (ids: string[]) => void;
   messages: ChatMessage[];
   busy: string;
-  goBack: () => void;
+  newChat: () => void;
+  openSession: (sessionId: string) => void;
   openPdf: (paper: Paper) => void;
   sendMessage: (question: string) => Promise<void> | void;
   stopChat: () => void;
 }) {
   const [input, setInput] = useState("");
+  const [mentionActive, setMentionActive] = useState(false);
+  const [mentionQuery, setMentionQuery] = useState("");
   const scrollRef = useRef<HTMLDivElement | null>(null);
+  const inputRef = useRef<HTMLTextAreaElement | null>(null);
   const composingRef = useRef(false);
   const justComposedRef = useRef(false);
   const isStreaming = props.busy === "chat";
+  const paperById = useMemo(() => new Map(props.papers.map((paper) => [paper.id, paper])), [props.papers]);
+  const mentionedPapers = props.mentionedPaperIds
+    .map((id) => paperById.get(id))
+    .filter(Boolean) as Paper[];
+  const mentionMatches = useMemo(() => {
+    const term = mentionQuery.trim().toLowerCase();
+    if (!term) return props.papers.slice(0, 8);
+    return props.papers.filter((paper) => {
+      const haystack = `${paper.id} ${paper.title ?? ""} ${(paper.authors ?? []).join(" ")} ${(paper.tags ?? []).join(" ")}`.toLowerCase();
+      return haystack.includes(term);
+    }).slice(0, 8);
+  }, [mentionQuery, props.papers]);
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
   }, [props.messages]);
-
-  if (!props.paper) {
-    return <div className="loading-state"><Loader2 className="spin" size={20} /> Loading paper chat...</div>;
-  }
 
   function send() {
     const text = input.trim();
@@ -1736,6 +1865,27 @@ function PaperChatPage(props: {
     }
   }
 
+  function onInputChange(value: string) {
+    setInput(value);
+    const match = value.match(/(?:^|\s)@([^\s@]*)$/);
+    setMentionActive(Boolean(match));
+    setMentionQuery(match ? match[1] : "");
+  }
+
+  function addMention(paper: Paper) {
+    if (!props.mentionedPaperIds.includes(paper.id)) {
+      props.setMentionedPaperIds([...props.mentionedPaperIds, paper.id]);
+    }
+    setInput((current) => current.replace(/(?:^|\s)@([^\s@]*)$/, " ").replace(/\s{2,}/g, " "));
+    setMentionActive(false);
+    setMentionQuery("");
+    requestAnimationFrame(() => inputRef.current?.focus());
+  }
+
+  function removeMention(paperId: string) {
+    props.setMentionedPaperIds(props.mentionedPaperIds.filter((id) => id !== paperId));
+  }
+
   function onCompositionEnd() {
     composingRef.current = false;
     justComposedRef.current = true;
@@ -1745,66 +1895,114 @@ function PaperChatPage(props: {
   }
 
   const suggestions = [
-    "用中文总结这篇论文的核心贡献和局限。",
-    "这篇论文的方法和实验设计是否有薄弱点？",
-    "帮我生成 5 个适合组会讨论的问题。",
+    "总结已 mention 论文的核心贡献和局限。",
+    "比较这些论文的方法差异和实验设计。",
+    "帮我找出库里和 agent harness 相关的论文。",
   ];
 
   return (
-    <div className="chat-page">
-      <section className="chat-topbar">
-        <button className="ghost-button" onClick={props.goBack}><ArrowLeft size={16} /> 返回详情</button>
-        <div className="chat-title">
-          <p className="kicker">Paper Chat</p>
-          <h1>{props.paper.title || props.paper.id}</h1>
-          <p>{props.paper.id} · {props.paper.pages ?? "?"} pages</p>
+    <div className="chat-page chat-module-page">
+      <aside className="chat-history-panel">
+        <div className="chat-history-head">
+          <div>
+            <p className="kicker">Chat Logs</p>
+            <h2>历史对话</h2>
+          </div>
+          <button type="button" className="icon-button" onClick={props.newChat} aria-label="新对话" title="新对话">
+            <Plus size={16} />
+          </button>
         </div>
-        <div className="chat-top-actions">
-          <button className="action-button" onClick={() => props.openPdf(props.paper!)}><ExternalLink size={15} /> PDF</button>
-        </div>
-      </section>
-
-      <section className="chat-shell">
-        <div className="chat-scroll" ref={scrollRef}>
-          {props.messages.length === 0 ? (
-            <div className="chat-empty">
-              <div className="chat-emblem"><MessageCircle size={28} /></div>
-              <h2>和这篇论文对话</h2>
-              <div className="chat-suggestions">
-                {suggestions.map((item) => (
-                  <button key={item} type="button" onClick={() => setInput(item)}>
-                    {item}
-                  </button>
-                ))}
-              </div>
-            </div>
-          ) : (
-            props.messages.map((message) => <ChatMessageView key={message.id} message={message} />)
+        <div className="chat-session-list">
+          {props.sessions.length ? props.sessions.map((session) => (
+            <button
+              key={session.id}
+              type="button"
+              className={session.id === props.activeSessionId ? "active" : ""}
+              onClick={() => props.openSession(session.id)}
+            >
+              <strong>{session.title}</strong>
+              <span>{session.message_count} 条消息 · {formatDateShort(session.updated_at)}</span>
+            </button>
+          )) : (
+            <p className="empty-note">暂无历史对话</p>
           )}
         </div>
-        <div className="chat-composer-wrap">
-          <div className="chat-composer">
-            <textarea
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              onKeyDown={onKeyDown}
-              onCompositionStart={() => { composingRef.current = true; }}
-              onCompositionEnd={onCompositionEnd}
-              placeholder="询问论文内容、方法、实验、局限或让 agent 校验 PDF…"
-              rows={1}
-              disabled={isStreaming}
-            />
-            {isStreaming ? (
-              <button type="button" className="chat-send-button" onClick={props.stopChat} aria-label="停止生成" title="停止生成">
-                <Square size={15} />
-              </button>
+      </aside>
+
+      <section className="chat-main-panel">
+        <section className="chat-topbar">
+          <div className="chat-title">
+            <p className="kicker">NeuNote Chat</p>
+            <h1>和文献库对话</h1>
+            <p>{mentionedPapers.length ? `${mentionedPapers.length} 篇论文已 mention` : "未指定论文，可直接询问整个文献库"}</p>
+          </div>
+        </section>
+
+        <section className="chat-shell">
+          <div className="chat-scroll" ref={scrollRef}>
+            {props.messages.length === 0 ? (
+              <div className="chat-empty">
+                <div className="chat-emblem"><MessageCircle size={28} /></div>
+                <h2>{mentionedPapers.length ? "围绕 mention 论文开始提问" : "开始一个独立对话"}</h2>
+                <div className="chat-suggestions">
+                  {suggestions.map((item) => (
+                    <button key={item} type="button" onClick={() => setInput(item)}>
+                      {item}
+                    </button>
+                  ))}
+                </div>
+              </div>
             ) : (
-              <button type="button" className="chat-send-button" onClick={send} disabled={!input.trim()} aria-label="发送" title="发送">
-                <SendHorizontal size={16} />
-              </button>
+              props.messages.map((message) => <ChatMessageView key={message.id} message={message} paperById={paperById} />)
             )}
           </div>
-        </div>
+          <div className="chat-composer-wrap">
+            <div className="mention-strip">
+              {mentionedPapers.map((paper) => (
+                <span className="mention-chip" key={paper.id}>
+                  <BookOpen size={13} />
+                  <span>{paper.title || paper.id}</span>
+                  <button type="button" onClick={() => removeMention(paper.id)} aria-label={`移除 ${paper.title || paper.id}`}>
+                    <XCircle size={13} />
+                  </button>
+                </span>
+              ))}
+              <span className="mention-hint">输入 @ 可 mention 论文</span>
+            </div>
+            <div className="chat-composer">
+              <textarea
+                ref={inputRef}
+                value={input}
+                onChange={(e) => onInputChange(e.target.value)}
+                onKeyDown={onKeyDown}
+                onCompositionStart={() => { composingRef.current = true; }}
+                onCompositionEnd={onCompositionEnd}
+                placeholder="询问论文内容、方法、实验、局限，或输入 @ 搜索并 mention 论文…"
+                rows={1}
+                disabled={isStreaming}
+              />
+              {mentionActive && (
+                <div className="mention-menu">
+                  {mentionMatches.length ? mentionMatches.map((paper) => (
+                    <button key={paper.id} type="button" onClick={() => addMention(paper)}>
+                      <span className="mention-menu-title">{paper.title || paper.id}</span>
+                      <span className="mention-menu-authors">{(paper.authors ?? []).join(", ") || "Unknown authors"}</span>
+                    </button>
+                  )) : <p>没有匹配的论文</p>}
+                </div>
+              )}
+              {isStreaming ? (
+                <button type="button" className="chat-send-button" onClick={props.stopChat} aria-label="停止生成" title="停止生成">
+                  <Square size={15} />
+                </button>
+              ) : (
+                <button type="button" className="chat-send-button" onClick={send} disabled={!input.trim()} aria-label="发送" title="发送">
+                  <SendHorizontal size={16} />
+                </button>
+              )}
+            </div>
+          </div>
+        </section>
       </section>
     </div>
   );
@@ -1832,11 +2030,14 @@ function completeToolCall(tool: ChatToolCall, payload: Record<string, any>): Cha
   };
 }
 
-function ChatMessageView({ message }: { message: ChatMessage }) {
+function ChatMessageView({ message, paperById }: { message: ChatMessage; paperById: Map<string, Paper> }) {
   const segments = message.role === "assistant" && message.segments?.length
     ? message.segments
     : null;
   const showThinking = Boolean(message.pending && !message.content && !(message.segments?.length));
+  const mentionedPapers = (message.paperIds ?? [])
+    .map((id) => paperById.get(id))
+    .filter(Boolean) as Paper[];
 
   return (
     <article className={`chat-message ${message.role}`}>
@@ -1844,6 +2045,13 @@ function ChatMessageView({ message }: { message: ChatMessage }) {
         {message.role === "assistant" ? <Bot size={17} /> : <UserRound size={17} />}
       </div>
       <div className="chat-bubble">
+        {message.role === "user" && mentionedPapers.length ? (
+          <div className="message-mentions">
+            {mentionedPapers.map((paper) => (
+              <span key={paper.id}>{paper.title || paper.id}</span>
+            ))}
+          </div>
+        ) : null}
         {segments ? (
           segments.map((segment) => (
             segment.type === "tool" ? (

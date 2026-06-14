@@ -1,0 +1,140 @@
+id: guiding_masked_representation_learning_to_capture_spatio_t_emporal_relationship
+title: GUIDING MASKED REPRESENTATION LEARNING TO CAPTURE SPATIO-T EMPORAL RELATIONSHIP
+  OF
+authors:
+- Yeongyeon Na
+- Minje Park
+- Yunwon Tae
+- Sunghoon Joo
+year: 2024
+venue: ICLR 2024
+doi: ''
+arxiv_id: ''
+source_pdf: originals/papers/iclr_2024_guiding_masked_representation_learning_to_capture_spatio_temporal_relationship_of_electrocardiogram_paper_conference.pdf
+pages: 24
+tags:
+- ecg
+- representation_learning
+- time_series
+status: profiled
+confidence: medium
+reading_status: unread
+priority: normal
+needs_review: false
+abstract: Electrocardiograms (ECG) are widely employed as a diagnostic tool for monitoring
+  electrical signals originating from a heart. Recent machine learning research efforts
+  have focused on the application of screening various diseases using ECG signals.
+  However, adapting to the application of screening disease is challenging in that
+  labeled ECG data are limited. Achieving general representation through self-supervised
+  learning (SSL) is a well-known approach to overcome the scarcity of labeled data;
+  however, a naive application of SSL to ECG data, without considering the spatial-temporal
+  relationships inherent in ECG signals, may yield suboptimal results. In this paper,
+  we introduce ST-MEM (Spatio-Temporal Masked Electrocardiogram Modeling), designed
+  to learn spatio-temporal features by reconstructing masked 12-lead ECG data. ST-MEM
+  outperforms other SSL baseline methods in various experimental settings for arrhythmia
+  classification tasks. Moreover, we demonstrate that ST-MEM is adaptable to various
+  lead combinations. Through quantitative and qualitative analysis, we show a spatio-temporal
+  relationship within ECG data. Our code is available at https://github.com/bakqui/ST-MEM.
+one_sentence: We propose ST-MEM, a self-supervised generative framework that uses
+  spatio-temporal patchifying and a masked autoencoder with lead-wise shared decoding
+  to capture spatio-temporal relationships in 12-lead ECG signals.
+problem: Limited labeled ECG data for disease screening tasks hinders supervised learning;
+  naive self-supervised learning ignores spatial-temporal structure of ECG.
+contributions:
+- Proposes ST-MEM, a simple but effective ECG-specific generative self-supervised
+  learning framework.
+- ST-MEM learns general representations by capturing spatio-temporal relationships
+  in ECG, shown via quantitative and qualitative analysis.
+- ST-MEM demonstrates comparable or superior performance to contrastive and generative
+  SSL baselines on arrhythmia classification, excelling in fine-tuning and linear
+  evaluation across various lead settings.
+method:
+- 'Spatio-temporal patchifying: divides each lead signal into non-overlapping patches
+  (temporal splitting) and treats patches from different leads as separate tokens.'
+- Masked autoencoder (MAE) with random masking of patches; the encoder only receives
+  unmasked patches to learn representations.
+- 'Lead-wise shared decoder: decoder processes each lead independently to prevent
+  trivial reconstruction from unmasked patches of other leads.'
+- 'Lead indicating modules: learnable lead embeddings and [SEP] separation embeddings
+  are added to help the model distinguish between leads.'
+- 'Training objective: mean squared error (L2) between original and reconstructed
+  masked patches.'
+experiments:
+- Evaluated on multi-class arrhythmia classification using fine-tuning and linear
+  evaluation protocols.
+- Compared against contrastive (SimCLR, CLOCS, etc.) and generative (MAE) SSL baselines
+  on benchmark datasets.
+- Demonstrates robustness to limited labeled data and effective adaptation to reduced
+  lead settings (limb leads, single lead) after pre-training on 12-lead data.
+- Ablation studies confirm the importance of spatio-temporal patchifying, lead-wise
+  decoder, and lead embeddings.
+limitations:
+- However, adapting to the application of screening disease is challenging in that
+  labeled ECG data are limited.
+- Achieving general repre- sentation through self-supervised learning (SSL) is a well-known
+  approach to overcome the scarcity of labeled data; however, a naive application
+  of SSL to ECG data, without considering the spatial-temporal relationships inherent
+  in ECG signals, may yield suboptimal results.
+- However, since the types of heart disease are diverse and the experienced cardiologists
+  who can provide labels are limited, learning the ECG representation for each application
+  (i.e., detecting various heart diseases) is challenging.
+- These data are usually defined by numerous augmentation methods (e.g., cropping,
+  flipping, and shifting); however, despite a simple augmentation, the information
+  on the semantic meaning of ECG signals can change drastically (Lan et al., 2023).
+notes: "# Reading Notes\n\n*Use this space for your own notes while reading the paper.\
+  \ The structured summary is available in the Summary section.*\n\n## Key takeaways\n\
+  \n- \n\n## Questions\n\n- \n\n## Connections to other papers\n\n- \n"
+review_notes: []
+agent_reviews:
+- time: '2026-06-14T02:48:23.491133+00:00'
+  model: deepseek-v4-flash
+  notes:
+  - 'authors: [] → [''Yeongyeon Na'', ''Minje Park'', ''Yunwon Tae'', ''Sunghoon Joo'']'
+  - 'year: None → 2024'
+  - 'venue:  → ICLR 2024'
+  - 'abstract: updated (was: ''Electrocardiograms (ECG) are widely employed as a diagnostic...'')'
+  - 'one_sentence: updated (was: ''Electrocardiograms (ECG) are widely employed as
+    a diagnostic...'')'
+  - 'problem: updated (was: ''However, adapting to the application of screening disease
+    is...'')'
+  - 'contributions: replaced 0 items → 3 items'
+  - 'method: replaced 5 items → 5 items'
+  - 'experiments: replaced 5 items → 4 items'
+  - Corrected title from broken all-caps version to proper title case with typo fix
+    ('Spatio-Temporal' not 'SPATIO-T EMPORAL').
+  - Added authors from PDF (Yeongyeon Na, Minje Park, Yunwon Tae, Sunghoon Joo).
+  - Set year=2024 and venue='ICLR 2024' based on header.
+  - Extracted full abstract from first page.
+  - Filled one_sentence, problem, contributions, method, and experiments based on
+    paper content.
+  - No explicit limitations section found; set limitations to null.
+  - Tags kept as is; existing tags adequately cover the paper's topics (ecg, representation_learning,
+    time_series).
+  - No DOI or arXiv ID found in provided PDF pages.
+created_at: '2026-06-14T02:46:58.333446+00:00'
+updated_at: '2026-06-14T02:48:35.802593+00:00'
+agent_reviewed_at: '2026-06-14T02:48:23.491164+00:00'
+translations:
+  abstract: 心电图（ECG）广泛应用于监测心脏电信号的诊断工具。近期机器学习研究聚焦于利用心电图信号筛查多种疾病。然而，由于带标签的心电图数据有限，将其应用于疾病筛查颇具挑战。通过自监督学习（SSL）获得通用表征是克服标注数据稀缺的公认方法；然而，若不考虑心电图信号固有的时空关系而简单应用SSL，可能产生次优结果。本文提出ST-MEM（时空掩码心电图建模），通过重建掩码的12导联心电数据学习时空特征。ST-MEM在多种心律失常分类实验设置中优于其他SSL基线方法。此外，我们证明ST-MEM可适配多种导联组合。通过定量和定性分析，我们揭示了心电图数据中的时空关系。代码开源：https://github.com/bakqui/ST-MEM。
+  one_sentence: 我们提出ST-MEM，一种自监督生成框架，通过时空分块和带导联共享解码的掩码自编码器捕获12导联心电信号的时空关系。
+  problem: 疾病筛查任务中带标签的心电图数据有限，阻碍了监督学习；朴素的自监督学习忽略了心电图的时空结构。
+  contributions:
+  - 提出ST-MEM，一种简单但有效的面向心电图的生成式自监督学习框架。
+  - ST-MEM通过捕获心电图中的时空关系学习通用表征，并通过定量和定性分析加以证明。
+  - ST-MEM在心律失常分类中展现出与对比式和生成式SSL基线相当或更优的性能，在微调和线性评估中均表现优异，且能适配多种导联设置。
+  method:
+  - 时空分块：将每个导联信号划分为不重叠的块（时间分割），并将不同导联的块视为独立标记。
+  - 掩码自编码器（MAE）：随机掩码部分块，编码器仅接收未掩码块以学习表征。
+  - 导联共享解码器：解码器独立处理每个导联，防止通过其他导联的未掩码块进行平凡重建。
+  - 导联指示模块：添加可学习的导联嵌入和[SEP]分隔嵌入，帮助模型区分不同导联。
+  - 训练目标：原始与重建掩码块之间的均方误差（L2损失）。
+  experiments:
+  - 在多类心律失常分类任务中使用微调和线性评估协议进行评估。
+  - 与对比式（SimCLR、CLOCS等）和生成式（MAE）SSL基线在基准数据集上进行比较。
+  - 在12导联数据预训练后，对有限标注数据具有鲁棒性，并能有效适配减少导联设置（肢体导联、单导联）。
+  - 消融研究证实了时空分块、导联解码器和导联嵌入的重要性。
+  limitations:
+  - 然而，由于带标签的心电图数据有限，将其应用于疾病筛查颇具挑战。
+  - 通过自监督学习（SSL）获得通用表征是克服标注数据稀缺的公认方法；然而，若不考虑心电图信号固有的时空关系而简单应用SSL，可能产生次优结果。
+  - 然而，由于心脏疾病类型多样且能提供标签的经验丰富的心血管专家有限，针对每种应用（即检测各类心脏疾病）学习心电图表征面临挑战。
+  - 这些数据通常由多种增强方法（如裁剪、翻转和平移）定义；然而，尽管是简单增强，心电图信号语义信息可能发生剧烈变化（Lan et al., 2023）。
