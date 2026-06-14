@@ -1,0 +1,157 @@
+id: agent_harness_engineering_a_survey_junjie_li1_6_xi_xiao_6_yunbei_zhang_5_chen_li
+title: 'Agent Harness Engineering: A Survey Junjie Li1,6,*,Xi Xiao 6,*,Yunbei Zhang
+  5,*,Chen Liu 2,*,'
+authors:
+- Junjie Li
+- Xi Xiao
+- Yunbei Zhang
+- Chen Liu
+- Lin Zhao
+- Xiaoying Liao
+- Yingrui Ji
+- Janet Wang
+- Jianyang Gu
+- Yingqiang Ge
+- Weijie Xu
+- Xi Fang
+- Xiang Xu
+- Tianchen Zhao
+- Youngeun Kim
+- Tianyang Wang
+- Jihun Hamm
+- Smita Krishnaswamy
+- Jun Huan
+- Chandan K Reddy
+year: null
+venue: TMLR
+doi: ''
+arxiv_id: ''
+source_pdf: originals/papers/00_agent_harness_engineering_survey.pdf
+pages: 71
+tags:
+- agent
+- harness
+- llm
+- survey
+- tool_use
+status: profiled
+confidence: medium
+reading_status: unread
+priority: normal
+needs_review: false
+abstract: 'The rapid deployment of large language model (LLM) agents in production
+  has revealed a recurring pattern: task execution reliability depends less on the
+  underlying model than on the infrastructure layer that wraps it, the agent execution
+  harness. This survey provides a practice-grounded, systematic treatment of agent
+  harness engineering, organized around three claims. First, the agent harness is
+  an independent system layer whose engineering quality drives a large share of real-world
+  reliability, a position we develop through a three-phase engineering evolution from
+  prompt to context to harness engineering, a cross-layer synthesis covering the cost–quality–speed
+  trilemma, the capability–control tradeoff, and the harness coupling problem, and
+  an open-problem agenda grounded in both research gaps and production pain points.
+  Second, we propose ETCLOVG, a seven-layer taxonomy (Execution environment, Tool
+  interface, Context management, Lifecycle/Orchestration, Observability, Verification,
+  Governance) that extends prior six-component frameworks by treating observability
+  and governance as independent architectural concerns. Third, we map 170+ open-source
+  projects onto this taxonomy to expose ecosystem patterns, coverage gaps, and emerging
+  design principles, alongside engineering principles distilled from production deployments
+  at OpenAI, Anthropic, and LangChain that address the gap between practitioner knowledge
+  and research vocabulary.'
+one_sentence: This survey systematically treats agent harness engineering as an independent
+  system layer, proposing the ETCLOVG taxonomy and mapping over 148 open-source projects.
+problem: The rapid deployment of LLM agents has revealed that task execution reliability
+  depends less on the underlying model than on the infrastructure layer (the agent
+  execution harness), yet this layer lacks systematic study.
+contributions:
+- 'Conceptual: The harness, not the model alone, is the binding constraint on real-world
+  agent reliability, supported by harness-only gains of up to 10x on benchmarks.'
+- 'Classificatory: The seven-layer ETCLOVG taxonomy treats Observability and Governance
+  as first-class layers, extending prior six-component frameworks.'
+- 'Empirical: Mapping 148+ open-source projects onto ETCLOVG reveals ecosystem patterns,
+  coverage gaps, and emerging design principles.'
+method:
+- Systematic survey and synthesis of agent harness engineering literature.
+- Proposal of the ETCLOVG seven-layer taxonomy (Execution environment, Tool interface,
+  Context management, Lifecycle/Orchestration, Observability, Verification, Governance).
+- Mapping of 170+ open-source projects onto the taxonomy to expose ecosystem patterns
+  and coverage gaps.
+experiments:
+- 31 8 Verification and Evaluation (V) 32 8.1 Harness Evaluation as a Task-to-Feedback
+  Lifecycle .
+- Bölük (2026a) modified only the edit-tool format and surrounding tool harness, with
+  no model modification, and reported gains of up to 10×on coding benchmarks across
+  15 models.
+- Each of these harness-only gains exceeds the typical 2 to 4 percentage point improvements
+  reported as meaningful model advances on the same benchmarks.
+- 'We refer to this pattern as the binding-constraint thesis (Bölük, 2026b): for long-horizon
+  tasks evaluated across comparable frontier models, benchmark variance may be driven
+  as much by the execution harness as by the model itself.'
+- Evaluation infrastructure matured with SWE-bench, AgentBench, WebArena, and GAIA
+  (Jimenez et al., 2024; Liu et al., 2023a; Zhou et al., 2024; Mialon et al., 2023),
+  while protocol standardization began with Anthropic’s MCP and Google’s A2A (Anthropic,
+  2024c; Surapaneni et al., 2025).
+limitations:
+- Corpus limited to open-source projects; commercial platforms are excluded.
+- Selection criteria may introduce coverage gaps in the mapping.
+- Qualitative analysis; quantitative comparisons across harness components are limited.
+notes: "# Reading Notes\n\n*Use this space for your own notes while reading the paper.\
+  \ The structured summary is available in the Summary section.*\n\n## Key takeaways\n\
+  \n- \n\n## Questions\n\n- \n\n## Connections to other papers\n\n- \n"
+review_notes: []
+agent_reviews:
+- time: '2026-06-13T01:31:50.889414+00:00'
+  model: deepseek-v4-flash
+  notes:
+  - 'authors: [] → [''Junjie Li'', ''Xi Xiao'', ''Yunbei Zhang'', ''Chen Liu'', ''Lin
+    Zh...'
+  - 'venue:  → TMLR'
+  - 'abstract: updated (was: ''The rapid deployment of large language model (LLM)
+    agents in...'')'
+  - 'one_sentence: updated (was: ''The rapid deployment of large language model (LLM)
+    agents in...'')'
+  - 'problem: updated (was: ''The rapid deployment of large language model (LLM) agents
+    in...'')'
+  - 'contributions: replaced 0 items → 3 items'
+  - 'method: replaced 5 items → 3 items'
+  - 'limitations: replaced 2 items → 3 items'
+  - 'tags: added [''tool_use'']'
+  - 'Corrected title from garbled version including authors to ''Agent Harness Engineering:
+    A Survey'' based on first page.'
+  - Added full author list extracted from the PDF (20 authors).
+  - Set venue to TMLR as the paper states 'Under review as submission to TMLR'.
+  - Year not explicitly given in PDF; references cite 2026 but that is uncertain,
+    so left null.
+  - Abstract, one_sentence, problem, contributions, method, and limitations filled
+    from PDF content.
+  - 'Tags: added ''tool_use'' because the paper devotes a full layer (Tool Interface
+    and Protocol Layer) to tool-related infrastructure, a topic not covered by existing
+    tags.'
+  - Removed garbled section numbers from method, experiments, and limitations fields.
+created_at: '2026-06-13T01:31:24.697067+00:00'
+updated_at: '2026-06-13T01:32:27.443863+00:00'
+agent_reviewed_at: '2026-06-13T01:31:50.889418+00:00'
+translations:
+  abstract: 生产中迅速部署大型语言模型(LLM)剂,暴露出一种反复出现的模式:任务执行可靠性所依赖的不是基础模型,而是包扎它的基础设施层,即代理执行工具.
+    这项调查提供了一种基于实践的系统处理剂牵引工程的方法,围绕三项索赔案组织。 首先,代理牵引器是一个独立的系统层,其工程质量驱动着大部分真实世界的可靠性,我们通过从快速到上下文的三阶段工程演化来发展这种地位,跨层合成涵盖成本-质量-速度三重力马,能力-控制权衡,以及操纵耦合问题,以及基于研究差距和生产痛点的开放式问题议程。
+    第二,我们提议采用七层分类法(执行环境、工具界面、背景管理、生命周期/管弦乐、可观察性、核查、治理),通过将可观察性和治理作为独立的建筑问题来扩展前六部分框架。
+    第三,我们把170+开源项目映射到这个分类学上,以揭示生态系统模式、覆盖差距和新兴设计原则,以及从OpenAI、Anthropic和LangChain的生产部署中提取的工程原则,解决实践者知识和研究词汇之间的差距。
+  one_sentence: 这项调查系统地将代理人牵引工程视为独立的系统层,提出了ETCLOVG分类法,并绘制了148个开源项目。
+  problem: 快速部署LLM代理显示,任务执行可靠性所依赖的不是基础模型,而是基础设施层(代理执行杠杆),然而这一层缺乏系统的研究.
+  contributions:
+  - 概念:对现实世界代理人可靠性的约束性制约是,仅靠在基准上达到10x的利用收益。
+  - 分类法:七层ETCLOVG分类法将可观察性和治理性视为一流层,延伸前六部分框架.
+  - 经验论:将148+开源项目映射到ETCLOVG上,揭示生态系统模式,覆盖差距,以及新兴设计原则.
+  method:
+  - 系统勘测和综合剂利用工程文献.
+  - ETCLOVG七层分类学(执行环境、工具界面、背景管理、生命周期/管弦、可观察性、核查、治理)的建议。
+  - 将170+开源项目映射到分类中,以揭示生态系统模式和覆盖面差距。
+  experiments:
+  - 31 8 核查和评价(五) 32 8.1 Harness评价作为任务对后继周期。
+  - Bölük(2026a)只修改了编辑工具格式和周围工具的套装,没有模型修改,并报告在15个模型中增加了最多10×on编码基准.
+  - 这些仅限使用的收益都超过了典型的2至4个百分点的改进,这些改进是在同一基准上取得有意义的模型进展。
+  - 我们把这种模式称为约束-约束论(Bölük, 2026b):对于跨可比前沿模型评价的长视野任务,基准差异可能与模型本身一样由执行手段驱动。
+  - 与SWE-bench,Agent Bench,WebArena,以及GAIA(Jimenez等人,2024年;Liu等人,2023年a;Zhou等人,2024年;Mialon等人,2023年)一起,评价基础设施已经成熟,而协议标准化则从Anthropic的MCP和Google的A2A(Anthropic,2024c;Surapaneni等人,2025年)开始.
+  limitations:
+  - 公司仅限于开源项目;商业平台除外.
+  - 选择标准可能会在测绘中引入覆盖面差距。
+  - 定性分析;对各种带状组件的定量比较有限。

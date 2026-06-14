@@ -1,0 +1,130 @@
+id: m_every_task_deserves_its_own_memory_harness
+title: 'M^⋆: Every Task Deserves Its Own Memory Harness'
+authors:
+- Wenbo Pan
+- Shujie Liu
+- Xiangyang Zhou
+- Shiwei Zhang
+- Wanlu Shi
+- Mirror Xu
+- Xiaohua Jia
+year: 2026
+venue: ''
+doi: ''
+arxiv_id: 2604.11811v2
+source_pdf: originals/papers/10_mstar_memory_harness.pdf
+pages: 36
+tags:
+- agent
+- evolutionary_algorithm
+- harness
+- llm
+- retrieval
+status: profiled
+confidence: medium
+reading_status: unread
+priority: normal
+needs_review: false
+abstract: Large Language Model (LLM) agents rely on a memory harness to write, organize,
+  retrieve, and use past experience. A harness that works for one task often fails
+  on another, because different tasks like conversations, embodied planning, or expert
+  reasoning require different storage and retrieval behavior. To address this limitation,
+  we introduce MSTAR, a method that automatically discovers task-optimized memory
+  programs through reflective code evolution. Specifically, MSTAR represents a memory
+  harness as an executable Python program that defines the Schema, Logic, and Instruction
+  components, which are optimized jointly. We evaluate MSTAR on four tasks covering
+  conversation, embodied planning, and specialized reasoning. Our results demonstrate
+  that MSTAR improves performance over existing static memory harnesses across all
+  evaluated tasks. Furthermore, the evolved memory programs exhibit structurally distinct
+  processing mechanisms for each evaluated domain. These findings suggest that every
+  task benefits from its own memory harness, and that memory-program search provides
+  a concrete way to discover it.
+one_sentence: MSTAR automatically discovers task-optimized memory harnesses for LLM
+  agents through reflective code evolution of executable Python memory programs.
+problem: Different tasks require different memory harnesses for LLM agents, but existing
+  static harnesses transfer poorly across tasks.
+contributions:
+- Formulate task-optimized memory harness discovery as memory-program search, where
+  an executable Python program jointly specifies Schema, Logic, and Instruction.
+- Propose MSTAR, an evolutionary method that optimizes memory harnesses from target-task
+  feedback through reflective code evolution.
+- Demonstrate that task-optimized memory harnesses are structurally and procedurally
+  distinct across conversation, embodied planning, and expert reasoning tasks.
+method:
+- 'Represent memory harness as an executable Python program with three components:
+  Schema (data formats), Logic (backend operations), and Instruction (prompt constants).'
+- 'Use reflective code evolution: sample validation feedback, generate targeted patches
+  via a reflector agent, and apply quality checks with auto-repair.'
+- Employ population-based program search balancing exploration and exploitation.
+experiments:
+- 'Evaluate on four tasks: conversation (LoCoMo), embodied AI (ALFWorld), healthcare
+  (HealthBench), and legal reasoning (PRBench).'
+- Compare against nine baselines across three memory paradigms (No Memory, RAG, Cheatsheet).
+- MSTAR achieves best overall score and performs robustly on all tasks; evolved programs
+  are structurally distinct per domain.
+limitations:
+- A harness that works for one task often fails on another, because different tasks
+  like conversations, embodied planning, or expert reasoning require different storage
+  and retrieval behavior.
+- To address this limitation, we introduce MSTAR, a method that automatically discovers
+  task-optimized memory programs through reflective code evolution.
+- 'MSTAR searches over the memory harness itself with two mechanisms: a reflector
+  agent that debugs memory program failures and generates targeted improvements, and
+  a population-based program search strategy that balances exploration and exploitation
+  while enforcing constraints on program quality.'
+- If any check fails, the memory program and its corresponding error messages are
+  resubmitted to the coding agent for repair.
+notes: "# Reading Notes\n\n*Use this space for your own notes while reading the paper.\
+  \ The structured summary is available in the Summary section.*\n\n## Key takeaways\n\
+  \n- \n\n## Questions\n\n- \n\n## Connections to other papers\n\n- \n"
+review_notes: []
+agent_reviews:
+- time: '2026-06-13T01:32:49.980616+00:00'
+  model: deepseek-v4-flash
+  notes:
+  - 'authors: [] → [''Wenbo Pan'', ''Shujie Liu'', ''Xiangyang Zhou'', ''Shiwei Zhang''...'
+  - 'year: None → 2026'
+  - 'arxiv_id:  → 2604.11811v2'
+  - 'abstract: updated (was: ''Large Language Model (LLM) agents rely on a memory
+    harness t...'')'
+  - 'one_sentence: updated (was: ''Large Language Model (LLM) agents rely on a memory
+    harness t...'')'
+  - 'problem: updated (was: ''2 Problem Setting We consider a task T= (D e,D v,D t),
+    where...'')'
+  - 'contributions: replaced 0 items → 3 items'
+  - 'method: replaced 5 items → 3 items'
+  - 'experiments: replaced 5 items → 3 items'
+  - 'tags: added [''evolutionary_algorithm'']'
+  - Added authors, year, arxiv_id from PDF header.
+  - Fixed abstract and one_sentence to reflect full text.
+  - Added problem statement, contributions, method, experiments from paper content.
+  - Added tag 'evolutionary_algorithm' because the method uses reflective code evolution
+    with population-based search.
+  - Left venue, doi, limitations as null (not provided in source).
+created_at: '2026-06-13T01:31:32.271743+00:00'
+updated_at: '2026-06-13T01:33:03.618397+00:00'
+agent_reviewed_at: '2026-06-13T01:32:49.980631+00:00'
+translations:
+  abstract: 大型语言模型(LLM)代理依赖于记忆带来写作,组织,检索,并使用过去的经验. 一种对一项任务起作用的牵引器往往在另一项任务上失败,因为像对话,内含规划,或专家推理等不同任务都需要不同的存储和检索行为.
+    为了解决这一局限性,我们引入了MSTAR,这种方法通过反射代码演化自动发现任务优化的内存程序. 具体来说,MSTAR作为可执行的Python程序代表一个内存吊带,它定义了Schema,Logic,以及指令组件,这些组件是共同优化的.
+    我们评价MSTAR的四项任务,包括对话、规划和专门推理。 我们的结果表明,MSTAR改进了所有评价任务的现有静态内存的性能。 此外,不断发展的内存程序为每个被评价领域显示了结构上不同的处理机制。
+    这些研究结果表明,每一项任务都得益于自身记忆的利用,记忆程序搜索提供了发现它的具体方法.
+  one_sentence: MSTAR通过可执行的Python内存程序的反射代码演化,自动发现LLM代理的任务优化内存控制器.
+  problem: 不同的任务需要不同的LLM代理的内存控制,但现有的静态控制在任务间转移不良.
+  contributions:
+  - 制定任务优化的内存拉带发现作为内存程序搜索,其中可执行的Python程序共同指定了Schema,Logic,以及指令.
+  - 提议MSTAR,一种通过反射代码演化来优化目标任务反馈的内存的演化方法.
+  - 表明优化任务记忆的利用在结构和程序上与对话、规划和专家推理任务不同。
+  method:
+  - 作为可执行的 Python 程序来代表内存控制器,其中包含三个组件:Schema(数据格式),Logic(后端操作),和Directive(即时常数).
+  - 使用反射码演化:样本验证反馈,通过反射剂生成定向补丁,并应用自动修复进行质量检查.
+  - 采用基于人口的搜索方案,平衡勘探和开发。
+  experiments:
+  - 评价四项任务:对话(LoCoMo),包含AI(ALFWorld),保健(Health Bench)和法律推理(PR Bench)。
+  - 与跨越三个内存范式(无记忆,RAG,Cheetsheet)的9个基线相比.
+  - MSTAR取得了最佳的总体分数,并有力完成了所有任务;进化后的程序在结构上与每个域不同.
+  limitations:
+  - 一种对一项任务起作用的牵引器往往在另一项任务上失败,因为像对话,内含规划,或专家推理等不同任务都需要不同的存储和检索行为.
+  - 为了解决这一局限性,我们引入了MSTAR,这种方法通过反射代码演化自动发现任务优化的内存程序.
+  - MSTAR对内存的搜索利用两种机制:一种是调试内存程序故障并产生针对性改进的反射剂,另一种是以人口为基础的程序搜索策略,既要平衡探索和开发,又要强制执行对程序质量的限制.
+  - 如果任何检查失败,内存程序及其相应的错误消息会被重新提交编码代理进行修复.

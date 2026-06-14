@@ -653,22 +653,43 @@ def run_enrichment_job(root: Path, paper_id: str, job_id: str, config: dict[str,
 
         # ── Translation (after enrichment, if paper is in English) ──
         try:
-            from .translate import translate_paper_summary
+            from .translate import translate_paper_summary, translate_paper_summary_llm
             paper = load_paper(root, paper_id)
             if not paper.get("translations") and _text_is_english(paper.get("abstract", "")):
+                engine = (config.get("translation_engine") or "local").lower()
+                if engine == "llm" and not (config.get("claude_api_key") or "").strip():
+                    job_debug_log(root, job_id,
+                                  "Translation engine='llm' but no API key configured; "
+                                  "falling back to local Argos.")
+                    engine = "local"
+
+                engine_label = "LLM (Claude)" if engine == "llm" else "Argos (offline)"
                 update_job(root, job_id, stage="translating", progress=92,
-                           message="Translating summary to Chinese.")
-                job_debug_log(root, job_id, "Stage: translating (en→zh)")
+                           message=f"Translating summary to Chinese ({engine_label}).")
+                job_debug_log(root, job_id, f"Stage: translating (engine={engine}, model={config.get('claude_model', 'sonnet') if engine == 'llm' else 'n/a'})")
                 job = load_job(root, job_id)
                 if job.get("status") == "cancelled":
                     return
-                translations = translate_paper_summary(paper)
+
+                if engine == "llm":
+                    translations = translate_paper_summary_llm(paper, config)
+                    # If the LLM returned nothing usable (parse failure, no
+                    # fields translated), fall back to local so the user
+                    # still gets *something* rather than an empty card.
+                    if not translations:
+                        job_debug_log(root, job_id,
+                                      "LLM translation returned no fields; "
+                                      "falling back to local Argos.")
+                        translations = translate_paper_summary(paper)
+                else:
+                    translations = translate_paper_summary(paper)
+
                 paper["translations"] = translations
                 save_paper(root, paper)
                 field_count = len(translations)
                 job_debug_log(root, job_id, f"Translation complete: {field_count} fields")
                 update_job(root, job_id, stage="translating", progress=96,
-                           message=f"Translated {field_count} summary fields.")
+                           message=f"Translated {field_count} summary fields via {engine_label}.")
             else:
                 job_debug_log(root, job_id, "Translation skipped (already translated or non-English)")
         except Exception as exc:
@@ -781,6 +802,7 @@ def load_app_config(root: Path) -> dict[str, Any]:
             "claude_endpoint": "",
             "claude_model": "sonnet",
             "max_concurrency": 4,
+            "translation_engine": "llm",
         }
         path.write_text(yaml.safe_dump(default, sort_keys=False, allow_unicode=True))
         return default
@@ -790,13 +812,15 @@ def load_app_config(root: Path) -> dict[str, Any]:
         "claude_endpoint": data.get("claude_endpoint") or "",
         "claude_model": data.get("claude_model") or "sonnet",
         "max_concurrency": data.get("max_concurrency", 4),
+        "translation_engine": data.get("translation_engine") or "llm",
     }
 
 
 def save_app_config(root: Path, config: dict[str, Any]) -> dict[str, Any]:
     ensure_kb(root)
     current = load_app_config(root)
-    for key in ("claude_api_key", "claude_endpoint", "claude_model", "max_concurrency"):
+    for key in ("claude_api_key", "claude_endpoint", "claude_model",
+                "max_concurrency", "translation_engine"):
         if key in config and config[key] is not None:
             current[key] = config[key]
     (root / "metadata/app_config.yaml").write_text(

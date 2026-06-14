@@ -1,0 +1,156 @@
+id: auditing_agent_harness_safety
+title: Auditing Agent Harness Safety
+authors:
+- Chengzhi Liu
+- Yichen Guo
+- Yepeng Liu
+- Yuzhe Yang
+- Qianqi Yan
+- Xuandong Zhao
+- Wenyue Hua
+- Sheng Liu
+- Sharon Li
+- Yuheng Bu
+- Xin Eric Wang
+year: 2026
+venue: ''
+doi: ''
+arxiv_id: '2605.14271'
+source_pdf: originals/papers/16_auditing_agent_harness_safety.pdf
+pages: 34
+tags:
+- agent
+- benchmark
+- harness
+- llm
+- multi_agent
+- tool_use
+status: profiled
+confidence: medium
+reading_status: unread
+priority: normal
+needs_review: false
+abstract: 'LLM agents increasingly run inside execution harnesses that dispatch tools,
+  allocate resources, and route messages between specialized components. However,
+  a harness can return a correct, benign answer over a trajectory that accesses unauthorized
+  resources or leaks context to the wrong agent. Output-level evaluation cannot see
+  these failures, yet most safety benchmarks score only final outputs or terminal
+  states, even though many violations occur mid-trajectory rather than at termination.
+  The central question is whether the harness respects user intent, permission boundaries,
+  and information-flow constraints throughout execution. To address this gap, we propose
+  HarnessAudit, a framework that audits full execution trajectories across boundary
+  compliance, execution fidelity, and system stability, with a focus on multi-agent
+  harnesses where these risks are most pronounced. We further introduce HarnessAudit-Bench,
+  a benchmark of 210 tasks across eight real-world domains, instantiated in both single-agent
+  and multi-agent configurations with embedded safety constraints. Evaluating ten
+  harness configurations across frontier models and three multi-agent frameworks,
+  we find that: (i) task completion is misaligned with safe execution, and violations
+  accumulate with trajectory length; (ii) safety risks vary across domains, task types,
+  and agent roles; (iii) most violations concentrate in resource access and inter-agent
+  information transfer; (iv) multi-agent collaboration expands the safety risk surface,
+  while harness design sets the upper bound of safe deployment.'
+one_sentence: This paper proposes HarnessAudit, a framework for auditing LLM agent
+  execution trajectories for safety violations, and HarnessAudit-Bench, a benchmark
+  of 210 tasks across eight domains, revealing that task completion is misaligned
+  with safe execution and that multi-agent collaboration expands the safety risk surface.
+problem: Existing agent safety benchmarks evaluate only final outputs or terminal
+  states, failing to detect mid-trajectory violations such as unauthorized resource
+  access, information leakage, and irreversible side effects.
+contributions:
+- Formalize agent harness as a policy-constrained execution system and audit trajectories
+  along boundary compliance, execution fidelity, and system stability.
+- Construct HarnessAudit-Bench, a benchmark of 210 tasks across eight real-world domains
+  with embedded safety constraints in single- and multi-agent configurations.
+- Empirically evaluate ten harness configurations across frontier models and three
+  multi-agent frameworks, revealing systematic failure patterns in resource access,
+  inter-agent information transfer, and stability.
+method:
+- Define agent harness as policy-constrained execution system with permission policy
+  Π and information-flow policy Φ.
+- 'Propose three-layer safety evaluation: L1 Boundary Compliance (tool, resource,
+  information flow violations), L2 Execution Fidelity (action validity, checkpointed
+  task completion), L3 System Stability (robustness to prompt injection, ambiguous
+  goals, tool errors).'
+- 'Design trajectory auditing pipeline with three phases: Setup (hidden audit artifacts),
+  Execution (record tool calls, resource accesses, messages), Judge (score using hidden
+  artifacts and collected evidence).'
+- 'Introduce scoring metrics: Safety Adherence Rate (SAR) for boundary compliance,
+  Task Completion Rate (TCR) and Action Validity Score (AVS) for execution fidelity.'
+experiments:
+- Evaluate 10 harness configurations across frontier models (GPT-5.4, Opus 4.6, Sonnet
+  4.6, Gemini 3.1 Pro, etc.) and three multi-agent frameworks.
+- Benchmark 210 tasks across 8 real-world domains (E-commerce, Calendar, Code Repository,
+  etc.) in both single-agent and multi-agent configurations.
+- Analyze safety violations across domains, task types, and agent roles, finding that
+  resource access and inter-agent information transfer account for most violations.
+limitations:
+- However, a harness can return a correct, benign answer over a trajectory that accesses
+  unauthorized resources or leaks context to the wrong agent.
+- Output-level evaluation cannot see these failures, yet most safety benchmarks score
+  only final outputs or terminal states, even though many violations occurmid-trajectoryratherthanattermination.
+- 'Thisshiftexposesafailuremodethatoutput- levelevaluationcannotsee: asillustratedinFigure2,aharnesscanreturnacorrect,benignanswerwhilealong
+  thewayaccessingunauthorizedresources,leakingprivatecontexttothewrongagent,ortriggeringirreversible
+  sideeffectsoutsidetheintendedscope.'
+- (3) Empirical analysis of harness safety failures.We evaluate ten harness configurations
+  across frontier modelsandthreemulti-agentframeworks,surfacingsystematicfailurepatternsinresourceaccess,inter-agent
+  information transfer, and stability under perturbation.
+notes: "# Reading Notes\n\n*Use this space for your own notes while reading the paper.\
+  \ The structured summary is available in the Summary section.*\n\n## Key takeaways\n\
+  \n- \n\n## Questions\n\n- \n\n## Connections to other papers\n\n- \n"
+review_notes: []
+agent_reviews:
+- time: '2026-06-13T01:33:32.713391+00:00'
+  model: deepseek-v4-flash
+  notes:
+  - 'authors: [] → [''Chengzhi Liu'', ''Yichen Guo'', ''Yepeng Liu'', ''Yuzhe Yang'',
+    ''...'
+  - 'year: None → 2026'
+  - 'arxiv_id:  → 2605.14271'
+  - 'abstract: updated (was: ''AuditingAgentHarnessSafety ChengzhiLiu* 1,YichenGuo*
+    1,Yepen...'')'
+  - 'one_sentence: updated (was: ''AuditingAgentHarnessSafety ChengzhiLiu* 1,YichenGuo*
+    1,Yepen...'')'
+  - 'problem: updated (was: ''However, a harness can return a correct, benign answer
+    over ...'')'
+  - 'contributions: replaced 0 items → 3 items'
+  - 'method: replaced 5 items → 4 items'
+  - 'experiments: replaced 5 items → 3 items'
+  - 'tags: added [''multi_agent'', ''tool_use'']'
+  - 'tags: removed [''retrieval'']'
+  - Fixed authors list from empty to the 11 authors listed on the paper.
+  - Set year to 2026 based on arXiv date.
+  - Set arxiv_id to 2605.14271.
+  - Replaced garbled abstract with cleaned version from PDF text.
+  - Provided one_sentence summary based on abstract.
+  - Filled problem, contributions, method, experiments from paper content.
+  - 'Updated tags: removed ''retrieval'' (not a core topic), added ''multi_agent''
+    and ''tool_use''.'
+created_at: '2026-06-13T01:31:34.016668+00:00'
+updated_at: '2026-06-13T01:33:42.106552+00:00'
+agent_reviewed_at: '2026-06-13T01:33:32.713398+00:00'
+translations:
+  abstract: LLM代理越来越多地在内部运行,利用这些工具在专门组件之间发送、分配资源和路由信息。 然而,在获取未经授权的资源或向错误的代理商泄露上下文的轨迹上,牵引装置可以返回正确、良性的答案。
+    产出一级的评价看不到这些失败,但大多数安全基准只得最终产出或终端状态的分数,尽管许多违规事件发生于中途,而不是在终止时。 中心问题是,在整个执行过程中,这种利用是否尊重用户意图、许可界限和信息流动的限制。
+    为了弥补这一差距,我们建议采用HarnessAudit这一框架,对跨越边界合规、执行忠心和系统稳定性的完全执行轨迹进行审计,重点是这些风险最为突出的多代理人利用。
+    我们进一步引入HarnessAudit-Bench,这是跨越8个现实世界域的210项任务的基准,在具有嵌入式安全限制的单代理和多代理配置中进行即时化. 评估跨越前沿模式和三个多代理框架的十种牵引配置,我们发现:(一)任务完成与安全执行不匹配,违规事件累积与轨迹长度;(二)安全风险因领域,任务类型,代理作用而异;(三)大多数违规事件集中于资源获取和代理间信息传输;(四)多代理协作扩大安全风险表面,同时利用设计设定安全部署的上限.
+  one_sentence: 本文提出HarnessAudit是审计违反安全规则的LLM代理执行轨迹的框架,HarnessAudit-Bench是8个领域210项任务的基准,揭示任务完成与安全执行不一致,多代理合作扩大了安全风险表面.
+  problem: 现有的代理安全基准只评价最终产出或终端状态,未能发现诸如未经授权的资源获取、信息泄漏和不可逆转的副作用等中途违规。
+  contributions:
+  - 将代理人利用正规化,作为政策限制的执行制度和审计轨迹,沿边界合规、执行忠诚和系统稳定。
+  - 建構HarnessAudit-Bench,是跨8个现实世界域的210项任务的基准,具有嵌入式安全约束的单代理和多代理配置.
+  - 经验性地评价跨越前沿模型的10个牵引配置和3个多代理框架,揭示资源获取、代理间信息传输和稳定性方面的系统故障模式。
+  method:
+  - 将代理人利用定义为政策限制的执行系统,其中包含许可政策和信息流动政策。
+  - 建议三层安全评价:L1 边界合规(工具,资源,信息流违规),L2 执行Fidelity(行动有效性,检查任务完成),L3系统稳定性(快速注入的阻塞,模糊目标,工具错误).
+  - 设计轨迹审计程序分三个阶段:设置(隐藏审计文物)、执行(记录工具呼叫、资源存取、信息)、法官(使用隐藏文物和收集的证据)。
+  - 采用评分指标:遵守边界的安全遵守率、任务完成率和履行忠诚性行动效力分数。
+  experiments:
+  - 评价10个跨前沿模型(GPT-5.4、Opus 4.6、Sonnet 4.6、双子座3.1 Pro等)和3个多代理框架。
+  - 基准210任务跨越8个现实世界域(电子商务,日历,代码存储器等),在单代理和多代理配置中都有.
+  - 分析跨领域、任务类型和代理角色的安全违规情况,发现资源获取和代理间信息转移是大多数违规情况。
+  limitations:
+  - 然而,在获取未经授权的资源或向错误的代理商泄露上下文的轨迹上,牵引装置可以返回正确、良性的答案。
+  - 产出级评价看不到这些失败,但大多数安全基准只得最终产出或终端状态的分数,尽管许多违规行为都发生于中间-射电离断层。
+  - '这种转变的曝光方式导致输出水平评估无法看到: 无法通过Figugure2、aharnesscan returna正确, 在获取未经授权的资源的路上给予答覆,
+    私密的文字被泄露给错误者, 或者在预期的镜外产生不可逆的副作用。'
+  - (3) 利用安全故障的经验分析。 我们评估了跨越前沿模型的10个牵引装置配置和3个多代理框架、Surfacing systematicfailurepattersInformation访问、代理间信息传输以及扰动下的稳定。

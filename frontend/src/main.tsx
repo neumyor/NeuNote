@@ -18,14 +18,19 @@ import {
   FileText,
   FolderCog,
   Gauge,
+  Globe,
   KeyRound,
+  Languages,
   Library,
   Loader2,
   MessageCircle,
+  Minus,
   Play,
+  Plus,
   RefreshCw,
   Search,
   SendHorizontal,
+  Server,
   Settings,
   SlidersHorizontal,
   Sparkles,
@@ -36,6 +41,7 @@ import {
   UserRound,
   Wrench,
   XCircle,
+  Zap,
 } from "lucide-react";
 import "./styles.css";
 
@@ -112,11 +118,16 @@ type ChatToolCall = {
   state: "running" | "done";
 };
 
+type ChatSegment =
+  | { id: string; type: "text"; content: string }
+  | { id: string; type: "tool"; tool: ChatToolCall };
+
 type ChatMessage = {
   id: string;
   role: "user" | "assistant";
   content: string;
   tools?: ChatToolCall[];
+  segments?: ChatSegment[];
   pending?: boolean;
 };
 
@@ -129,6 +140,7 @@ function App() {
   const [claudeApiKey, setClaudeApiKey] = useState("");
   const [claudeEndpoint, setClaudeEndpoint] = useState("");
   const [claudeModel, setClaudeModel] = useState("sonnet");
+  const [translationEngine, setTranslationEngine] = useState<"local" | "llm">("llm");
   const [maxConcurrency, setMaxConcurrency] = useState(4);
   const [papers, setPapers] = useState<Paper[]>([]);
   const [stats, setStats] = useState<Stats>({ papers: 0, needs_review: 0, profiled: 0, tags: 0, duplicate_groups: 0, duplicate_papers: 0 });
@@ -264,13 +276,21 @@ function App() {
 
   async function loadConfig() {
     setError("");
-    const data = await request<{ root: string; claude_api_key?: string; claude_endpoint?: string; claude_model?: string; max_concurrency?: number }>("/api/config");
+    const data = await request<{
+      root: string;
+      claude_api_key?: string;
+      claude_endpoint?: string;
+      claude_model?: string;
+      max_concurrency?: number;
+      translation_engine?: "local" | "llm";
+    }>("/api/config");
     setRoot(data.root);
     setSavedRoot(data.root);
     setClaudeApiKey(data.claude_api_key ?? "");
     setClaudeEndpoint(data.claude_endpoint ?? "");
     setClaudeModel(data.claude_model ?? "sonnet");
     setMaxConcurrency(data.max_concurrency ?? 4);
+    setTranslationEngine(data.translation_engine ?? "local");
     await loadPapers(data.root);
     await loadJobs(data.root);
     await loadDuplicates(data.root);
@@ -326,13 +346,21 @@ function App() {
     setBusy("root");
     setError("");
     try {
-      const data = await request<{ root: string }>("/api/config", {
+      const data = await request<{ root: string; translation_engine?: "local" | "llm" }>("/api/config", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ root, claude_api_key: claudeApiKey, claude_endpoint: claudeEndpoint, claude_model: claudeModel, max_concurrency: maxConcurrency }),
+        body: JSON.stringify({
+          root,
+          claude_api_key: claudeApiKey,
+          claude_endpoint: claudeEndpoint,
+          claude_model: claudeModel,
+          max_concurrency: maxConcurrency,
+          translation_engine: translationEngine,
+        }),
       });
       setSavedRoot(data.root);
       setRoot(data.root);
+      if (data.translation_engine) setTranslationEngine(data.translation_engine);
       await loadPapers(data.root);
       await loadJobs(data.root);
     } catch (err) {
@@ -554,7 +582,7 @@ function App() {
     if (!paperId || !question.trim() || busy === "chat") return;
     const userMessage: ChatMessage = { id: `user-${Date.now()}`, role: "user", content: question.trim() };
     const assistantId = `assistant-${Date.now()}`;
-    const assistantMessage: ChatMessage = { id: assistantId, role: "assistant", content: "", tools: [], pending: true };
+    const assistantMessage: ChatMessage = { id: assistantId, role: "assistant", content: "", tools: [], segments: [], pending: true };
     setChatMessages((prev) => [...prev, userMessage, assistantMessage]);
     setBusy("chat");
     setError("");
@@ -598,8 +626,9 @@ function App() {
           if (payload.type === "session" && payload.session?.id) {
             setChatSessionId(payload.session.id);
           } else if (payload.type === "delta") {
+            const delta = String(payload.delta ?? "");
             setChatMessages((prev) => prev.map((m) => (
-              m.id === assistantId ? { ...m, content: m.content + String(payload.delta ?? "") } : m
+              m.id === assistantId ? appendTextSegment(m, delta) : m
             )));
           } else if (payload.type === "tool") {
             const tool: ChatToolCall = {
@@ -610,7 +639,9 @@ function App() {
               state: "running",
             };
             setChatMessages((prev) => prev.map((m) => (
-              m.id === assistantId ? { ...m, tools: [...(m.tools ?? []), tool] } : m
+              m.id === assistantId
+                ? { ...m, tools: [...(m.tools ?? []), tool], segments: [...(m.segments ?? []), { id: tool.id, type: "tool", tool }] }
+                : m
             )));
           } else if (payload.type === "tool_result") {
             const toolId = String(payload.tool_use_id ?? "");
@@ -619,15 +650,12 @@ function App() {
                 ? {
                     ...m,
                     tools: (m.tools ?? []).map((tool) => (
-                      tool.id === toolId
-                        ? {
-                            ...tool,
-                            result: payload.result,
-                            resultDetail: payload.detail,
-                            isError: Boolean(payload.is_error),
-                            state: "done",
-                          }
-                        : tool
+                      tool.id === toolId ? completeToolCall(tool, payload) : tool
+                    )),
+                    segments: (m.segments ?? []).map((segment) => (
+                      segment.type === "tool" && segment.tool.id === toolId
+                        ? { ...segment, tool: completeToolCall(segment.tool, payload) }
+                        : segment
                     )),
                   }
                 : m
@@ -717,6 +745,7 @@ function App() {
             claudeApiKey={claudeApiKey} setClaudeApiKey={setClaudeApiKey}
             claudeModel={claudeModel} setClaudeModel={setClaudeModel}
             maxConcurrency={maxConcurrency} setMaxConcurrency={setMaxConcurrency}
+            translationEngine={translationEngine} setTranslationEngine={setTranslationEngine}
             busy={busy} saveRoot={saveRoot}
           />
         )}
@@ -1680,6 +1709,7 @@ function PaperChatPage(props: {
   const [input, setInput] = useState("");
   const scrollRef = useRef<HTMLDivElement | null>(null);
   const composingRef = useRef(false);
+  const justComposedRef = useRef(false);
   const isStreaming = props.busy === "chat";
 
   useEffect(() => {
@@ -1699,11 +1729,19 @@ function PaperChatPage(props: {
 
   function onKeyDown(e: React.KeyboardEvent<HTMLTextAreaElement>) {
     const native = e.nativeEvent as KeyboardEvent;
-    const isComposing = composingRef.current || native.isComposing || native.keyCode === 229;
+    const isComposing = composingRef.current || justComposedRef.current || native.isComposing || native.keyCode === 229;
     if (e.key === "Enter" && !e.shiftKey && !isComposing) {
       e.preventDefault();
       send();
     }
+  }
+
+  function onCompositionEnd() {
+    composingRef.current = false;
+    justComposedRef.current = true;
+    window.setTimeout(() => {
+      justComposedRef.current = false;
+    }, 80);
   }
 
   const suggestions = [
@@ -1751,7 +1789,7 @@ function PaperChatPage(props: {
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={onKeyDown}
               onCompositionStart={() => { composingRef.current = true; }}
-              onCompositionEnd={() => { composingRef.current = false; }}
+              onCompositionEnd={onCompositionEnd}
               placeholder="询问论文内容、方法、实验、局限或让 agent 校验 PDF…"
               rows={1}
               disabled={isStreaming}
@@ -1772,21 +1810,63 @@ function PaperChatPage(props: {
   );
 }
 
+function appendTextSegment(message: ChatMessage, delta: string): ChatMessage {
+  if (!delta) return message;
+  const segments = [...(message.segments ?? [])];
+  const last = segments[segments.length - 1];
+  if (last?.type === "text") {
+    segments[segments.length - 1] = { ...last, content: last.content + delta };
+  } else {
+    segments.push({ id: `text-${Date.now()}-${segments.length}`, type: "text", content: delta });
+  }
+  return { ...message, content: message.content + delta, segments };
+}
+
+function completeToolCall(tool: ChatToolCall, payload: Record<string, any>): ChatToolCall {
+  return {
+    ...tool,
+    result: payload.result,
+    resultDetail: payload.detail,
+    isError: Boolean(payload.is_error),
+    state: "done",
+  };
+}
+
 function ChatMessageView({ message }: { message: ChatMessage }) {
+  const segments = message.role === "assistant" && message.segments?.length
+    ? message.segments
+    : null;
+  const showThinking = Boolean(message.pending && !message.content && !(message.segments?.length));
+
   return (
     <article className={`chat-message ${message.role}`}>
       <div className="chat-avatar" aria-hidden="true">
         {message.role === "assistant" ? <Bot size={17} /> : <UserRound size={17} />}
       </div>
       <div className="chat-bubble">
-        {message.role === "assistant" && (message.tools ?? []).map((tool) => (
-          <ToolCallView key={tool.id} tool={tool} />
-        ))}
-        {message.content ? (
-          <div className="markdown-body chat-markdown">
-            <ReactMarkdown remarkPlugins={[remarkGfm]}>{message.content}</ReactMarkdown>
-          </div>
-        ) : message.pending ? (
+        {segments ? (
+          segments.map((segment) => (
+            segment.type === "tool" ? (
+              <ToolCallView key={segment.id} tool={segment.tool} />
+            ) : (
+              <div className="markdown-body chat-markdown chat-segment" key={segment.id}>
+                <ReactMarkdown remarkPlugins={[remarkGfm]}>{segment.content}</ReactMarkdown>
+              </div>
+            )
+          ))
+        ) : (
+          <>
+            {message.role === "assistant" && (message.tools ?? []).map((tool) => (
+              <ToolCallView key={tool.id} tool={tool} />
+            ))}
+            {message.content ? (
+              <div className="markdown-body chat-markdown">
+                <ReactMarkdown remarkPlugins={[remarkGfm]}>{message.content}</ReactMarkdown>
+              </div>
+            ) : null}
+          </>
+        )}
+        {showThinking ? (
           <div className="chat-thinking"><Loader2 className="spin" size={14} /> 思考中</div>
         ) : null}
       </div>
@@ -1798,14 +1878,16 @@ function ToolCallView({ tool }: { tool: ChatToolCall }) {
   const [open, setOpen] = useState(false);
   const inputText = stringifyToolPayload(tool.input ?? tool.detail);
   const resultText = stringifyToolPayload(tool.result ?? tool.resultDetail);
+  const label = toolIntentLabel(tool);
+  const status = tool.state === "running" ? "运行中" : tool.isError ? "失败" : "完成";
 
   return (
     <div className={`tool-call ${tool.isError ? "failed" : ""}`}>
       <button className="tool-call-head" type="button" onClick={() => setOpen(!open)}>
         {open ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
         <Wrench size={14} />
-        <span>{tool.name}</span>
-        <small>{tool.state === "running" ? "运行中" : tool.isError ? "失败" : "完成"}</small>
+        <span>{label}</span>
+        <small>{status} · {friendlyToolName(tool.name)}</small>
       </button>
       {open && (
         <div className="tool-call-body">
@@ -1823,6 +1905,46 @@ function ToolCallView({ tool }: { tool: ChatToolCall }) {
   );
 }
 
+function toolIntentLabel(tool: ChatToolCall): string {
+  const input = tool.input;
+  if (input && typeof input === "object" && "intend" in input) {
+    const intend = String((input as { intend?: unknown }).intend ?? "").trim();
+    if (intend) return intend;
+  }
+  return fallbackToolIntent(tool);
+}
+
+function fallbackToolIntent(tool: ChatToolCall): string {
+  const input = tool.input && typeof tool.input === "object" ? tool.input as Record<string, unknown> : {};
+  const path = typeof input.path === "string" ? input.path : "";
+  const pages = typeof input.pages === "string" ? input.pages : "";
+  if (tool.name.includes("kb_read_pdf_pages")) return pages ? `正在读取 PDF 第 ${pages} 页` : "正在读取 PDF";
+  if (tool.name.includes("kb_render_pdf_pages")) return pages ? `正在查看 PDF 第 ${pages} 页` : "正在查看 PDF 页面";
+  if (tool.name.includes("kb_pdf_info")) return "正在检查 PDF 信息";
+  if (tool.name.includes("kb_read")) return path ? `正在读取 ${compactToolPath(path)}` : "正在读取资料";
+  if (tool.name.includes("kb_list")) return path ? `正在浏览 ${compactToolPath(path)}` : "正在浏览资料";
+  if (tool.name.includes("kb_write")) return path ? `正在保存 ${compactToolPath(path)}` : "正在保存修正";
+  return "正在处理资料";
+}
+
+function friendlyToolName(name: string): string {
+  const normalized = name.replace(/^mcp__neunote__/, "");
+  const labels: Record<string, string> = {
+    kb_list: "浏览",
+    kb_read: "读取",
+    kb_write: "保存",
+    kb_pdf_info: "PDF 信息",
+    kb_read_pdf_pages: "PDF 文本",
+    kb_render_pdf_pages: "PDF 视觉",
+  };
+  return labels[normalized] ?? normalized;
+}
+
+function compactToolPath(path: string): string {
+  const filename = path.split("/").filter(Boolean).pop() || path;
+  return filename.length > 28 ? `${filename.slice(0, 25)}...` : filename;
+}
+
 function stringifyToolPayload(value: unknown): string {
   if (value === undefined || value === null || value === "") return "";
   if (typeof value === "string") return value;
@@ -1832,7 +1954,6 @@ function stringifyToolPayload(value: unknown): string {
     return String(value);
   }
 }
-
 
 // ── Jobs ─────────────────────────────────────────────────────────────
 
@@ -1927,8 +2048,12 @@ function SettingsPage(props: {
   claudeApiKey: string; setClaudeApiKey: (v: string) => void;
   claudeModel: string; setClaudeModel: (v: string) => void;
   maxConcurrency: number; setMaxConcurrency: (v: number) => void;
+  translationEngine: "local" | "llm";
+  setTranslationEngine: (v: "local" | "llm") => void;
   busy: string; saveRoot: () => void;
 }) {
+  const decConcurrency = () => props.setMaxConcurrency(Math.max(1, props.maxConcurrency - 1));
+  const incConcurrency = () => props.setMaxConcurrency(Math.min(20, props.maxConcurrency + 1));
   return (
     <div className="settings-page">
       <section className="page-heading">
@@ -1937,29 +2062,105 @@ function SettingsPage(props: {
         <p>配置文献库根目录与自动整理服务。</p>
       </section>
       <section className="settings-grid">
-        <div className="panel">
-          <label className="label"><FolderCog size={16} /> 文献库根目录</label>
+        <div className="panel settings-panel settings-panel-wide">
+          <label className="label"><FolderCog size={15} /> 文献库根目录</label>
           <div className="root-row">
-            <input value={props.root} onChange={(e) => props.setRoot(e.target.value)} placeholder="/path/to/kb" />
+            <input
+              value={props.root}
+              onChange={(e) => props.setRoot(e.target.value)}
+              placeholder="/path/to/kb"
+            />
           </div>
           <p className="hint">包含 papers/ 与 originals/papers/ 的目录。</p>
         </div>
-        <div className="panel">
-          <label className="label"><KeyRound size={16} /> Agent API</label>
-          <input value={props.claudeEndpoint} onChange={(e) => props.setClaudeEndpoint(e.target.value)} placeholder="Endpoint / base URL (optional)" />
-          <input value={props.claudeApiKey} onChange={(e) => props.setClaudeApiKey(e.target.value)} type="password" placeholder="API key" />
-          <input value={props.claudeModel} onChange={(e) => props.setClaudeModel(e.target.value)} placeholder="Model, e.g. sonnet" />
+
+        <div className="panel settings-panel">
+          <label className="label"><KeyRound size={15} /> Agent API</label>
+          <input
+            value={props.claudeEndpoint}
+            onChange={(e) => props.setClaudeEndpoint(e.target.value)}
+            placeholder="Endpoint / base URL (optional)"
+          />
+          <input
+            value={props.claudeApiKey}
+            onChange={(e) => props.setClaudeApiKey(e.target.value)}
+            type="password"
+            placeholder="API key"
+          />
+          <input
+            value={props.claudeModel}
+            onChange={(e) => props.setClaudeModel(e.target.value)}
+            placeholder="Model, e.g. sonnet"
+          />
         </div>
-        <div className="panel">
-          <label className="label"><Play size={16} /> 并行整理</label>
-          <label className="label-stack">
-            最大并发任务
-            <input type="number" min={1} max={20} value={props.maxConcurrency} onChange={(e) => props.setMaxConcurrency(Number(e.target.value) || 1)} />
-          </label>
+
+        <div className="panel settings-panel">
+          <label className="label"><Languages size={15} /> 翻译引擎</label>
+          <div
+            className="ios-segmented"
+            role="radiogroup"
+            aria-label="翻译引擎"
+          >
+            <button
+              type="button"
+              className={props.translationEngine === "local" ? "active" : ""}
+              role="radio"
+              aria-checked={props.translationEngine === "local"}
+              onClick={() => props.setTranslationEngine("local")}
+            >
+              本地模型
+            </button>
+            <button
+              type="button"
+              className={props.translationEngine === "llm" ? "active" : ""}
+              role="radio"
+              aria-checked={props.translationEngine === "llm"}
+              onClick={() => props.setTranslationEngine("llm")}
+            >
+              LLM 服务
+            </button>
+          </div>
+          <p className="hint">
+            {props.translationEngine === "llm"
+              ? "使用上方配置的 Claude 兼容接口生成翻译，质量更好但需要联网和 API 配额。"
+              : "使用本地 Argos Translate 离线模型，无需联网，但译文偏直译、术语一致性较弱。"}
+          </p>
+        </div>
+
+        <div className="panel settings-panel">
+          <label className="label"><Zap size={15} /> 并行整理</label>
+          <div className="concurrency-row">
+            <span className="concurrency-label">最大并发任务</span>
+            <div className="ios-stepper" role="group" aria-label="最大并发任务">
+              <button
+                type="button"
+                className="ios-stepper-btn"
+                onClick={decConcurrency}
+                disabled={props.maxConcurrency <= 1}
+                aria-label="减少"
+              >
+                <Minus size={15} strokeWidth={2.5} />
+              </button>
+              <span className="ios-stepper-value" aria-live="polite">{props.maxConcurrency}</span>
+              <button
+                type="button"
+                className="ios-stepper-btn"
+                onClick={incConcurrency}
+                disabled={props.maxConcurrency >= 20}
+                aria-label="增加"
+              >
+                <Plus size={15} strokeWidth={2.5} />
+              </button>
+            </div>
+          </div>
           <p className="hint">同时整理的文献数量，通常建议 4–8。</p>
         </div>
       </section>
-      <button onClick={props.saveRoot} disabled={props.busy === "root"} className="save-settings-btn">
+      <button
+        onClick={props.saveRoot}
+        disabled={props.busy === "root"}
+        className="save-settings-btn ios-save-button"
+      >
         {props.busy === "root" ? <Loader2 className="spin" size={16} /> : null}
         保存设置
       </button>

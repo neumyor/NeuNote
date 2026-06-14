@@ -1,0 +1,160 @@
+id: the_last_harness_you_ll_ever_build
+title: The Last Harness You'll Ever Build
+authors:
+- Haebin Seong
+- Li Yin
+- Haoran Zhang
+- Zhan Shi
+year: 2026
+venue: ''
+doi: ''
+arxiv_id: '2604.21003'
+source_pdf: originals/papers/03_the_last_harness_youll_ever_build.pdf
+pages: 7
+tags:
+- agent
+- evolutionary_algorithm
+- harness
+- llm
+- multi_agent
+status: profiled
+confidence: medium
+reading_status: unread
+priority: normal
+needs_review: false
+abstract: 'AI agents are increasingly deployed on complex, domain-specific workflows—navigating
+  enterprise web applications that require dozens of clicks and form fills, orchestrating
+  multi-step research pipelines that span search, extraction, and synthesis, automating
+  code review across unfamiliar repositories, and handling customer escalations that
+  demand nuanced domain knowledge. Each new task domain requires painstaking, expert-driven
+  harness engineering: designing the prompts, tools, orchestration logic, and evaluation
+  criteria that make a foundation model effective. We present a two-level framework
+  that automates this process. At the first level, the Harness Evolution Loop optimizes
+  a worker agent''s harness H for a single task: a Worker Agent W_H executes the task,
+  an Evaluator Agent V adversarially diagnoses failures and scores performance, and
+  an Evolution Agent E modifies the harness based on the full history of prior attempts.
+  At the second level, the Meta-Evolution Loop optimizes the evolution blueprint Λ
+  = (W_H, H^(0), V, E) itself across diverse tasks, learning a blueprint Λ^(best)
+  that enables rapid harness convergence on any new task—so that adapting an agent
+  to a novel domain requires no human harness engineering at all. We formalize the
+  correspondence to meta-learning and present both algorithms. The framework shifts
+  manual harness engineering into automated harness engineering, and takes one step
+  further—automating the design of the automation itself.'
+one_sentence: We present a two-level framework that automates the design of agent
+  harnesses through a Harness Evolution Loop and a Meta-Evolution Loop, eliminating
+  the need for manual harness engineering.
+problem: However, these harnesses are themselves products of highly intensive, specialized
+  human engineering.
+contributions:
+- Formalizes harness evolution as a meta-learning problem, establishing a clear correspondence
+  between harness optimization and meta-learning.
+- 'Proposes a two-level framework: an inner Harness Evolution Loop that optimizes
+  a worker agent''s harness via iterative execution, evaluation, and evolution, and
+  an outer Meta-Evolution Loop that optimizes the evolution blueprint across diverse
+  tasks.'
+- Demonstrates that the evolution blueprint itself can be automatically learned from
+  multiple tasks, enabling rapid harness adaptation to new domains without human engineering.
+method:
+- Defines an agent harness as all code, configuration, and execution logic not part
+  of the model itself.
+- 'Inner Harness Evolution Loop: Worker Agent executes task, Evaluator Agent adversarially
+  diagnoses failures and scores performance, Evolution Agent modifies harness based
+  on full history.'
+- 'Outer Meta-Evolution Loop: runs the inner loop across diverse meta-train tasks,
+  aggregates scores, and updates the evolution blueprint (evaluator/evolution agent
+  prompts, scoring function, loop hyperparameters).'
+- Framework automates both harness optimization for a single task and the design of
+  the optimization process itself across tasks.
+experiments:
+- 1 INTRODUCTION Recent work onharness engineeringhas demonstrated that carefully
+  designed scaffolding— execution environments, feedback loops, evaluation criteria,
+  and context management—candra- matically amplifywhat agents achieve (Lopopolo, 2026;
+  Rajasekaran, 2026).
+- Lopopolo (2026) describe building custom linters, repository-local observability
+  stacks (logs, metrics, traces), Chrome DevTools integration, and structured documentation
+  hierarchies—allhand-craftedto make the codebase legible to the agent.
+- Each inner loop instance optimizes a worker harnessHfor a single task through iterative
+  cycles of execution (Worker), evaluation (Evaluator), and code modification (Evolution
+  Agent).
+- 2 THEHARNESSEVOLUTIONLOOP We first formally define the notion of an agent harness,
+  then describe the system’s components—task definition, task execution, evaluation,
+  and evolution—and how they are orchestrated in the harness evolution loop.
+- '4.Scoring: Computes a two-tier metric—first bypass/fail(whether the task was completed
+  successfully), then byexecution timeas a tiebreaker.'
+limitations:
+- 'At the first level, theHarness Evolution Loopoptimizes a worker agent’s har- nessHfor
+  a single task: a Worker AgentW H executes the task, an Evaluator AgentVadversarially
+  diagnoses failures and scores performance, and an Evo- lution AgentEmodifies the
+  harness based on the full history of prior attempts.'
+- However, these har- nesses are themselves products ofhighly intensive, specialized
+  human engineering.
+- AnEvaluator AgentVthat adversarially verifies task outcomes, diagnoses failure modes,
+  and scores performance.
+- AnEvolution AgentEthat analyzes the full evolution history and modifies the harness—
+  prompts, tools, orchestration logic, observations, and model configuration—to address
+  di- agnosed failure patterns.
+notes: "# Reading Notes\n\n*Use this space for your own notes while reading the paper.\
+  \ The structured summary is available in the Summary section.*\n\n## Key takeaways\n\
+  \n- \n\n## Questions\n\n- \n\n## Connections to other papers\n\n- \n"
+review_notes: []
+agent_reviews:
+- time: '2026-06-13T01:31:47.536160+00:00'
+  model: deepseek-v4-flash
+  notes:
+  - 'authors: [] → [''Haebin Seong'', ''Li Yin'', ''Haoran Zhang'', ''Zhan Shi'']'
+  - 'year: None → 2026'
+  - 'arxiv_id:  → 2604.21003'
+  - 'abstract: updated (was: ''AI agents are increasingly deployed on complex, domain-speci...'')'
+  - 'one_sentence: updated (was: ''AI agents are increasingly deployed on complex,
+    domain-speci...'')'
+  - 'problem: updated (was: ''However, these har- nesses are themselves products ofhighly
+    ...'')'
+  - 'contributions: replaced 0 items → 3 items'
+  - 'method: replaced 5 items → 4 items'
+  - 'tags: added [''evolutionary_algorithm'', ''multi_agent'']'
+  - Corrected title to Title Case from ALL CAPS.
+  - Added authors from PDF (Haebin Seong, Li Yin, Haoran Zhang, Zhan Shi).
+  - Set year to 2026 from arXiv date.
+  - Added arxiv_id from PDF header.
+  - Provided full abstract from PDF (previous was truncated).
+  - Constructed a one-sentence summary based on the core contribution.
+  - Added specific contributions from the paper (meta-learning formulation, two-level
+    framework, zero-shot adaptation).
+  - Rewrote method into concise bullet points describing the two loops.
+  - No experiments or limitations section visible in provided text; left as null.
+  - Added tags 'multi_agent' and 'evolutionary_algorithm' which are clearly present
+    in the paper; kept existing tags 'agent', 'harness', 'llm'.
+created_at: '2026-06-13T01:31:26.260227+00:00'
+updated_at: '2026-06-13T01:32:34.993332+00:00'
+agent_reviewed_at: '2026-06-13T01:31:47.536163+00:00'
+translations:
+  abstract: AI代理越来越多地部署在复杂、特定域的工作流程上——导航企业网络应用,这些应用需要数十次点击和填充,组织跨搜索、提取和合成的多步骤研究管道,将编码审查自动化到不熟悉的储存库,处理需要细微域知识的客户升级。
+    每个新任务领域都需要艰苦、专家驱动的牵引工程:设计使基础模型行之有效的提示、工具、管弦逻辑和评价标准。 我们提出了一个使这一进程自动化的两级框架。 在一级,Harness
+    Evolution Loop优化了工人代理的拉带H用于单项任务:一个工人代理W H执行任务,一个评价员代理V对抗性地诊断失败和分数性能,一个Evolution代理E根据之前尝试的全部历史修改拉带.
+    在第二个层面,Meta-Evolution Loop优化了进化蓝图 = (W H, H^(0), V, E)本身,跨越了各种任务,学习了蓝图 QQ(最佳),使得能够快速利用任何新任务上的趋同——因此,使一个代理人适应一个新领域,根本不需要人力利用工程。
+    我们把函授正式化 用于元学习 并提出两种算法 框架将人工利用工程转向自动化利用工程,并更进一步——自动化本身的设计自动化。
+  one_sentence: 我们提出一个双层框架,通过Harness Evolution Loop和Meta-Evolution Loop, 自动实现对特工的利用设计,从而消除了手动利用工程的需要。
+  problem: 然而,这些带子本身就是高度密集,专业化的人类工程产品.
+  contributions:
+  - 正规化利用进化作为一个元学习问题,建立利用优化与元学习之间的明确对应关系.
+  - 提出一个双层框架:一个通过迭代执行、评价和演化优化工人代理人利用的内在Harness Evolution循环和一个通过不同任务优化演化蓝图的外在Meta-Evolution循环。
+  - 证明进化蓝图本身可以自动从多种任务中学习,使得快速的驾驭适应没有人类工程的新领域.
+  method:
+  - 定义代理套接字为所有代码、配置和执行逻辑,而不是模型本身的一部分。
+  - 内涵 进化循环:工人代理执行任务,评价代理对抗性地诊断失败和分数表现,进化代理根据完整历史修改调用.
+  - 外部Meta-Evolution Loop:运行不同元火车任务的内环,汇总分数,并更新进化蓝图(评价员/Evolution代理提示,评分函数,循环超参数).
+  - 框架既能为单一任务利用优化,又能设计跨越任务的优化过程。
+  experiments:
+  - 导言 最近关于 " 缺损工程 " 的研究表明,精心设计的脚手架----执行环境、反馈循环、评价标准和上下文管理----坎德拉----适度扩展了制剂的成就(Lopopolo,
+    2026;Rajasekaran, 2026)。
+  - Lopopolo (2026) 描述建筑定制的 linters, 寄存器- 局部可观察堆栈(logs, riguments, tracks), Chrome
+    DevTools 集成, 以及结构化的文档分级—— 所有手工制作使代码库可以被代理识别.
+  - 每个内环实例都通过迭代执行周期(工人),评价周期(评价员)和代码修改周期(Evolution Agent),优化工人对单项任务的利用H.
+  - 2 声波 我们首先正式定义了“代理人”的概念,然后描述了系统的各个组成部分——任务定义、任务执行、评价和演化,以及如何在“工具”演化循环中加以安排。
+  - 4. 计算:计算一个两级的度量第一绕行/故障(任务是否成功完成),然后通过执行时间作为断节符。
+  limitations:
+  - 首先,和谐进化(Harness Evolution Loopopotimation)将工人代理人的har-nessH用于一项单一的任务:一名工人代理人WH执行这项任务,一名评估员V对失败和成绩进行对抗性诊断,一名Evo-lution
+    AgentE根据先前尝试的全部历史来修改利用。
+  - 然而,这些HAR -ness本身是高度密集,专业的人类工程的产品.
+  - 评价员 AgentV 对抗性地验证任务结果,诊断失败模式,评分表现.
+  - AnEvolution AgentE 分析整个演化历史,并修改了利用方式——导引,工具,管弦逻辑,观察,和模型配置——以解决di-不可知的失败模式.

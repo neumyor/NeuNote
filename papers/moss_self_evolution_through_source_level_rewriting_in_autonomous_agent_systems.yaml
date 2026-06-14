@@ -1,0 +1,146 @@
+id: moss_self_evolution_through_source_level_rewriting_in_autonomous_agent_systems
+title: 'MOSS: Self-Evolution through Source-Level Rewriting in Autonomous Agent Systems'
+authors:
+- Qianshu Cai
+- Yonggang Zhang
+- Xianzhang Jia
+- Huajiang Zheng
+- Wei Xue
+- Jun Song
+- Xinmei Tian
+- Yike Guo
+year: 2026
+venue: ''
+doi: ''
+arxiv_id: 2605.22794v2
+source_pdf: originals/papers/13_moss_source_level_rewriting.pdf
+pages: 12
+tags:
+- agent
+- harness
+- recursive_self_improvement
+status: profiled
+confidence: medium
+reading_status: unread
+priority: normal
+needs_review: false
+abstract: 'Autonomous agentic systems are largely static after deployment: they do
+  not learn from user interactions, and recurring failures persist until the next
+  human-driven update ships a fix. Self-evolving agents have emerged in response,
+  but all confine evolution to text-mutable artifacts—skill files, prompt configurations,
+  memory schemas, workflow graphs—and leave the agent harness untouched. Since routing,
+  hook ordering, state invariants, and dispatch live in code rather than in any text
+  artifact, an entire class of structural failure is physically unreachable from the
+  text layer. We argue that source-level adaptation is a fundamentally more general
+  medium: it is Turing-complete, a strict superset of every text-mutable scope, takes
+  effect deterministically rather than through base-model compliance, and does not
+  erode under long-context drift. We present MOSS, a system that performs self-rewriting
+  at the source level on production agentic substrates. Each evolution is anchored
+  to an automatically curated batch of production-failure evidence and proceeds through
+  a deterministic multi-stage pipeline; code modification is delegated to a pluggable
+  external coding-agent CLI while MOSS retains stage ordering and verdicts. Candidates
+  are verified by replaying the batch against the candidate image in ephemeral trial
+  workers, then promoted via user-consent-gated, in-place container swap with health-probe-gated
+  rollback. On OpenClaw, MOSS lifts a four-task mean grader score from 0.25 to 0.61
+  in a single cycle without human intervention.'
+one_sentence: MOSS is a system that enables production autonomous agent systems to
+  self-evolve by performing source-level rewriting, fixing structural failures in
+  the agent harness that are unreachable through text-mutable artifact updates alone.
+problem: Autonomous agent systems are static after deployment and cannot learn from
+  user interactions, and existing self-evolving approaches only modify text-mutable
+  artifacts (skills, prompts, memory) but cannot reach structural failures in the
+  agent harness code.
+contributions:
+- Articulates that source-level adaptation is a more general medium than text-mutable
+  evolution for agentic systems.
+- Presents MOSS, a system for source-level self-rewriting on production agentic substrates.
+- Introduces a design with deterministic multi-stage pipeline, pluggable coding-agent
+  CLI, and user-consent-gated container swap.
+- Demonstrates on OpenClaw with a lift from 0.25 to 0.61 mean grader score in one
+  cycle without human intervention.
+method:
+- 'Collects failure evidence from two channels: periodic background scan of user sessions
+  and user-flagged turns.'
+- 'Uses a deterministic multi-stage pipeline for evolution: localization, planning,
+  code editing, verification, and deployment.'
+- Delegates code modification to a pluggable external coding-agent CLI (e.g., Claude
+  Code, OpenAI Codex).
+- Verifies candidate modifications by replaying the evidence batch on ephemeral trial
+  workers in production-equivalent containers.
+- Deploys verified changes via user-consent-gated in-place container swap with health-probe-gated
+  rollback.
+- Exposes evolution lifecycle through a moss evo CLI and webhook events for user interaction.
+experiments:
+- Evaluated on OpenClaw, a production-grade agentic system, across four tasks.
+- Measures performance using a grader score, achieving improvement from 0.25 to 0.61
+  in a single evolution cycle.
+limitations:
+- 'Requires the agentic substrate to provide five primitives: shell tool, filesystem
+  read, periodic scheduling, webhook-to-agent delivery, and system-prompt injection.'
+- Code modification delegation to external coding-agent CLI introduces dependency
+  on that CLI's capabilities and reliability.
+- Container swap requires user consent, which may delay deployment.
+notes: "# Reading Notes\n\n*Use this space for your own notes while reading the paper.\
+  \ The structured summary is available in the Summary section.*\n\n## Key takeaways\n\
+  \n- \n\n## Questions\n\n- \n\n## Connections to other papers\n\n- \n"
+review_notes: []
+agent_reviews:
+- time: '2026-06-13T01:33:22.956345+00:00'
+  model: deepseek-v4-flash
+  notes:
+  - 'authors: [] → [''Qianshu Cai'', ''Yonggang Zhang'', ''Xianzhang Jia'', ''Huajiang...'
+  - 'year: None → 2026'
+  - 'arxiv_id:  → 2605.22794v2'
+  - 'abstract: updated (was: ''Autonomous agentic systems are largely static after
+    deployme...'')'
+  - 'one_sentence: updated (was: ''Autonomous agentic systems are largely static after
+    deployme...'')'
+  - 'problem: updated (was: ''1 Introduction Application-level autonomous agent systems
+    su...'')'
+  - 'contributions: replaced 0 items → 4 items'
+  - 'method: replaced 5 items → 6 items'
+  - 'experiments: replaced 5 items → 2 items'
+  - 'limitations: replaced 4 items → 3 items'
+  - 'tags: added [''recursive_self_improvement'']'
+  - 'tags: removed [''benchmark'']'
+  - Corrected authors from empty to list provided in PDF.
+  - Set year to 2026 from arXiv date.
+  - Set arxiv_id to 2605.22794v2.
+  - Filled abstract with full text from PDF.
+  - Created one_sentence summary.
+  - Created problem statement from paper's motivation.
+  - Added contributions based on paper's claims.
+  - Refined method entries to concise bullet points from system description.
+  - Refined experiments to concrete results from PDF.
+  - Added limitations inferred from system design.
+  - 'Updated tags: removed ''benchmark'' as not central, added ''recursive_self_improvement''
+    to reflect core contribution.'
+created_at: '2026-06-13T01:31:33.103985+00:00'
+updated_at: '2026-06-13T01:33:32.401493+00:00'
+agent_reviewed_at: '2026-06-13T01:33:22.956352+00:00'
+translations:
+  abstract: 自主代理系统在部署后基本上是静态的:它们不会从用户互动中吸取教训,并且反复发生的故障一直持续到下一个人类驱动的更新船一个固定. 自我进化的代理已经出现,但所有进化都局限于文本可变的文物——技能文件、即时配置、内存计划、工作流程图——并让代理工具不受干扰。
+    由于路由,钩子订购,状态变异,以及发送以代码而不是任何文本文物进行直播,整个一类的结构故障从文本层中实际上是无法到达的. 我们争辩说,源一级适应基本上是一种更为一般的媒介:它是图灵-完成的,是每个文本可变范围的严格的超级组合,通过确定而不是通过基准模型的遵守来产生效果,不会在长文本漂移下削弱。
+    我们提出最低业务安全标准,这是一种在源一级对生产剂底物进行自我改写的系统。 每次演化都以自动整理的一批生产失败证据为基础,并通过确定性的多阶段管道进行;代码修改被授权给可插接的外部编码代理CLI,而最低业务安全标准则保留阶段订购和判决。
+    候选人通过在电子试验工作人员中对照候选人形象重新播放批次进行核查,然后通过用户同意的、在位的集装箱交换与健康检测回滚进行升级。 在OpenClaw上,MOSS将一个单循环的四任务平均分分从0.25分提升到0.61分,没有人类干预.
+  one_sentence: MOSS是一种系统,它通过进行源级重写,修复仅通过文本可移动的文物更新无法达到的代理带的结构故障,使生产自主代理系统能够自我移动.
+  problem: 自主代理系统在部署后是静态的,无法从用户的交互中学习,现有的自演方法只修改了文本可变的文物(技能,提示,内存),但无法在代理机牵引码中达到结构故障.
+  contributions:
+  - 说明源层次的适应对于代理系统而言是一种比文本可变演化的更一般的介质.
+  - 呈现MOSS,一种生产剂底物的源层自写系统.
+  - 采用确定式多阶段管道、可插接编码剂CLI和用户同意的集装箱互换的设计。
+  - 在OpenClaw上展示,在一个周期里,在没有人干预的情况下,从0.25升到0.61的中分分.
+  method:
+  - 从两个渠道收集故障证据:定期对用户会话的背景扫描和用户标记的转弯.
+  - 采用确定性的多阶段进化管道:本地化、规划、代码编辑、核查和部署。
+  - 代表代码修改为可插件的外部编码代理CLI(如克劳德代码,OpenAI代码).
+  - 通过在生产等同容器中重新播放电子试验工作人员的证据批次,验证候选修改。
+  - 通过经用户同意的就地集装箱交换与经健康检验的回滚进行可核实的更改。
+  - 通过苔藓 evo CLI 和 webhook 事件来展示进化生命周期,用于用户互动.
+  experiments:
+  - 对OpenClaw这个生产级代理系统进行评价,涉及四项任务。
+  - 用一个分数来衡量性能,在一个单一演化周期中从0.25提高到0.61.
+  limitations:
+  - '要求代理底物提供五个原始物: shell工具,文件系统读取,定期调度,webhook-to-agent送出,以及系统即时注射.'
+  - 代码修改授权给外部编码代理人CLI,引入了对CLI能力和可靠性的依赖.
+  - 集装箱互换需要用户同意,这可能延误部署。

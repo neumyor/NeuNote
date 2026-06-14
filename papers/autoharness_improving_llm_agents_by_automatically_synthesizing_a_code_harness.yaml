@@ -1,0 +1,158 @@
+id: autoharness_improving_llm_agents_by_automatically_synthesizing_a_code_harness
+title: 'AutoHarness: improving LLM agents by automatically synthesizing a code harness'
+authors:
+- Xinghua Lou
+- Miguel Lázaro-Gredilla
+- Antoine Dedieu
+- Carter Wendelken
+- Wolfgang Lehrach
+- Kevin P. Murphy
+year: 2026
+venue: ''
+doi: ''
+arxiv_id: 2603.03329v1
+source_pdf: originals/papers/02_autoharness.pdf
+pages: 21
+tags:
+- agent
+- benchmark
+- evolutionary_algorithm
+- harness
+- llm
+status: profiled
+confidence: medium
+reading_status: unread
+priority: normal
+needs_review: false
+abstract: Despite significant strides in language models in the last few years, when
+  used as agents, such models often try to perform actions that are not just suboptimal
+  for a given state, but are strictly prohibited by the external environment. For
+  example, in the recent Kaggle GameArena chess competition, 78% of Gemini-2.5-Flash
+  losses were attributed to illegal moves. Often people manually write "harnesses"
+  around LLMs to prevent such failures. In this paper, we demonstrate that Gemini-2.5-Flash
+  can automatically synthesize such a code harness, using a small number of rounds
+  of iterative code refinement given feedback from the (game) environment. The resulting
+  harness prevents all illegal moves in 145 different TextArena games (both 1-player
+  and 2-player), enabling the smaller Gemini-2.5-Flash model to outperform larger
+  models, such as Gemini-2.5-Pro. Pushing our technique to the limit, we can get Gemini-2.5-Flash
+  to generate the entire policy in code, thus eliminating the need to use the LLM
+  at decision making time. The resulting code-policy receives a higher average reward
+  than Gemini-2.5-Pro and GPT-5.2-High on 16 TextArena 1-player games. Our results
+  show that using a smaller model to synthesize a custom code harness (or entire policy)
+  can outperform a much larger model, while also being more cost effective.
+one_sentence: AutoHarness automatically synthesizes a code harness for LLM agents
+  using iterative code refinement with environment feedback, enabling smaller models
+  to outperform larger ones by preventing illegal actions.
+problem: LLM agents acting in constrained environments frequently attempt illegal
+  actions because they fail to follow environment rules, and manually writing validation
+  harnesses is labor-intensive and brittle.
+contributions:
+- Proposes 'code as harness' framework to automatically synthesize a code harness
+  for LLM agents via iterative code refinement.
+- Uses tree search with Thompson sampling to efficiently explore the space of harness
+  programs.
+- Achieves 100% legal action success rate on 145 TextArena games.
+- Enables smaller Gemini-2.5-Flash to outperform larger Gemini-2.5-Pro in 2-player
+  games (56.3% vs 38.2% win rate).
+- Extends to 'harness-as-policy' where entire policy is generated as code, achieving
+  higher average reward than GPT-5.2-High on 16 1-player games.
+- Demonstrates cost-effectiveness with nearly zero test-time inference cost for code-only
+  policies.
+method:
+- Maintains a tree of code hypotheses; each node is a candidate harness.
+- Uses Thompson sampling to select which node to refine next based on heuristic value
+  (average legal move accuracy).
+- LLM acts as a mutation operator to refine code based on feedback from environment
+  critic (legal/illegal moves and rewards).
+- 'Two main variants: harness-as-action-verifier (LLM proposes actions, code verifies
+  legality) and harness-as-policy (entire policy in code).'
+experiments:
+- Tested on 145 TextArena games (excluding dialog games); training uses 10 parallel
+  envs, up to 1000 steps per rollout.
+- Average training ends after 14.5 iterations; 19/32 games finish in under 10 iterations.
+- Achieves 100% legal action success rate on all 145 games.
+- 'Evaluation on 16 1P and 16 2P games: compares Gemini-2.5-Flash, Gemini-2.5-Pro,
+  and Gemini-2.5-Flash+Harness.'
+- 'For 2P games: Flash+Harness wins 9/16 games (56.3% win rate) vs Gemini-2.5-Pro
+  (38.2%).'
+- 'For 1P games: Flash+Harness achieves 0.745 average reward vs Gemini-2.5-Pro 0.707
+  and Flash 0.673.'
+- Harness-as-policy achieves 0.870 average reward on 16 1P games, outperforming GPT-5.2-High
+  (0.844) and others, with nearly zero test cost.
+limitations:
+- Currently generates a separate harness for each environment/game.
+- Harness-as-policy is limited to 1-player games; 2-player games require opponent
+  modeling and are more challenging.
+- Relies on base LLM (Gemini-2.5-Flash) for code synthesis and requires environment
+  feedback signals.
+- The method may not extend well to games with free-form text actions (like Mafia,
+  Codenames).
+notes: "# Reading Notes\n\n*Use this space for your own notes while reading the paper.\
+  \ The structured summary is available in the Summary section.*\n\n## Key takeaways\n\
+  \n- \n\n## Questions\n\n- \n\n## Connections to other papers\n\n- \n"
+review_notes: []
+agent_reviews:
+- time: '2026-06-13T01:32:01.824242+00:00'
+  model: deepseek-v4-flash
+  notes:
+  - 'authors: [] → [''Xinghua Lou'', ''Miguel Lázaro-Gredilla'', ''Antoine Dedieu'',
+    ...'
+  - 'year: None → 2026'
+  - 'arxiv_id:  → 2603.03329v1'
+  - 'abstract: updated (was: ''Despite significant strides in language models in the
+    last f...'')'
+  - 'one_sentence: updated (was: ''Despite significant strides in language models
+    in the last f...'')'
+  - 'problem: updated (was: ''1 Introduction Large language models (LLMs) have demonstrate...'')'
+  - 'contributions: replaced 0 items → 6 items'
+  - 'method: replaced 5 items → 4 items'
+  - 'experiments: replaced 5 items → 7 items'
+  - 'limitations: replaced 4 items → 4 items'
+  - Added authors from paper header.
+  - Set year to 2026 based on arXiv date and paper date.
+  - Added arXiv ID from paper header.
+  - Corrected title to Title Case.
+  - Filled abstract from paper.
+  - Provided concise one_sentence summary of core contribution.
+  - Provided concise problem statement.
+  - Extracted specific contributions as bullet points.
+  - Summarized method concisely.
+  - Summarized experiments with key results.
+  - Identified limitations from paper text.
+  - Tags kept unchanged as they accurately represent paper topics.
+created_at: '2026-06-13T01:31:23.877252+00:00'
+updated_at: '2026-06-13T01:33:00.766076+00:00'
+agent_reviewed_at: '2026-06-13T01:32:01.824258+00:00'
+translations:
+  abstract: 尽管语言模型在过去几年中取得了长足的进步,但当作为代理使用时,这类模型往往试图进行不仅对特定状态来说不尽人意,而且受到外部环境的严格禁止的行动.
+    例如,在近期的卡格格GameArena围棋比赛中,双子座2.5-Flash损失的78%被归咎于非法移动. 人们常常在LLMs周围手动写作"harneses",以防止这种失败.
+    在本文中,我们表明双子座-2.5-Flash可以自动合成这样的代码带,利用少数回合的迭代代码精炼,从(游戏)环境中得到反馈. 由此产生的套带在145个不同的TextArena游戏中(包括1-玩家和2-玩家)防止了所有非法移动,使得较小的双子座2.5-Flash模型能够超越更大的模型,如双子座2.5-Pro.
+    把技术推到极限,我们可以让双子座2.5-Flash在代码中生成整个政策,从而消除在决策时间使用LLM的必要性. 由此产生的代码政策在16个TextArena
+    1-player游戏上得到比双子座2.5-Pro和GPT-5.2-High更高的平均奖励. 我们的结果表明,使用一个较小的模型来合成一个自定义的代码(或整个政策),可以比一个更大的模型更好,同时也更具成本效益。
+  one_sentence: AutoHarness使用环境反馈的迭代代码改进,自动合成LLM代理的代码控制器,通过防止非法行动,使较小的模型能够超过较大的模型。
+  problem: 在受限环境中行事的LLM代理人经常试图采取非法行动,因为他们没有遵守环境规则,手动写作验证工具是劳动密集型和简陋的。
+  contributions:
+  - 提出“ 代码” 框架, 以通过迭代代码的完善, 自动合成 LLM 代理的代码 。
+  - 利用Thompson采样的树搜索来有效探索利用程序的空间.
+  - 在145个TextArena游戏中实现100%的诉讼成功率.
+  - 在2个玩家游戏中,允许较小的双子座2.5-Flash超越较大的双子座2.5-Pro(56.3%对38.2%的胜率).
+  - 延伸至整个政策作为代码生成的"harness-as-policy",在16个1玩家游戏中实现比GPT-5.2-High更高的平均奖励.
+  - 以几乎零的试验时间推论成本证明只限代码政策的成本效率。
+  method:
+  - 维持一棵代码假说树;每个节点都是候选带.
+  - 使用Thompson采样来选择哪个节点来根据热度值(平均合法移动精度)来精炼下一个节点.
+  - LLM作为变异操作者,根据环境评论家的反馈(合法/非法动作和奖励)完善代码.
+  - '两个主要的变体: " 即行动即行动 " 核查器(LLM提出行动、守则核查合法性)和 " 即行动即行动 " 政策(守则中的实体政策)。'
+  experiments:
+  - 在145个TextArena游戏(不包括对话框游戏)上测试过;训练使用10个平行的envs,每次推出最多1000步.
+  - 平均训练在14.5次迭代后结束;19/32游戏在10次迭代以下完成.
+  - 在所有145场比赛中实现100%的法律诉讼成功率.
+  - 对16个1P和16个2P游戏的评价:比较双子座2.5-Flash,双子座2.5-Pro和双子座2.5-Flash+. 调和。
+  - 对于2P游戏:Flash+Harness赢得9/16游戏(56.3%的胜率)对双子座2.5-Pro(38.2%).
+  - 对于1P游戏:Flash+Harness实现0.745平均奖励对双子座-2.5-Pro 0.707和Flash 0.673.
+  - Harness-as-policy在16个1P游戏中平均获得0.870的奖励,表现优于GPT-5.2-High(0.844)等,测试成本接近零.
+  limitations:
+  - 目前为每个环境/游戏生成一个单独的带.
+  - Harness-as-policy仅限于1个玩家游戏;2个玩家游戏需要对手模特,更具挑战性.
+  - 以基 LLM(Gemini-2.5-Flash)为代码合成,需要环境反馈信号.
+  - 这种方法可能不会很好地扩展至带有自由格式文本动作的游戏(如黑手党,代码).

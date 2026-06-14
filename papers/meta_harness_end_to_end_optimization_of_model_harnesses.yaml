@@ -1,0 +1,150 @@
+id: meta_harness_end_to_end_optimization_of_model_harnesses
+title: 'Meta-Harness: End-to-End Optimization of Model Harnesses'
+authors:
+- Yoonho Lee
+- Roshen Nair
+- Qizheng Zhang
+- Kangwook Lee
+- Omar Khattab
+- Chelsea Finn
+year: 2026
+venue: ''
+doi: ''
+arxiv_id: 2603.28052v1
+source_pdf: originals/papers/04_meta_harness.pdf
+pages: 26
+tags:
+- agent
+- benchmark
+- harness
+- llm
+- retrieval
+status: profiled
+confidence: medium
+reading_status: unread
+priority: normal
+needs_review: false
+abstract: 'The performance of large language model (LLM) systems depends not only
+  on model weights, but also on their harness: the code that determines what information
+  to store, retrieve, and present to the model. Yet harnesses are still designed largely
+  by hand, and existing text optimizers are poorly matched to this setting because
+  they compress feedback too aggressively: they are memoryless, condition only on
+  scalar scores, or restrict feedback to short templates or summaries. We introduce
+  Meta-Harness, an outer-loop system that searches over harness code for LLM applications.
+  It uses an agentic proposer that accesses the source code, scores, and execution
+  traces of all prior candidates through a filesystem. On online text classification,
+  Meta-Harness improves over a state-of-the-art context management system by 7.7 points
+  while using 4× fewer context tokens. On retrieval-augmented math reasoning, a single
+  discovered harness improves accuracy on 200 IMO-level problems by 4.7 points on
+  average across five held-out models. On agentic coding, discovered harnesses surpass
+  the best hand-engineered baselines on TerminalBench-2. Together, these results show
+  that richer access to prior experience can enable automated harness engineering.'
+one_sentence: Meta-Harness is an outer-loop system that searches over harness code
+  for LLM applications using an agentic proposer with filesystem access to full history.
+problem: Existing text optimizers are poorly matched to harness engineering because
+  they compress feedback too aggressively, losing information needed to trace downstream
+  failures to earlier harness decisions.
+contributions:
+- Introduces Meta-Harness, an outer-loop system for searching over harness code using
+  an agentic proposer with filesystem access.
+- On online text classification, improves over ACE by 7.7 points using 4× fewer context
+  tokens.
+- On retrieval-augmented math reasoning, a single discovered harness improves accuracy
+  on 200 IMO-level problems by 4.7 points on average across five held-out models.
+- 'On agentic coding, discovered harnesses surpass the best hand-engineered baselines
+  on TerminalBench-2, ranking #1 among Haiku 4.5 agents.'
+method:
+- Meta-Harness uses an outer loop that repeatedly proposes, evaluates, and logs new
+  harnesses.
+- The proposer is a coding agent with filesystem access to all prior candidates' source
+  code, scores, and execution traces.
+- The proposer selectively inspects prior artifacts via tools like grep and cat, rather
+  than ingesting all in a single prompt.
+- Harness optimization occurs in code space, allowing small changes to retrieval,
+  memory, or prompt-construction logic.
+- The outer loop maintains a population and Pareto frontier but imposes no parent-selection
+  rule.
+experiments:
+- 'Online text classification: compared against ACE, OpenEvolve, TTT-Discover; achieved
+  7.7 point improvement with 4× fewer context tokens.'
+- 'Retrieval-augmented math reasoning: 200 IMO-level problems; evaluated on five held-out
+  models; 4.7 point average accuracy improvement.'
+- 'Agentic coding: TerminalBench-2; compared against Terminus-KIRA, Mini-SWE-Agent,
+  Claude Code; surpassed all reported Haiku 4.5 harnesses.'
+limitations:
+- 'However, these methods are poorly matched to harness engineering because they typically
+  operate with short-horizon or heavily compressed feedback: some condition only on
+  the current candidate [31; 51; 53], others rely primarily on scalar scores [35;
+  12], and others restrict feedback to short templates or LLM-generated summaries
+  [1; 26].'
+- Compressed feedback often removes the information needed to trace downstream failures
+  to earlier harness decisions.
+- We address this limitation withMeta-Harness, an agentic harness for optimizing harnesses
+  via end-to-end search (Figure 2).
+- 'Rather than updating model weights, the system assigns credit at the harness level:
+  it uses experience from past rollouts to deliberately reason about which steps and
+  components are responsible for failures, then rewrites the external code that governs
+  future behavior.'
+notes: "# Reading Notes\n\n*Use this space for your own notes while reading the paper.\
+  \ The structured summary is available in the Summary section.*\n\n## Key takeaways\n\
+  \n- \n\n## Questions\n\n- \n\n## Connections to other papers\n\n- \n"
+review_notes: []
+agent_reviews:
+- time: '2026-06-13T01:32:05.947463+00:00'
+  model: deepseek-v4-flash
+  notes:
+  - 'authors: [] → [''Yoonho Lee'', ''Roshen Nair'', ''Qizheng Zhang'', ''Kangwook
+    Lee...'
+  - 'year: None → 2026'
+  - 'arxiv_id:  → 2603.28052v1'
+  - 'abstract: updated (was: ''The performance of large language model (LLM) systems
+    depend...'')'
+  - 'one_sentence: updated (was: ''The performance of large language model (LLM) systems
+    depend...'')'
+  - 'problem: updated (was: ''On retrieval-augmented math reasoning, a single discovered
+    h...'')'
+  - 'contributions: replaced 0 items → 4 items'
+  - 'method: replaced 5 items → 5 items'
+  - 'experiments: replaced 5 items → 3 items'
+  - Corrected authors list from PDF (Yoonho Lee et al.).
+  - Set year to 2026 based on arXiv date.
+  - Set arxiv_id to 2603.28052v1.
+  - Replaced truncated abstract with full text from PDF, fixing typo ('theirharness'
+    -> 'their harness').
+  - Replaced one_sentence with a proper single-sentence summary.
+  - Replaced problem statement (was a result) with actual problem from abstract.
+  - Added contributions, method, and experiments based on paper content.
+  - Removed limitations that were about prior work, set to null as paper does not
+    state its own limitations.
+  - Kept existing tags; no new tags added.
+created_at: '2026-06-13T01:31:27.084819+00:00'
+updated_at: '2026-06-13T01:32:58.689899+00:00'
+agent_reviewed_at: '2026-06-13T01:32:05.947467+00:00'
+translations:
+  abstract: 大型语言模型(LLM)系统的性能不仅取决于模型的权重,也取决于它们的牵引力:决定哪些信息可以存储,检索,并呈现给模型的代码. 然而,绑带仍然在很大程度上是手工设计的,现有的文本优化器与这个设置不匹配,因为它们过于积极地压缩反馈:它们是无记忆的,仅以标分为条件,或者将反馈限制在短模板或摘要上.
+    我们引入了Meta-Harness,一个外侧跳动系统,它搜索了LLM应用的带码. 它使用代理求婚者,通过文件系统访问所有先前候选人的源代码,分数和执行痕迹.
+    在在线文本分类方面,Meta-Harness比最先进的上下文管理系统改进了7.7分,同时使用了4×更少的上下文符号. 在检索增强的数学推理方面,在海事组织的200个一级问题上,一个发现的单一工具在五个搁置模型中平均提高了4.7个百分点的准确性。
+    在代理编码上,发现的绳索超过了Bench-2终端上最好的手工设计基线. 这些结果表明,更充分地获得以往的经验,可以使自动化的利用工程成为可能。
+  one_sentence: Meta-Harness是一个外Loop系统,它使用一个代理提议者搜索LLM应用的利用率代码,文件系统访问全史.
+  problem: 现有文本优化器与工程技术不匹配,因为它们过于积极地压缩反馈,丢失了追踪下游失败情况所需的信息,无法利用早期的决定。
+  contributions:
+  - 引入Meta-Harness,是使用具有文件系统访问权的代理提议者搜索比拉带码的外掠翼系统.
+  - 在在线文本分类上,使用4×更少的上下文符号,比ACE改进7.7分.
+  - 在检索增强的数学推理方面,在海事组织的200个一级问题上,一个发现的单一工具在五个搁置模型中平均提高了4.7个百分点的准确性。
+  - 在代理编码上,发现的绳索超过了Bench-2终端上最好的手动基线,在Haiku 4.5代理中排名第1位.
+  method:
+  - Meta-Harness使用一个外环,反复提出,评价,并记录新的吊带.
+  - 提议者是一个编码代理,文件系统可以访问所有之前候选人的源代码,分数,以及执行痕迹.
+  - 求婚者通过grep和猫等工具选择性地检查之前的文物,而不是在单一的瞬间摄取所有文物.
+  - 利用性优化发生在代码空间中,允许对检索,内存,或即时构造逻辑进行小的修改.
+  - 外环保持人口和帕雷托边疆,但没有实行家长选择规则。
+  experiments:
+  - 在线文本分类:与ACE,OpenEvolve,TTT-Discover相比;以4×更少的上下文符号实现7.7点改进.
+  - 检索增强的数学推理:200个海事组织层面的问题;对5个搁置模型进行评价;4.7点平均精度提高。
+  - 代理编码:Terminus Bench-2;与Terminus-KIRA,Mini-SWE-Agent,Claude Code相比;超过了所有报道的Haiku
+    4.5牵引.
+  limitations:
+  - 然而,这些方法与利用工程方法的匹配度差,因为它们通常使用短视或高度压缩的反馈:一些条件只针对当前候选人[31;51;53],其他主要依靠scalar分数[35;12],其他则将反馈限制在短模板或LLM生成的摘要[1;26].
+  - 压缩的反馈往往会删除追踪下游失败以早期利用决策所需的信息.
+  - 我们通过Meta-Harness来处理这一限制,这是通过端到端搜索优化利用的代理手段(图2)。
+  - 系统不是更新模型权重,而是在牵引层分配信用:它利用过去推出的经验来刻意说明哪些步骤和组件对失败负责,然后改写规范未来行为的外部代码.

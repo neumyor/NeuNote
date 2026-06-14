@@ -1,0 +1,158 @@
+id: harness_updating_is_not_harness_benefit_disentangling_evolution_capabilities_in
+title: 'Harness Updating Is Not Harness Benefit: Disentangling Evolution Capabilities
+  in Self-Evolving LLM Agents'
+authors:
+- Minhua Lin
+- Juncheng Wu
+- Zijun Wang
+- Zhan Shi
+- Yisi Sang
+- Bing He
+- Zewen Liu
+- Tianxin Wei
+- Zongyu Wu
+- Zhiwei Zhang
+- Dakuo Wang
+- Xiang Zhang
+- Benoit Dumoulin
+- Cihang Xie
+- Yuyin Zhou
+- Suhang Wang
+- Hanqing Lu
+year: 2026
+venue: ''
+doi: ''
+arxiv_id: 2605.30621v1
+source_pdf: originals/papers/09_harness_updating_is_not_benefit.pdf
+pages: 24
+tags:
+- agent
+- benchmark
+- harness
+- llm
+status: profiled
+confidence: medium
+reading_status: unread
+priority: normal
+needs_review: false
+abstract: 'LLM agents are increasingly deployed as systems built around editable external
+  harnesses, including prompts, skills, memories and tools, that shape task execution
+  without changing model parameters. Harness self-evolution adapts such agents by
+  updating these harnesses from execution evidence. Yet it remains unclear whether
+  a model’s base capability in task-solving predicts its capabilities in harness self-evolution:
+  which models produce useful harness updates, and which actually benefit from them?
+  We analyze two harness self-evolution capabilities: (i) harness-updating, the capability
+  to produce useful persistent harness updates from execution evidence; (ii) harness-benefit,
+  the capability to benefit from updated harnesses during task solving. Our analysis
+  reveals two findings. First, harness-updating is flat in base capability: models
+  from different capability tiers produce harness updates that lead to surprisingly
+  similar gains; even Qwen3.5-9B’s updates yield gains comparable to those of Claude
+  Opus 4.6. Second, harness-benefit is non-monotonic in base capability: weak-tier
+  models benefit little from updated harnesses, mid-tier models benefit most, and
+  strong-tier models benefit less than mid-tier. We trace low gains at the weak tier
+  to two failure modes: weak-tier models may fail to activate relevant harness artifacts,
+  or activate them but fail to follow them faithfully. These findings suggest investing
+  capability budget in the task-solving agent rather than the evolver, and targeting
+  harness invocation and long-horizon instruction following in agent training. Our
+  source code is publicly available at here.'
+one_sentence: We analyze and disentangle two harness self-evolution capabilities—harness-updating
+  and harness-benefit—finding that harness-updating is flat across model capability
+  tiers while harness-benefit is non-monotonic, with mid-tier models benefiting most.
+problem: 'However, such manual design is brittle in deployment-time environments:
+  task distributions shift, edge cases appear, and useful procedures are discovered
+  only after the system interacts with real tasks.'
+contributions:
+- 'Disentangle two harness self-evolution capabilities: harness-updating and harness-benefit.'
+- 'Show that harness-updating is flat in base capability: models across tiers produce
+  updates with similar gains.'
+- 'Show that harness-benefit is non-monotonic: mid-tier models benefit most, weak-tier
+  benefit little, strong-tier less than mid-tier.'
+- 'Identify two failure modes in weak models: harness activation failure and harness
+  adherence failure.'
+- 'Provide design guidance: allocate capability budget to task-solving agent, bake
+  harness invocation into training, strengthen long-horizon instruction following.'
+method:
+- Formalize harness self-evolution protocol as an iterative loop between task-solving
+  and harness updating.
+- 'Define two evolution capabilities: harness-updating (ability to produce useful
+  updates) and harness-benefit (ability to benefit from updates).'
+- Measure these capabilities by pairing agents and evolvers across multiple benchmarks
+  and models.
+- Analyze relationship between base capability and evolution capabilities.
+experiments:
+- 'Evaluate on three representative agentic benchmarks: SWE-bench Verified (software
+  engineering) and MCP-Atlas (tool use), with a third benchmark mentioned but not
+  fully specified in the snippet.'
+- Use seven LLMs spanning open-source and closed-source families across capability
+  tiers.
+- Pair models as agents and evolvers to measure harness-updating and harness-benefit.
+- Conduct case studies on failure modes including harness activation and adherence
+  failure.
+limitations:
+- Analysis is limited to selected harness components (prompts, skills, memories) and
+  does not include tools, execution policies, or other components.
+- Study uses a specific evolution protocol; findings may not generalize to other self-evolution
+  methods.
+- Only three agentic benchmarks are used, which may not cover all agentic tasks.
+notes: "# Reading Notes\n\n*Use this space for your own notes while reading the paper.\
+  \ The structured summary is available in the Summary section.*\n\n## Key takeaways\n\
+  \n- \n\n## Questions\n\n- \n\n## Connections to other papers\n\n- \n"
+review_notes: []
+agent_reviews:
+- time: '2026-06-13T01:32:16.853963+00:00'
+  model: deepseek-v4-flash
+  notes:
+  - 'authors: [] → [''Minhua Lin'', ''Juncheng Wu'', ''Zijun Wang'', ''Zhan Shi'',
+    ''Yis...'
+  - 'year: None → 2026'
+  - 'arxiv_id:  → 2605.30621v1'
+  - 'abstract: updated (was: ''LLM agents are increasingly deployed as sys- tems built
+    arou...'')'
+  - 'one_sentence: updated (was: ''LLM agents are increasingly deployed as sys- tems
+    built arou...'')'
+  - 'contributions: replaced 0 items → 5 items'
+  - 'method: replaced 5 items → 4 items'
+  - 'experiments: replaced 5 items → 4 items'
+  - 'limitations: replaced 4 items → 3 items'
+  - Filled in authors from PDF text.
+  - Set year to 2026 based on arXiv date.
+  - Set arxiv_id to 2605.30621v1.
+  - Updated abstract with full text from PDF.
+  - Updated one_sentence to concise summary.
+  - Updated contributions list with specific claims.
+  - Updated method list with concise points.
+  - Updated experiments list with details from setup.
+  - Updated limitations list based on paper's scope.
+  - Kept tags unchanged; no new tags added.
+  - Venue and DOI remain unknown (no evidence).
+created_at: '2026-06-13T01:31:31.383779+00:00'
+updated_at: '2026-06-13T01:33:00.867910+00:00'
+agent_reviewed_at: '2026-06-13T01:32:16.853967+00:00'
+translations:
+  abstract: LLM代理越来越多地被部署在围绕可编辑的外部杠杆构建的系统上,包括提示,技能,记忆和工具,它们塑造任务执行而不改变模型参数. 利用自我进化通过更新执行证据中的这些工具来适应这些代理人。
+    然而,还不清楚一个模型在任务解决方面的基础能力是否预测它利用自我进化的能力:哪些模型产生有用的利用更新,哪些模型实际从中获益? 我们分析两种利用自我演进能力:(一)
+    利用更新的能力,即从执行证据中产生有用的持续利用更新的能力;(二) 利用效益,即在任务解决过程中从更新的利用中受益的能力。 我们的分析发现了两个结果。 首先,利用更新在基础能力上是平的:来自不同能力层次的模型产生利用更新,导致令人惊讶的类似收益;即使是Quen3.5-9B的更新也会产生与克劳德·奥普斯4.6相似的收益。
+    第二,利用效益在基础能力方面是非莫名的:薄弱的模型从更新的利用中得益甚微,中级模型从中得益最多,而强的模型从中得益较少。 我们追踪到弱级的低收益到两种失败模式:弱级的模型可能无法激活相关的吊带文物,或激活它们,但未能忠实地遵循它们.
+    这些调查结果表明,在执行任务的代理人而不是演化者身上投入能力预算,并在代理人培训之后针对利用和长期指导。 我们的源代码在这里是公开的。
+  one_sentence: 我们分析并分解两种自演能力——热度更新和热度效益——的调查发现,在模型能力层次上,热度提升是平坦的,而热度提升则不是莫名其妙的,中级模型受益最大。
+  problem: 然而,这种人工设计在部署时间环境中是简洁的:任务分布转移,边缘案例出现,只有在系统与实际任务互动后才会发现有用的程序.
+  contributions:
+  - 分离两种利用自演能力:利用更新能力和利用效益.
+  - 显示在基础能力上,调用率是平的:跨级模型产生具有类似收益的更新.
+  - 显示牵引效益是非摩诺主义的:中层模型对大多数,弱层好处很少,强层不及中层.
+  - 在弱模型中确定两种失败模式:利用激活失败和利用坚持失败.
+  - 提供设计指导:分配能力预算,用于任务解决代理人,在培训中烘烤利用,加强随后的长视距教学。
+  method:
+  - 将自演协议正式化,作为任务解决与更新之间的迭代循环.
+  - 界定两种演化能力:利用更新(能够产生有用的更新)和利用效益(能够从更新中受益)。
+  - 测量这些能力的方法是,在多个基准和模型中,对物剂和进化器进行配对。
+  - 分析基础能力和进化能力之间的关系.
+  experiments:
+  - 评估三个具有代表性的代理基准:SWE-bench 验证(软件工程)和MCP-Atlas(工具使用),第三个基准在片断中提及但未充分说明。
+  - 使用7个LLMS,涵盖跨能力层次的开源家庭和闭源家庭.
+  - 以对等模型作为动力和进化器,以衡量利用更新和利用效益。
+  - 对故障模式进行个案研究,包括利用激活和坚持失败。
+  limitations:
+  - 分析仅限于所选的牵引组件(瞬间,技能,记忆),不包括工具,执行政策或其他组件.
+  - 研究使用特定的演化协议;结果可能不会被概括到其他自演化方法.
+  - 仅采用三个代理基准,可能无法涵盖所有代理任务。

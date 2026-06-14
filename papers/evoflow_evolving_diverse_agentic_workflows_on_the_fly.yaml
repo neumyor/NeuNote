@@ -94,7 +94,9 @@ limitations:
 notes: "# Reading Notes\n\n*Use this space for your own notes while reading the paper.\
   \ The structured summary is available in the Summary section.*\n\n## Key takeaways\n\
   \n- \n\n## Questions\n\n- \n\n## Connections to other papers\n\n- \n"
-review_notes: []
+review_notes:
+- text: 考虑到使用的模型的异构性，强调效率和质量的多目标优化
+  created_at: '2026-06-11T08:15:20.791Z'
 agent_reviews:
 - time: '2026-06-10T07:02:52.477677+00:00'
   model: deepseek-v4-flash
@@ -139,7 +141,7 @@ agent_reviews:
   - Cleared limitations field as no explicit limitations section was found in the
     provided text; the previous content was actually from the problem statement.
 created_at: '2026-06-10T07:02:26.187305+00:00'
-updated_at: '2026-06-11T05:38:14.906163+00:00'
+updated_at: '2026-06-11T08:15:21.425716+00:00'
 agent_reviewed_at: '2026-06-11T05:38:14.906160+00:00'
 translations:
   abstract: 在过去两年中,大型基于语言模型(LLM)的多代理系统从劳动密集型的人工设计演变为部分自动化(如即时工程,通信地形学),并最终发展为完全自动化的设计.

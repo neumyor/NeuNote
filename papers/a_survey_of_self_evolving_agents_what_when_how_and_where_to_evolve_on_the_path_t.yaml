@@ -133,7 +133,9 @@ limitations:
 notes: "# Reading Notes\n\n*Use this space for your own notes while reading the paper.\
   \ The structured summary is available in the Summary section.*\n\n## Key takeaways\n\
   \n- \n\n## Questions\n\n- \n\n## Connections to other papers\n\n- \n"
-review_notes: []
+review_notes:
+- text: 我认为最好的最全面讲清楚agent系统如何实现自我改进的论文。重点是what 和 when
+  created_at: '2026-06-11T08:16:31.833Z'
 agent_reviews:
 - time: '2026-06-10T06:37:08.511976+00:00'
   model: deepseek-v4-flash
@@ -180,7 +182,7 @@ agent_reviews:
     changes needed for those fields.
   - DOI and arXiv ID are not provided in the PDF; left as null.
 created_at: '2026-06-10T06:36:19.548432+00:00'
-updated_at: '2026-06-11T05:38:31.283410+00:00'
+updated_at: '2026-06-11T08:16:32.405494+00:00'
 agent_reviewed_at: '2026-06-11T05:38:31.283371+00:00'
 translations:
   abstract: 大型语言模型(LLMs)在各种任务中表现出了显著的能力,但基本上保持不变,无法使其内部参数适应新任务、不断发展的知识领域或动态互动环境。 由于LLMS越来越多地部署在无限制、互动的环境中,这种静态性质已成为一个关键的瓶颈,需要能够适应性地理性、采取行动和实时演变的代理人。

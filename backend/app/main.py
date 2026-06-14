@@ -119,6 +119,7 @@ class RootConfig(BaseModel):
     claude_endpoint: str | None = None
     claude_model: str | None = None
     max_concurrency: int | None = Field(default=None, ge=1, le=20)
+    translation_engine: str | None = Field(default=None, pattern=r"^(local|llm)$")
 
 
 @app.get("/api/config")
@@ -444,6 +445,7 @@ class AskRequest(BaseModel):
     question: str
     root: str | None = None
     session_id: str | None = None
+    paper_id: str | None = None
     claude_api_key: str | None = None
     claude_endpoint: str | None = None
     claude_model: str | None = None
@@ -457,7 +459,8 @@ def api_ask(request: AskRequest) -> dict[str, Any]:
     parts: list[str] = []
     final_session = None
     for payload in run_agent_answer_sync(kb_root, request.question,
-                                          request.session_id, request.model_dump()):
+                                          request.session_id, request.model_dump(),
+                                          paper_id=request.paper_id):
         if payload.get("type") == "delta":
             parts.append(payload.get("delta", ""))
         elif payload.get("type") in ("session", "done"):
@@ -476,7 +479,8 @@ def api_chat_stream(request: AskRequest) -> StreamingResponse:
 
     def generate():
         for payload in run_agent_answer_sync(kb_root, request.question,
-                                              request.session_id, request.model_dump()):
+                                              request.session_id, request.model_dump(),
+                                              paper_id=request.paper_id):
             yield event(payload)
 
     return StreamingResponse(generate(), media_type="text/event-stream")

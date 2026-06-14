@@ -1,8 +1,11 @@
 from __future__ import annotations
 
 import asyncio
+import base64
 import json
 import queue
+import shutil
+import subprocess
 import tempfile
 import threading
 import traceback
@@ -43,7 +46,7 @@ def safe_rel_path(value: str) -> str:
 
 def assert_allowed_read(rel: str) -> None:
     if rel.startswith(PDF_PREFIX):
-        raise ValueError("Use kb_extract_pdf_text for source PDFs.")
+        raise ValueError("Use the PDF tools for source PDFs.")
     if not any(rel == prefix.rstrip("/") or rel.startswith(prefix) for prefix in READ_PREFIXES):
         raise ValueError(f"Read denied for `{rel}`. Allowed: AGENT.md, papers/, logs/.")
 
@@ -89,6 +92,53 @@ def _compact_json(value: Any, limit: int = 700) -> str:
     return text[:limit] + "... [truncated]"
 
 
+def _parse_page_spec(spec: str | None, page_count: int, *, default_count: int = 3, max_pages: int = 12) -> list[int]:
+    if page_count < 1:
+        return []
+    raw = (spec or "").strip().lower()
+    if not raw:
+        return list(range(1, min(page_count, default_count) + 1))
+    selected: list[int] = []
+    if raw in {"all", "*"}:
+        selected = list(range(1, page_count + 1))
+    else:
+        for token in raw.replace("，", ",").split(","):
+            part = token.strip()
+            if not part:
+                continue
+            if "-" in part:
+                start_raw, end_raw = part.split("-", 1)
+                start = int(start_raw) if start_raw.strip() else 1
+                end = int(end_raw) if end_raw.strip() else page_count
+                if start > end:
+                    start, end = end, start
+                selected.extend(range(start, end + 1))
+            else:
+                selected.append(int(part))
+    deduped: list[int] = []
+    seen: set[int] = set()
+    for page in selected:
+        if page < 1 or page > page_count or page in seen:
+            continue
+        deduped.append(page)
+        seen.add(page)
+        if len(deduped) >= max_pages:
+            break
+    return deduped
+
+
+def _pdf_page_count(path: Path) -> int:
+    reader = PdfReader(str(path))
+    return len(reader.pages)
+
+
+def _intend_schema(description: str) -> dict[str, str]:
+    return {
+        "type": "string",
+        "description": f"{description} Write in the user's language, under 24 Chinese characters or 12 English words.",
+    }
+
+
 def _tool_error(message: str) -> dict[str, Any]:
     return {"content": [{"type": "text", "text": message}], "isError": True}
 
@@ -129,8 +179,11 @@ async def run_agent_answer(root: Path, question: str,
         description="List paper YAML files in the knowledge base.",
         input_schema={
             "type": "object",
-            "properties": {"path": {"type": "string"}},
-            "required": ["path"],
+            "properties": {
+                "path": {"type": "string"},
+                "intend": _intend_schema("Explain why you are listing this directory for the user."),
+            },
+            "required": ["path", "intend"],
         },
     )
     async def kb_list(args: dict) -> dict:
@@ -151,8 +204,11 @@ async def run_agent_answer(root: Path, question: str,
         description="Read a paper YAML, AGENT.md, or log file.",
         input_schema={
             "type": "object",
-            "properties": {"path": {"type": "string"}},
-            "required": ["path"],
+            "properties": {
+                "path": {"type": "string"},
+                "intend": _intend_schema("Explain what information you are reading for the user."),
+            },
+            "required": ["path", "intend"],
         },
     )
     async def kb_read(args: dict) -> dict:
@@ -174,8 +230,9 @@ async def run_agent_answer(root: Path, question: str,
             "properties": {
                 "path": {"type": "string"},
                 "content": {"type": "string"},
+                "intend": _intend_schema("Explain what verified correction you are writing for the user."),
             },
-            "required": ["path", "content"],
+            "required": ["path", "content", "intend"],
         },
     )
     async def kb_write(args: dict) -> dict:
@@ -190,31 +247,142 @@ async def run_agent_answer(root: Path, question: str,
             return _tool_error(str(exc))
 
     @tool(
-        name="kb_extract_pdf_text",
-        description="Extract text from a source PDF by paper_id. Use only when the paper YAML lacks critical information.",
+        name="kb_pdf_info",
+        description="Inspect the source PDF metadata for a paper, including total page count and source path.",
         input_schema={
             "type": "object",
             "properties": {
                 "paper_id": {"type": "string"},
-                "max_pages": {"type": "integer", "minimum": 1, "maximum": 12},
+                "intend": _intend_schema("Explain why you are checking PDF metadata for the user."),
             },
-            "required": ["paper_id"],
+            "required": ["paper_id", "intend"],
         },
     )
-    async def kb_extract_pdf_text(args: dict) -> dict:
+    async def kb_pdf_info(args: dict) -> dict:
+        try:
+            paper = load_paper(root, args["paper_id"])
+            path = paper_pdf_path(root, args["paper_id"])
+            info = {
+                "paper_id": args["paper_id"],
+                "title": paper.get("title"),
+                "source_pdf": paper.get("source_pdf"),
+                "page_count": _pdf_page_count(path),
+            }
+            return {"content": [{"type": "text", "text": json.dumps(info, ensure_ascii=False, indent=2)}]}
+        except Exception as exc:
+            return _tool_error(str(exc))
+
+    @tool(
+        name="kb_read_pdf_pages",
+        description=(
+            "Extract text from specific 1-based PDF pages for a paper. "
+            "Use pages like '1,3-5,10-' instead of broad max-page reads."
+        ),
+        input_schema={
+            "type": "object",
+            "properties": {
+                "paper_id": {"type": "string"},
+                "pages": {
+                    "type": "string",
+                    "description": "1-based page selector, e.g. '1', '2-4', '1,5,9-11', '10-', or 'all'.",
+                },
+                "char_limit_per_page": {"type": "integer", "minimum": 1000, "maximum": 16000},
+                "intend": _intend_schema("Explain what evidence you expect to read from these PDF pages."),
+            },
+            "required": ["paper_id", "pages", "intend"],
+        },
+    )
+    async def kb_read_pdf_pages(args: dict) -> dict:
         try:
             path = paper_pdf_path(root, args["paper_id"])
-            max_pages = min(max(int(args.get("max_pages") or 6), 1), 12)
             reader = PdfReader(str(path))
-            text = "\n".join((page.extract_text() or "") for page in reader.pages[:max_pages])
-            return {"content": [{"type": "text", "text": _compact(text, limit=16000)}]}
+            pages = _parse_page_spec(str(args.get("pages") or ""), len(reader.pages), max_pages=12)
+            if not pages:
+                return _tool_error("No valid pages selected.")
+            char_limit = min(max(int(args.get("char_limit_per_page") or 8000), 1000), 16000)
+            blocks = [
+                f"PDF: {path.name}",
+                f"page_count: {len(reader.pages)}",
+                f"selected_pages: {', '.join(str(page) for page in pages)}",
+            ]
+            for page_number in pages:
+                text = reader.pages[page_number - 1].extract_text() or ""
+                blocks.append(f"\n--- page {page_number} ---\n{_compact(text.strip(), limit=char_limit)}")
+            return {"content": [{"type": "text", "text": "\n".join(blocks)}]}
+        except Exception as exc:
+            return _tool_error(str(exc))
+
+    @tool(
+        name="kb_render_pdf_pages",
+        description=(
+            "Render specific PDF pages as images for visual inspection of figures, tables, equations, or layout. "
+            "Use after kb_pdf_info/kb_read_pdf_pages when the text extraction is insufficient."
+        ),
+        input_schema={
+            "type": "object",
+            "properties": {
+                "paper_id": {"type": "string"},
+                "pages": {
+                    "type": "string",
+                    "description": "1-based page selector, e.g. '4', '6-7', or '2,9'. Up to 4 pages per call.",
+                },
+                "dpi": {"type": "integer", "minimum": 72, "maximum": 180},
+                "intend": _intend_schema("Explain what visual evidence you are checking on these PDF pages."),
+            },
+            "required": ["paper_id", "pages", "intend"],
+        },
+    )
+    async def kb_render_pdf_pages(args: dict) -> dict:
+        try:
+            renderer = shutil.which("pdftoppm")
+            if not renderer:
+                return _tool_error("PDF page rendering is unavailable because pdftoppm is not installed.")
+            path = paper_pdf_path(root, args["paper_id"])
+            page_count = _pdf_page_count(path)
+            pages = _parse_page_spec(str(args.get("pages") or ""), page_count, max_pages=4)
+            if not pages:
+                return _tool_error("No valid pages selected.")
+            dpi = min(max(int(args.get("dpi") or 144), 72), 180)
+            content: list[dict[str, Any]] = [{
+                "type": "text",
+                "text": (
+                    f"Rendered {path.name} at {dpi} dpi. "
+                    f"page_count: {page_count}; selected_pages: {', '.join(str(page) for page in pages)}"
+                ),
+            }]
+            with tempfile.TemporaryDirectory(prefix="neunote-pdf-pages-") as temp_dir:
+                temp_path = Path(temp_dir)
+                for page_number in pages:
+                    output_prefix = temp_path / f"page-{page_number}"
+                    subprocess.run(
+                        [
+                            renderer,
+                            "-png",
+                            "-singlefile",
+                            "-f",
+                            str(page_number),
+                            "-l",
+                            str(page_number),
+                            "-r",
+                            str(dpi),
+                            str(path),
+                            str(output_prefix),
+                        ],
+                        check=True,
+                        capture_output=True,
+                    )
+                    image_path = output_prefix.with_suffix(".png")
+                    data = base64.b64encode(image_path.read_bytes()).decode("ascii")
+                    content.append({"type": "text", "text": f"page {page_number}"})
+                    content.append({"type": "image", "data": data, "mimeType": "image/png"})
+            return {"content": content}
         except Exception as exc:
             return _tool_error(str(exc))
 
     server = create_sdk_mcp_server(
         name="neunote",
         version="1.0.0",
-        tools=[kb_list, kb_read, kb_write, kb_extract_pdf_text],
+        tools=[kb_list, kb_read, kb_write, kb_pdf_info, kb_read_pdf_pages, kb_render_pdf_pages],
     )
 
     session = load_session(root, session_id)
@@ -253,9 +421,15 @@ Recent chat history:
 Workflow:
 1. Read AGENT.md for rules.
 2. If a focused paper is provided, read its paper YAML first. Otherwise list papers/ to see what papers exist.
-3. If critical evidence is missing from the paper YAML, use kb_extract_pdf_text for the relevant paper_id.
-4. Answer with citations to paper IDs and mention when PDF verification was used.
-5. Only write paper updates when correcting verified errors.
+3. If critical evidence is missing from the paper YAML, use kb_pdf_info and then kb_read_pdf_pages with precise pages or page ranges.
+4. Use kb_render_pdf_pages for figures, tables, equations, screenshots, or layout-sensitive claims that text extraction cannot verify.
+5. Answer with citations to paper IDs and mention when PDF text or visual verification was used.
+6. Only write paper updates when correcting verified errors.
+
+Tool UI:
+- Every tool call requires an `intend` field. This string is shown directly to the user as the tool status.
+- Keep `intend` short, concrete, and user-facing, for example: "正在读取论文摘要", "正在查看第 4 页图表", "正在保存修正".
+- Do not put raw tool names, file paths only, JSON, or private chain-of-thought in `intend`.
 """
 
     config = config or {}
@@ -276,7 +450,9 @@ Workflow:
             "mcp__neunote__kb_list",
             "mcp__neunote__kb_read",
             "mcp__neunote__kb_write",
-            "mcp__neunote__kb_extract_pdf_text",
+            "mcp__neunote__kb_pdf_info",
+            "mcp__neunote__kb_read_pdf_pages",
+            "mcp__neunote__kb_render_pdf_pages",
         ],
         disallowed_tools=["Read", "Write", "Edit", "MultiEdit", "Bash", "Grep", "Glob", "LS", "WebFetch", "WebSearch"],
         mcp_servers={"neunote": server},
@@ -284,8 +460,11 @@ Workflow:
         debug_stderr=stderr_temp,
         system_prompt=(
             "You are a paper knowledge-base agent. Use only the neunote tools. "
-            "Never claim you read a PDF unless you called kb_extract_pdf_text. "
+            "Never claim you read PDF text unless you called kb_read_pdf_pages. "
+            "Never claim you visually inspected a PDF page, figure, table, or equation unless you called kb_render_pdf_pages. "
             "Prefer paper YAML files before PDF extraction. "
+            "When using PDFs, choose specific 1-based pages or page ranges rather than broad reads. "
+            "Every tool call must include a short user-facing `intend` field explaining the immediate action. "
             "Only write paper updates when correcting verified errors; never modify originals/papers."
         ),
     )
@@ -293,6 +472,14 @@ Workflow:
     answer_parts: list[str] = []
     agent_steps: list[dict[str, Any]] = []
     segments: list[dict[str, Any]] = []
+
+    def attach_tool_result(tool_id: str, detail: str, is_error: bool) -> None:
+        for segment in reversed(segments):
+            if segment.get("type") == "tool" and segment.get("id") == tool_id:
+                segment["result"] = detail
+                segment["is_error"] = is_error
+                return
+
     yield {"type": "session", "session": session}
 
     start_step = {
@@ -331,9 +518,7 @@ Workflow:
                         elif isinstance(block, ToolResultBlock):
                             tool_result = getattr(block, "content", None)
                             detail = _compact_json(tool_result, limit=1400)
-                            if segments and segments[-1].get("type") == "tool" and segments[-1].get("id") == block.tool_use_id:
-                                segments[-1]["result"] = detail
-                                segments[-1]["is_error"] = bool(block.is_error)
+                            attach_tool_result(block.tool_use_id, detail, bool(block.is_error))
                             yield {
                                 "type": "tool_result",
                                 "tool_use_id": block.tool_use_id,
@@ -348,9 +533,7 @@ Workflow:
                             if isinstance(block, ToolResultBlock):
                                 tool_result = getattr(block, "content", None)
                                 detail = _compact_json(tool_result, limit=1400)
-                                if segments and segments[-1].get("type") == "tool" and segments[-1].get("id") == block.tool_use_id:
-                                    segments[-1]["result"] = detail
-                                    segments[-1]["is_error"] = bool(block.is_error)
+                                attach_tool_result(block.tool_use_id, detail, bool(block.is_error))
                                 yield {
                                     "type": "tool_result",
                                     "tool_use_id": block.tool_use_id,

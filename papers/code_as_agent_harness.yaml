@@ -1,0 +1,199 @@
+id: code_as_agent_harness
+title: Code as Agent Harness
+authors:
+- Xuying Ning
+- Katherine Tieu
+- Dongqi Fu
+- Tianxin Wei
+- Zihao Li
+- Yuanchen Bei
+- Jiaru Zou
+- Mengting Ai
+- Zhining Liu
+- Ting-Wei Li
+- Lingjie Chen
+- Yanjun Zhao
+- Ke Yang
+- Bingxuan Li
+- Cheng Qian
+- Gaotang Li
+- Xiao Lin
+- Zhichen Zeng
+- Ruizhong Qiu
+- Sirui Chen
+- Yifan Sun
+- Xiyuan Yang
+- Ruida Wang
+- Rui Pan
+- Chenyuan Yang
+- Dylan Zhang
+- Liri Fang
+- Zikun Cui
+- Yang Cao
+- Pan Chen
+- Dorothy Sun
+- Ren Chen
+- Mahesh Srinivasan
+- Nipun Mathur
+- Yinglong Xia
+- Hong Li
+- Hong Yan
+- Pan Lu
+- Lingming Zhang
+- Tong Zhang
+- Hanghang Tong
+- Jingrui He
+year: 2026
+venue: ''
+doi: ''
+arxiv_id: '2605.18747'
+source_pdf: originals/papers/01_code_as_agent_harness.pdf
+pages: 102
+tags:
+- agent
+- harness
+- llm
+- multi_agent
+- survey
+- tool_use
+status: profiled
+confidence: medium
+reading_status: unread
+priority: normal
+needs_review: false
+abstract: 'Recent large language models (LLMs) have demonstrated strong capabilities
+  in understanding and generating code, from competitive programming to repository-level
+  software engineering. In emerging agentic systems, code is no longer only a target
+  output. It increasingly serves as an operational substrate for agent reasoning,
+  acting, environment modeling, and execution-based verification. We frame this shift
+  through the lens of agent harnesses and introduce code as agent harness: a unified
+  view that centers code as the basis for agent infrastructure. To systematically
+  study this perspective, we organize the survey around three connected layers. First,
+  we study the harness interface, where code connects agents to reasoning, action,
+  and environment modeling. Second, we examine harness mechanisms: planning, memory,
+  and tool use for long-horizon execution, together with feedback-driven control and
+  optimization that make harness reliable and adaptive. Third, we discuss scaling
+  the harness from single-agent systems to multi-agent settings, where shared code
+  artifacts support multi-agent coordination, review, and verification. Across these
+  layers, we summarize representative methods and practical applications of code as
+  agent harness, spanning coding assistants, GUI/OS automation, embodied agents, scientific
+  discovery, personalization and recommendation, DevOps, and enterprise workflows.
+  We further outline open challenges for harness engineering, including evaluation
+  beyond final task success, verification under incomplete feedback, regression-free
+  harness improvement, consistent shared state across multiple agents, human oversight
+  for safety-critical actions, and extensions to multimodal environments. By centering
+  code as the harness of agentic AI, this survey provides a unified roadmap toward
+  executable, verifiable, and stateful AI agent systems.'
+one_sentence: We frame the shift of code from target output to operational substrate
+  through the lens of agent harnesses and introduce 'code as agent harness' as a unified
+  view that centers code as the basis for agent infrastructure.
+problem: Existing surveys typically treat code as the end product of LLMs, overlooking
+  its role as an operational substrate for agent reasoning, acting, and environment
+  modeling.
+contributions:
+- 'Conceptual framing: We formalize code as agent harness, reframing code from a generated
+  artifact into the operational substrate of executable, verifiable, and stateful
+  AI agent systems.'
+- 'Taxonomy and synthesis: We organize code as agent harness into three connected
+  layers: harness interfaces, harness mechanisms, and scaling harness, and synthesize
+  representative methods.'
+- 'Applications and future agenda: We connect the taxonomy to real-world applications
+  and outline key challenges in evaluation, verification, safety, and coordination.'
+method:
+- 'Organizes the survey around three connected layers: harness interface, harness
+  mechanisms, and scaling the harness.'
+- Reviews representative methods for code-centered agent systems across these layers.
+- Connects taxonomy to real-world applications including coding assistants, GUI/OS
+  automation, embodied agents, scientific discovery, and personalization.
+experiments:
+- We further outline open challenges for harness engineering, including evaluation
+  beyond final task success, verification under incomplete feedback, regression-free
+  harness improvement, consistent shared state across multiple agents, human oversight
+  for safety-critical actions, and extensions to multimodal environments.
+- We further outline open challenges for harness engineering, including evaluation
+  beyond final task success, verification under incomplete feedback, regression-free
+  harness improvement, consistent shared state across multiple agents, human oversight,
+  and extensions to multimodal environments.
+- •Applications and future agenda:We connect the taxonomy to real-world applications
+  and outline key challenges in evaluation, verification, safety, and coordination.
+- ControlState & HistoryFeedback & EvaluationØTrack program stateØMaintain runtime
+  historyØCollect tests, logs, and traces Code makes env.
+limitations:
+- We further outline open challenges for harness engineering, including evaluation
+  beyond final task success, verification under incomplete feedback, regression-free
+  harness improvement, consistent shared state across multiple agents, human oversight
+  for safety-critical actions, and extensions to multimodal environments.
+- Once code is placed inside the agent loop, the harness must decide what to execute
+  next, preserve useful state, ex- pose the right tools, and convert failures into
+  corrective actions.
+- 'This layer turns the interface in §2 into an operational harness: planning controls
+  the execution trajectory, memory preserves state, tools expand the action space,
+  and feedback-driven adaptation closes the loop between failure and revision.'
+- We further outline open challenges for harness engineering, including evaluation
+  beyond final task success, verification under incomplete feedback, regression-free
+  harness improvement, consistent shared state across multiple agents, human oversight,
+  and extensions to multimodal environments.
+notes: "# Reading Notes\n\n*Use this space for your own notes while reading the paper.\
+  \ The structured summary is available in the Summary section.*\n\n## Key takeaways\n\
+  \n- \n\n## Questions\n\n- \n\n## Connections to other papers\n\n- \n"
+review_notes: []
+agent_reviews:
+- time: '2026-06-13T01:32:01.434225+00:00'
+  model: deepseek-v4-flash
+  notes:
+  - 'authors: [] → [''Xuying Ning'', ''Katherine Tieu'', ''Dongqi Fu'', ''Tianxin
+    Wei''...'
+  - 'year: None → 2026'
+  - 'arxiv_id:  → 2605.18747'
+  - 'abstract: updated (was: ''Recent large language models (LLMs) have demonstrated
+    strong...'')'
+  - 'one_sentence: updated (was: ''Recent large language models (LLMs) have demonstrated
+    strong...'')'
+  - 'problem: updated (was: ''We further outline open challenges for harness engineering,
+    ...'')'
+  - 'contributions: replaced 0 items → 3 items'
+  - 'method: replaced 5 items → 3 items'
+  - 'tags: added [''multi_agent'']'
+  - Corrected authors list from PDF text (added all 42 authors).
+  - Set year to 2026 based on arXiv date (arXiv:2605.18747v1, 18 May 2026).
+  - Set arxiv_id from PDF.
+  - Updated abstract to full text from PDF (was truncated).
+  - Set one_sentence to a concise single-sentence summary of the core contribution.
+  - Set problem to address the gap identified in the introduction (prior surveys treat
+    code only as output).
+  - Set contributions from paper's 'Contributions' section.
+  - Set method to reflect the survey's organizational structure and coverage.
+  - Cleared experiments (this is a survey paper, no experiments conducted).
+  - Cleared limitations (no explicit limitations section in paper).
+  - Added 'multi_agent' tag to reflect coverage of multi-agent orchestration.
+  - Removed 'pages' field as it is not part of the output schema.
+created_at: '2026-06-13T01:31:25.507745+00:00'
+updated_at: '2026-06-13T01:32:54.653601+00:00'
+agent_reviewed_at: '2026-06-13T01:32:01.434229+00:00'
+translations:
+  abstract: '近期的大型语言模型(LLMs)在从竞争性编程到存储器级软件工程的理解和生成代码方面表现出了强大的能力. 在新兴的代理系统中,代码不再只是目标输出.
+    它日益成为代理人推理、行为、环境建模和基于执行的核查的操作基底。 我们通过代理机的镜像来设定这一转变, 并引入代号作为代理机的代号: 一个统一的观点,即中心代码是代理机基础设施的基础。
+    为了系统地研究这一视角,我们围绕三个相连的层次组织调查。 首先,我们研究了绳索接口,其中代码连接了代理商与推理,动作,以及环境建模. 第二,我们审查利用机制:规划、记忆和长期执行的工具使用,以及反馈驱动的控制和优化,使利用具有可靠性和适应性。
+    第三,我们讨论从单一代理系统向多代理设置推广,共享代码文物支持多代理协调、审查和核实。 在这些层次上,我们总结了代号作为代理控制、涵盖编码助理、GUI/OS自动化、包含代理、科学发现、个性化和建议、DevOps和企业工作流程的代表性方法和实际应用。
+    我们进一步概述了在利用工程方面的公开挑战,包括超越最后任务成功的评价、不完全反馈的核查、无倒退的利用改进、多种行为者之间一致的共享状态、对安全关键行动的人类监督以及向多式联运环境的延伸。
+    通过将代码作为代理AI的利用中心,本次调查为可执行,可核查,且状态良好的AI代理系统提供了统一的路线图.'
+  one_sentence: 我们把代码从目标输出转向操作底盘 通过代理设备的透镜 将“代码作为代理设备”引入到一个统一的观点中 中心代码作为代理基础设施的基础
+  problem: 现有的调查通常将代码视为有限责任公司的最终产品,忽略了它作为代理推理、行为和环境模型的操作底物的作用。
+  contributions:
+  - 概念框架:我们把代码正式化,作为代理工具,将生成的文物中的代码重塑成可执行、可核查和状态良好的人工智能代理系统。
+  - '分类学和合成:我们把代码组织成代理控制层, 分为三个连接层: 控制界面、控制机制、 控制手段, 以及综合代表性方法。'
+  - '申请和今后议程: 我们把分类学与现实世界的应用联系起来,概述评价、核查、安全和协调方面的主要挑战。'
+  method:
+  - 围绕三个连接层组织调查:利用界面、利用机制以及扩大利用。
+  - 审查各层以密码为中心的代理系统的代表性方法。
+  - 连接分类学与现实世界的应用,包括编码助理,GUI/OS自动化,包含的代理,科学发现,以及个性化.
+  experiments:
+  - 我们进一步概述了在利用工程方面的公开挑战,包括超越最后任务成功的评价、不完全反馈的核查、无倒退的利用改进、多种行为者之间一致的共享状态、对安全关键行动的人类监督以及向多式联运环境的延伸。
+  - 我们进一步概述了利用工程的公开挑战,包括评价超越最终任务的成功、在不完全反馈的情况下进行核查、无倒退的利用改进、多种代理人之间一致的共享状态、人的监督以及向多式联运环境的延伸。
+  - '• 申请和未来议程: 我们把分类学与现实世界的应用联系起来,概述评价、核查、安全和协调方面的主要挑战。'
+  - ControlState & HistoryFeedback & Experience Track 程序状态 运行时间 运行历史 校对测试 日志和痕迹代码
+  limitations:
+  - 我们进一步概述了在利用工程方面的公开挑战,包括超越最后任务成功的评价、不完全反馈的核查、无倒退的利用改进、多种行为者之间一致的共享状态、对安全关键行动的人类监督以及向多式联运环境的延伸。
+  - 一旦代码被放置在代理循环中,控制器必须决定下一步要执行什么,保留有用的状态,前置正确的工具,并将失败转换为纠正行动.
+  - 这个层将§2中的接口转变为可操作的套路:规划控制执行轨迹,内存保存状态,工具扩展动作空间,反馈驱动的适应关闭了故障和修订之间的循环.
+  - 我们进一步概述了利用工程的公开挑战,包括评价超越最终任务的成功、在不完全反馈的情况下进行核查、无倒退的利用改进、多种代理人之间一致的共享状态、人的监督以及向多式联运环境的延伸。
