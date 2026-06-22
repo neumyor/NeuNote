@@ -13,6 +13,7 @@ import {
   ChevronDown,
   ChevronRight,
   Clock3,
+  CloudUpload,
   Copy,
   Bot,
   ExternalLink,
@@ -20,6 +21,8 @@ import {
   FolderCog,
   Gauge,
   Globe,
+  GitBranch,
+  HardDrive,
   KeyRound,
   Languages,
   Library,
@@ -116,6 +119,29 @@ type ChatSessionSummary = {
   message_count: number;
 };
 
+type SyncStatus = {
+  enabled: boolean;
+  available: boolean;
+  repository: boolean;
+  branch?: string;
+  remote?: string;
+  remote_configured?: boolean;
+  pending_files?: number;
+  paths: string[];
+  last_commit?: string;
+  detail: string;
+  message?: string;
+  auto_sync?: {
+    enabled: boolean;
+    interval_minutes: number;
+    running: boolean;
+    last_attempt_at?: string | null;
+    last_success_at?: string | null;
+    last_error?: string | null;
+    next_sync_at?: string | null;
+  };
+};
+
 type ChatToolCall = {
   id: string;
   name: string;
@@ -152,6 +178,15 @@ function App() {
   const [claudeModel, setClaudeModel] = useState("sonnet");
   const [translationEngine, setTranslationEngine] = useState<"local" | "llm">("llm");
   const [maxConcurrency, setMaxConcurrency] = useState(4);
+  const [syncMode, setSyncMode] = useState<"local" | "git">("local");
+  const [gitRemote, setGitRemote] = useState("origin");
+  const [gitRemoteUrl, setGitRemoteUrl] = useState("");
+  const [gitBranch, setGitBranch] = useState("main");
+  const [gitSyncPdfs, setGitSyncPdfs] = useState(false);
+  const [gitSyncChats, setGitSyncChats] = useState(false);
+  const [gitAutoSync, setGitAutoSync] = useState(false);
+  const [gitSyncIntervalMinutes, setGitSyncIntervalMinutes] = useState(10);
+  const [syncStatus, setSyncStatus] = useState<SyncStatus | null>(null);
   const [papers, setPapers] = useState<Paper[]>([]);
   const [stats, setStats] = useState<Stats>({ papers: 0, needs_review: 0, profiled: 0, tags: 0, duplicate_groups: 0, duplicate_papers: 0 });
   const [jobs, setJobs] = useState<Job[]>([]);
@@ -277,6 +312,13 @@ function App() {
     return () => window.clearInterval(timer);
   }, [savedRoot, activeJobCount]);
 
+  useEffect(() => {
+    if (page !== "settings" || !savedRoot) return;
+    void loadSyncStatus(savedRoot);
+    const timer = window.setInterval(() => { void loadSyncStatus(savedRoot); }, 5000);
+    return () => window.clearInterval(timer);
+  }, [page, savedRoot]);
+
   async function request<T>(path: string, init?: RequestInit): Promise<T> {
     const res = await fetch(`${API}${path}`, init);
     if (!res.ok) {
@@ -296,6 +338,14 @@ function App() {
       claude_model?: string;
       max_concurrency?: number;
       translation_engine?: "local" | "llm";
+      sync_mode?: "local" | "git";
+      git_remote?: string;
+      git_remote_url?: string;
+      git_branch?: string;
+      git_sync_pdfs?: boolean;
+      git_sync_chats?: boolean;
+      git_auto_sync?: boolean;
+      git_sync_interval_minutes?: number;
     }>("/api/config");
     setRoot(data.root);
     setSavedRoot(data.root);
@@ -304,10 +354,26 @@ function App() {
     setClaudeModel(data.claude_model ?? "sonnet");
     setMaxConcurrency(data.max_concurrency ?? 4);
     setTranslationEngine(data.translation_engine ?? "local");
+    setSyncMode(data.sync_mode ?? "local");
+    setGitRemote(data.git_remote ?? "origin");
+    setGitRemoteUrl(data.git_remote_url ?? "");
+    setGitBranch(data.git_branch ?? "main");
+    setGitSyncPdfs(data.git_sync_pdfs ?? false);
+    setGitSyncChats(data.git_sync_chats ?? false);
+    setGitAutoSync(data.git_auto_sync ?? false);
+    setGitSyncIntervalMinutes(data.git_sync_interval_minutes ?? 10);
     await loadPapers(data.root);
     await loadJobs(data.root);
     await loadDuplicates(data.root);
     await loadSessions(data.root);
+    await loadSyncStatus(data.root);
+  }
+
+  async function loadSyncStatus(kbRoot = savedRoot) {
+    if (!kbRoot) return;
+    const params = `?root=${encodeURIComponent(kbRoot)}`;
+    const data = await request<SyncStatus>(`/api/sync/status${params}`);
+    setSyncStatus(data);
   }
 
   async function loadPapers(kbRoot = savedRoot) {
@@ -377,6 +443,14 @@ function App() {
           claude_model: claudeModel,
           max_concurrency: maxConcurrency,
           translation_engine: translationEngine,
+          sync_mode: syncMode,
+          git_remote: gitRemote,
+          git_remote_url: gitRemoteUrl,
+          git_branch: gitBranch,
+          git_sync_pdfs: gitSyncPdfs,
+          git_sync_chats: gitSyncChats,
+          git_auto_sync: gitAutoSync,
+          git_sync_interval_minutes: gitSyncIntervalMinutes,
         }),
       });
       setSavedRoot(data.root);
@@ -385,8 +459,44 @@ function App() {
       await loadPapers(data.root);
       await loadJobs(data.root);
       await loadSessions(data.root);
+      await loadSyncStatus(data.root);
     } catch (err) {
       setError(String((err as Error).message ?? err));
+    } finally {
+      setBusy("");
+    }
+  }
+
+  async function syncNow() {
+    setBusy("git-sync");
+    setError("");
+    try {
+      await request("/api/config", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          root, claude_api_key: claudeApiKey, claude_endpoint: claudeEndpoint,
+          claude_model: claudeModel, max_concurrency: maxConcurrency,
+          translation_engine: translationEngine, sync_mode: syncMode,
+          git_remote: gitRemote, git_remote_url: gitRemoteUrl,
+          git_branch: gitBranch, git_sync_pdfs: gitSyncPdfs,
+          git_sync_chats: gitSyncChats,
+          git_auto_sync: gitAutoSync,
+          git_sync_interval_minutes: gitSyncIntervalMinutes,
+        }),
+      });
+      const data = await request<SyncStatus>("/api/sync", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ root }),
+      });
+      setSyncStatus(data);
+      await loadPapers(root);
+      await loadSessions(root);
+      await loadSyncStatus(root);
+    } catch (err) {
+      setError(String((err as Error).message ?? err));
+      await loadSyncStatus(root).catch(() => undefined);
     } finally {
       setBusy("");
     }
@@ -805,6 +915,15 @@ function App() {
             claudeModel={claudeModel} setClaudeModel={setClaudeModel}
             maxConcurrency={maxConcurrency} setMaxConcurrency={setMaxConcurrency}
             translationEngine={translationEngine} setTranslationEngine={setTranslationEngine}
+            syncMode={syncMode} setSyncMode={setSyncMode}
+            gitRemote={gitRemote} setGitRemote={setGitRemote}
+            gitRemoteUrl={gitRemoteUrl} setGitRemoteUrl={setGitRemoteUrl}
+            gitBranch={gitBranch} setGitBranch={setGitBranch}
+            gitSyncPdfs={gitSyncPdfs} setGitSyncPdfs={setGitSyncPdfs}
+            gitSyncChats={gitSyncChats} setGitSyncChats={setGitSyncChats}
+            gitAutoSync={gitAutoSync} setGitAutoSync={setGitAutoSync}
+            gitSyncIntervalMinutes={gitSyncIntervalMinutes} setGitSyncIntervalMinutes={setGitSyncIntervalMinutes}
+            syncStatus={syncStatus} syncNow={syncNow}
             busy={busy} saveRoot={saveRoot}
           />
         )}
@@ -2338,6 +2457,15 @@ function SettingsPage(props: {
   maxConcurrency: number; setMaxConcurrency: (v: number) => void;
   translationEngine: "local" | "llm";
   setTranslationEngine: (v: "local" | "llm") => void;
+  syncMode: "local" | "git"; setSyncMode: (v: "local" | "git") => void;
+  gitRemote: string; setGitRemote: (v: string) => void;
+  gitRemoteUrl: string; setGitRemoteUrl: (v: string) => void;
+  gitBranch: string; setGitBranch: (v: string) => void;
+  gitSyncPdfs: boolean; setGitSyncPdfs: (v: boolean) => void;
+  gitSyncChats: boolean; setGitSyncChats: (v: boolean) => void;
+  gitAutoSync: boolean; setGitAutoSync: (v: boolean) => void;
+  gitSyncIntervalMinutes: number; setGitSyncIntervalMinutes: (v: number) => void;
+  syncStatus: SyncStatus | null; syncNow: () => void;
   busy: string; saveRoot: () => void;
 }) {
   const decConcurrency = () => props.setMaxConcurrency(Math.max(1, props.maxConcurrency - 1));
@@ -2359,7 +2487,89 @@ function SettingsPage(props: {
               placeholder="/path/to/kb"
             />
           </div>
-          <p className="hint">包含 papers/ 与 originals/papers/ 的目录。</p>
+          <p className="hint">包含 papers/ 与 originals/papers/ 的独立数据目录；不要选择 NeuNote 代码仓库。</p>
+        </div>
+
+        <div className="panel settings-panel settings-panel-wide sync-settings-panel">
+          <label className="label"><CloudUpload size={15} /> 用户数据同步</label>
+          <div className="ios-segmented" role="radiogroup" aria-label="用户数据同步方式">
+            <button
+              type="button" role="radio" aria-checked={props.syncMode === "local"}
+              className={props.syncMode === "local" ? "active" : ""}
+              onClick={() => props.setSyncMode("local")}
+            >
+              <HardDrive size={14} /> 仅本地
+            </button>
+            <button
+              type="button" role="radio" aria-checked={props.syncMode === "git"}
+              className={props.syncMode === "git" ? "active" : ""}
+              onClick={() => props.setSyncMode("git")}
+            >
+              <GitBranch size={14} /> Git 同步
+            </button>
+          </div>
+          <p className="hint">论文 YAML 始终是同步内容；API 密钥、本机路径、任务和调试日志永远仅保存在本地。</p>
+
+          {props.syncMode === "git" && (
+            <div className="git-sync-options">
+              <div className="git-fields">
+                <label>
+                  <span>远端名称</span>
+                  <input value={props.gitRemote} onChange={(e) => props.setGitRemote(e.target.value)} placeholder="origin" />
+                </label>
+                <label>
+                  <span>分支</span>
+                  <input value={props.gitBranch} onChange={(e) => props.setGitBranch(e.target.value)} placeholder="main" />
+                </label>
+              </div>
+              <label>
+                <span>远端仓库 URL</span>
+                <input
+                  value={props.gitRemoteUrl}
+                  onChange={(e) => props.setGitRemoteUrl(e.target.value)}
+                  placeholder="已有 origin 时可留空；请使用系统 Git 凭据"
+                />
+              </label>
+              <label className="sync-check-row">
+                <input type="checkbox" checked={props.gitSyncChats} onChange={(e) => props.setGitSyncChats(e.target.checked)} />
+                <span><strong>同步聊天记录</strong><small>包含提问、回答和工具调用上下文，可能含私人研究信息。</small></span>
+              </label>
+              <label className="sync-check-row">
+                <input type="checkbox" checked={props.gitSyncPdfs} onChange={(e) => props.setGitSyncPdfs(e.target.checked)} />
+                <span><strong>同步原始 PDF</strong><small>文件通常很大且可能受版权约束，仅建议用于私有仓库。</small></span>
+              </label>
+              <label className="sync-check-row">
+                <input type="checkbox" checked={props.gitAutoSync} onChange={(e) => props.setGitAutoSync(e.target.checked)} />
+                <span><strong>定时同步</strong><small>后端持续运行时，按设定间隔检查、提交、拉取并推送用户数据。</small></span>
+              </label>
+              {props.gitAutoSync && (
+                <label className="sync-interval-row">
+                  <span>同步间隔（分钟）</span>
+                  <input
+                    type="number" min={1} max={1440}
+                    value={props.gitSyncIntervalMinutes}
+                    onChange={(e) => props.setGitSyncIntervalMinutes(Math.max(1, Math.min(1440, Number(e.target.value) || 10)))}
+                  />
+                </label>
+              )}
+              <div className="sync-status-card">
+                <div>
+                  <strong>{props.syncStatus?.detail ?? "保存设置后可查看 Git 状态。"}</strong>
+                  {props.syncStatus?.last_commit && <small>最近提交：{props.syncStatus.last_commit}</small>}
+                  {typeof props.syncStatus?.pending_files === "number" && <small>待同步项：{props.syncStatus.pending_files}</small>}
+                  {props.syncStatus?.auto_sync?.running && <small>定时同步正在运行…</small>}
+                  {props.syncStatus?.auto_sync?.next_sync_at && (
+                    <small>下次检查：{new Date(props.syncStatus.auto_sync.next_sync_at).toLocaleString("zh-CN")}</small>
+                  )}
+                  {props.syncStatus?.auto_sync?.last_error && <small className="sync-error">上次定时同步失败：{props.syncStatus.auto_sync.last_error}</small>}
+                </div>
+                <button type="button" onClick={props.syncNow} disabled={props.busy === "git-sync"} className="sync-now-btn">
+                  {props.busy === "git-sync" ? <Loader2 className="spin" size={15} /> : <RefreshCw size={15} />}
+                  立即同步
+                </button>
+              </div>
+            </div>
+          )}
         </div>
 
         <div className="panel settings-panel">

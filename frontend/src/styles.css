@@ -1327,6 +1327,105 @@ h1 {
   line-height: 1.55;
 }
 
+.sync-settings-panel .ios-segmented button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.git-sync-options {
+  display: grid;
+  gap: 14px;
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid var(--line);
+}
+
+.git-sync-options > label,
+.git-fields label {
+  display: grid;
+  gap: 6px;
+  color: var(--muted);
+  font-size: .8rem;
+}
+
+.git-fields {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.sync-check-row {
+  grid-template-columns: auto 1fr !important;
+  align-items: start;
+  cursor: pointer;
+}
+
+.sync-check-row input {
+  width: 18px !important;
+  height: 18px;
+  margin-top: 2px;
+}
+
+.sync-check-row span {
+  display: grid;
+  gap: 3px;
+}
+
+.sync-check-row strong {
+  color: var(--ink);
+  font-size: .9rem;
+}
+
+.sync-interval-row {
+  grid-template-columns: 1fr 120px !important;
+  align-items: center;
+}
+
+.sync-interval-row input {
+  text-align: right;
+}
+
+.sync-check-row small,
+.sync-status-card small {
+  color: var(--muted);
+  line-height: 1.45;
+}
+
+.sync-status-card .sync-error {
+  color: #9a3f3b;
+}
+
+.sync-status-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 13px 14px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: rgba(255,255,255,.48);
+}
+
+.sync-status-card > div {
+  display: grid;
+  gap: 3px;
+}
+
+.sync-now-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+}
+
+@media (max-width: 640px) {
+  .git-fields { grid-template-columns: 1fr; }
+  .sync-status-card { align-items: stretch; flex-direction: column; }
+  .sync-now-btn { justify-content: center; }
+}
+
 .root-row {
   display: grid;
   grid-template-columns: minmax(0, 1fr);

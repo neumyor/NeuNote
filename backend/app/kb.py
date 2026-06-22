@@ -807,6 +807,14 @@ def load_app_config(root: Path) -> dict[str, Any]:
             "claude_model": "sonnet",
             "max_concurrency": 4,
             "translation_engine": "llm",
+            "sync_mode": "local",
+            "git_remote": "origin",
+            "git_remote_url": "",
+            "git_branch": "main",
+            "git_sync_pdfs": False,
+            "git_sync_chats": False,
+            "git_auto_sync": False,
+            "git_sync_interval_minutes": 10,
         }
         path.write_text(yaml.safe_dump(default, sort_keys=False, allow_unicode=True))
         return default
@@ -817,6 +825,14 @@ def load_app_config(root: Path) -> dict[str, Any]:
         "claude_model": data.get("claude_model") or "sonnet",
         "max_concurrency": data.get("max_concurrency", 4),
         "translation_engine": data.get("translation_engine") or "llm",
+        "sync_mode": data.get("sync_mode") or "local",
+        "git_remote": data.get("git_remote") or "origin",
+        "git_remote_url": data.get("git_remote_url") or "",
+        "git_branch": data.get("git_branch") or "main",
+        "git_sync_pdfs": bool(data.get("git_sync_pdfs", False)),
+        "git_sync_chats": bool(data.get("git_sync_chats", False)),
+        "git_auto_sync": bool(data.get("git_auto_sync", False)),
+        "git_sync_interval_minutes": max(1, min(1440, int(data.get("git_sync_interval_minutes", 10)))),
     }
 
 
@@ -824,7 +840,10 @@ def save_app_config(root: Path, config: dict[str, Any]) -> dict[str, Any]:
     ensure_kb(root)
     current = load_app_config(root)
     for key in ("claude_api_key", "claude_endpoint", "claude_model",
-                "max_concurrency", "translation_engine"):
+                "max_concurrency", "translation_engine", "sync_mode",
+                "git_remote", "git_remote_url", "git_branch",
+                "git_sync_pdfs", "git_sync_chats", "git_auto_sync",
+                "git_sync_interval_minutes"):
         if key in config and config[key] is not None:
             current[key] = config[key]
     (root / "metadata/app_config.yaml").write_text(

@@ -1,4 +1,5 @@
 const root = new URL("..", import.meta.url).pathname.replace(/\/$/, "");
+const dataRoot = process.env.KB_DEFAULT_ROOT ?? `${process.env.HOME ?? root}/.neunote`;
 
 function run(name: string, command: string[], cwd: string) {
   const proc = Bun.spawn(command, {
@@ -8,7 +9,7 @@ function run(name: string, command: string[], cwd: string) {
     stdin: "inherit",
     env: {
       ...process.env,
-      KB_DEFAULT_ROOT: root,
+      KB_DEFAULT_ROOT: dataRoot,
       PYTHONUNBUFFERED: "1"
     }
   });

@@ -21,6 +21,10 @@ backend/.kb_app_config.yaml
 metadata/app_config.yaml
 
 # runtime data
+/papers/
+/originals/
+/logs/
+/metadata/
 logs/chat_sessions/
 logs/jobs/
 logs/debug/

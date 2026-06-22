@@ -1,6 +1,6 @@
 # Knowledge Base
 
-NeuNote stores a library as ordinary files. The default development root is the repository root, but users can select any folder from Settings.
+NeuNote stores a library as ordinary files in an independent data root. The default is `~/.neunote`; users can select another folder from Settings. Do not place the knowledge base inside the NeuNote source repository or another Git work tree.
 
 ## Folder Layout
 
@@ -86,6 +86,24 @@ claude_endpoint: ""
 claude_model: sonnet
 max_concurrency: 4
 translation_engine: local
+sync_mode: local
+git_auto_sync: false
+git_sync_interval_minutes: 10
 ```
 
 Do not commit this file when it contains private keys or local paths.
+
+## User Data and Sync Boundaries
+
+NeuNote classifies stored data as follows:
+
+| Path | Classification | Git sync |
+| --- | --- | --- |
+| `papers/*.yaml` | Core user library data: notes, tags, reading state, summaries | Always included when Git sync is enabled |
+| `logs/chat_sessions/*.json` | User conversations and research context | Optional, off by default |
+| `originals/papers/*` | User-provided source documents | Optional, off by default |
+| `metadata/app_config.yaml` | Local configuration and API credentials | Never included |
+| `.kb_app_config.yaml` | Machine-local root selection | Never included |
+| `logs/jobs/`, `logs/debug/`, ingest/update logs | Ephemeral operational data | Never included |
+
+Git sync exposes an **立即同步** action and an optional backend schedule. Scheduled sync is disabled by default; its interval defaults to 10 minutes and can be set from 1 to 1440 minutes. The knowledge-base folder becomes its own Git repository; an existing remote branch is fetched into an empty knowledge base on first sync. Local-only mode does not invoke Git or access a network. Git credentials are handled by the user's existing SSH agent or Git credential helper.

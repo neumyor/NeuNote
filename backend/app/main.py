@@ -5,6 +5,8 @@ import json
 import os
 import tempfile
 import threading
+import time
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any
 
@@ -14,6 +16,7 @@ from fastapi.responses import FileResponse, StreamingResponse
 from pydantic import BaseModel, Field
 
 from .agent_chat import run_agent_answer_sync
+from .git_sync import GitSyncError, git_sync_status, sync_with_git
 from .kb import (
     append_session_message,
     cancel_job,
@@ -45,7 +48,20 @@ from .kb import (
 from .translate import translate_paper_summary
 
 APP_CONFIG = Path(".kb_app_config.yaml")
-DEFAULT_ROOT = Path(os.environ.get("KB_DEFAULT_ROOT", Path.cwd())).resolve()
+DEFAULT_ROOT = Path(os.environ.get("KB_DEFAULT_ROOT", Path.home() / ".neunote")).expanduser().resolve()
+
+_auto_sync_lock = threading.Lock()
+_auto_sync_wake = threading.Event()
+_auto_sync_stop = threading.Event()
+_auto_sync_signature: tuple[Any, ...] | None = None
+_auto_sync_next_due: float | None = None
+_auto_sync_state: dict[str, Any] = {
+    "running": False,
+    "last_attempt_at": None,
+    "last_success_at": None,
+    "last_error": None,
+    "next_sync_at": None,
+}
 
 app = FastAPI(title="NeuNote")
 app.add_middleware(
@@ -82,10 +98,103 @@ def _preload_translation_model() -> None:
             "Translation model preload failed (will retry on first use): %s", exc)
 
 
+def _configured_root() -> Path:
+    root = DEFAULT_ROOT
+    if APP_CONFIG.exists():
+        import yaml
+        data = yaml.safe_load(APP_CONFIG.read_text(encoding="utf-8")) or {}
+        if data.get("root"):
+            root = Path(data["root"]).expanduser().resolve()
+    return root
+
+
+def _reset_auto_sync_schedule() -> None:
+    global _auto_sync_signature, _auto_sync_next_due
+    with _auto_sync_lock:
+        _auto_sync_signature = None
+        _auto_sync_next_due = None
+    _auto_sync_wake.set()
+
+
+def _auto_sync_status(config: dict[str, Any]) -> dict[str, Any]:
+    with _auto_sync_lock:
+        state = dict(_auto_sync_state)
+    state.update({
+        "enabled": config.get("sync_mode") == "git" and bool(config.get("git_auto_sync")),
+        "interval_minutes": int(config.get("git_sync_interval_minutes", 10)),
+    })
+    return state
+
+
+def _auto_sync_loop() -> None:
+    global _auto_sync_signature, _auto_sync_next_due
+    while not _auto_sync_stop.is_set():
+        wait_seconds = 5.0
+        try:
+            root = _configured_root()
+            config = load_app_config(root)
+            enabled = config.get("sync_mode") == "git" and bool(config.get("git_auto_sync"))
+            interval_minutes = max(1, min(1440, int(config.get("git_sync_interval_minutes", 10))))
+            signature = (
+                str(root), enabled, interval_minutes, config.get("git_remote"),
+                config.get("git_remote_url"), config.get("git_branch"),
+                config.get("git_sync_pdfs"), config.get("git_sync_chats"),
+            )
+            now_monotonic = time.monotonic()
+            with _auto_sync_lock:
+                if signature != _auto_sync_signature:
+                    _auto_sync_signature = signature
+                    _auto_sync_next_due = now_monotonic + interval_minutes * 60 if enabled else None
+                    _auto_sync_state.update({
+                        "running": False,
+                        "last_error": None,
+                        "next_sync_at": (
+                            datetime.now(timezone.utc) + timedelta(minutes=interval_minutes)
+                        ).isoformat() if enabled else None,
+                    })
+                due = enabled and _auto_sync_next_due is not None and now_monotonic >= _auto_sync_next_due
+
+            if due:
+                attempted_at = datetime.now(timezone.utc).isoformat()
+                with _auto_sync_lock:
+                    _auto_sync_state.update({"running": True, "last_attempt_at": attempted_at})
+                try:
+                    sync_with_git(root, config)
+                    with _auto_sync_lock:
+                        _auto_sync_state.update({"last_success_at": datetime.now(timezone.utc).isoformat(),
+                                                 "last_error": None})
+                except Exception as exc:  # noqa: BLE001 - scheduler must remain alive
+                    with _auto_sync_lock:
+                        _auto_sync_state["last_error"] = str(exc)
+                finally:
+                    with _auto_sync_lock:
+                        _auto_sync_state["running"] = False
+                        _auto_sync_next_due = time.monotonic() + interval_minutes * 60
+                        _auto_sync_state["next_sync_at"] = (
+                            datetime.now(timezone.utc) + timedelta(minutes=interval_minutes)
+                        ).isoformat()
+
+            with _auto_sync_lock:
+                if enabled and _auto_sync_next_due is not None:
+                    wait_seconds = max(0.25, min(5.0, _auto_sync_next_due - time.monotonic()))
+        except Exception as exc:  # noqa: BLE001 - keep scheduler alive on config errors
+            with _auto_sync_lock:
+                _auto_sync_state.update({"running": False, "last_error": str(exc), "next_sync_at": None})
+        _auto_sync_wake.wait(wait_seconds)
+        _auto_sync_wake.clear()
+
+
 @app.on_event("startup")
 def _on_startup() -> None:
-    import threading
     threading.Thread(target=_preload_translation_model, daemon=True).start()
+    _auto_sync_stop.clear()
+    threading.Thread(target=_auto_sync_loop, daemon=True, name="neunote-git-auto-sync").start()
+
+
+@app.on_event("shutdown")
+def _on_shutdown() -> None:
+    _auto_sync_stop.set()
+    _auto_sync_wake.set()
 
 # ── parallel job executor ─────────────────────────────────────────────
 
@@ -120,16 +229,19 @@ class RootConfig(BaseModel):
     claude_model: str | None = None
     max_concurrency: int | None = Field(default=None, ge=1, le=20)
     translation_engine: str | None = Field(default=None, pattern=r"^(local|llm)$")
+    sync_mode: str | None = Field(default=None, pattern=r"^(local|git)$")
+    git_remote: str | None = None
+    git_remote_url: str | None = None
+    git_branch: str | None = None
+    git_sync_pdfs: bool | None = None
+    git_sync_chats: bool | None = None
+    git_auto_sync: bool | None = None
+    git_sync_interval_minutes: int | None = Field(default=None, ge=1, le=1440)
 
 
 @app.get("/api/config")
 def get_config() -> dict[str, Any]:
-    root = DEFAULT_ROOT
-    if APP_CONFIG.exists():
-        import yaml
-        data = yaml.safe_load(APP_CONFIG.read_text(encoding="utf-8")) or {}
-        if data.get("root"):
-            root = Path(data["root"]).expanduser().resolve()
+    root = _configured_root()
     ensure_kb(root)
     cfg = load_app_config(root)
     return {"root": str(root), **cfg}
@@ -144,7 +256,30 @@ def set_config(config: RootConfig) -> dict[str, Any]:
     cfg = save_app_config(root, config.model_dump(exclude={"root"}, exclude_none=True))
     # Recreate executor if concurrency changed
     _get_executor(cfg.get("max_concurrency", 4))
+    _reset_auto_sync_schedule()
     return {"root": str(root), **cfg}
+
+
+class GitSyncRequest(BaseModel):
+    root: str | None = None
+
+
+@app.get("/api/sync/status")
+def api_sync_status(root: str | None = None) -> dict[str, Any]:
+    kb_root = resolve_root(root)
+    config = load_app_config(kb_root)
+    return {**git_sync_status(kb_root, config), "auto_sync": _auto_sync_status(config)}
+
+
+@app.post("/api/sync")
+def api_sync(request: GitSyncRequest) -> dict[str, Any]:
+    kb_root = resolve_root(request.root)
+    try:
+        result = sync_with_git(kb_root, load_app_config(kb_root))
+        _reset_auto_sync_schedule()
+        return result
+    except GitSyncError as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
 
 
 # ── papers ────────────────────────────────────────────────────────────

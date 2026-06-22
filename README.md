@@ -6,7 +6,7 @@ It is built as a small monorepo:
 
 - `backend/`: FastAPI service for the knowledge base, PDF ingestion, enrichment jobs, translation, and agent chat.
 - `frontend/`: Vite + React + TypeScript application.
-- `papers/`, `originals/`, `logs/`, `metadata/`: the default local knowledge-base root used during development.
+- User data lives in an independent knowledge-base root (default: `~/.neunote`), outside this code repository.
 
 NeuNote keeps your library on disk. Paper records are YAML files, source PDFs stay under `originals/papers/`, and chat sessions are stored as one JSON file per conversation under `logs/chat_sessions/`.
 
@@ -49,7 +49,7 @@ Then open:
 - Frontend: http://127.0.0.1:5173
 - Backend: http://127.0.0.1:8765
 
-The root dev command starts both services and sets `KB_DEFAULT_ROOT` to the repository root. You can change the knowledge-base root from the Settings page.
+The root dev command starts both services and uses `~/.neunote` as `KB_DEFAULT_ROOT` unless the environment variable is already set. You can change the knowledge-base root from the Settings page. Keep it outside the NeuNote source checkout so its Git history remains independent.
 
 ## Common Commands
 
@@ -122,20 +122,34 @@ claude_endpoint: ""
 claude_model: sonnet
 max_concurrency: 4
 translation_engine: local
+sync_mode: local
+git_auto_sync: false
+git_sync_interval_minutes: 10
 ```
 
 `translation_engine` can be `local` or `llm`.
 
 ## Privacy and Data Notes
 
-NeuNote is designed for local use. Before publishing your own library:
+NeuNote is designed for local use. The source repository ignores all runtime user-data directories. A knowledge base should use its own folder and, when sync is enabled, its own Git repository and remote.
+
+Before publishing or syncing your own library:
 
 - do not commit `originals/papers/`,
 - review `papers/*.yaml` for private notes,
 - do not commit `metadata/app_config.yaml`,
 - do not commit `logs/`.
 
-The repository currently includes sample paper YAML records so the UI has meaningful data during development.
+## Optional Git Sync
+
+Settings offers two storage modes:
+
+- **Local only** (default): NeuNote never invokes Git or contacts a remote.
+- **Git sync**: the user can explicitly sync selected user-data folders to a configured Git remote.
+
+Paper records under `papers/` are always included in the independent data repository. Chat sessions and source PDFs are separate opt-in choices because chats may contain private research context and PDFs may be large or copyrighted. API keys, machine-local paths, job state, and debug logs are never included. Authentication is delegated to the system Git credential helper or SSH agent; avoid putting access tokens in the remote URL.
+
+Git mode supports manual sync and optional scheduled sync. Scheduled sync is off by default, uses a 10-minute interval by default, and accepts intervals from 1 to 1440 minutes. The backend performs the schedule even when no browser tab is open; it must remain running.
 
 ## Project Status
 

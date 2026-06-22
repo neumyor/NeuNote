@@ -1,6 +1,6 @@
 # Architecture
 
-NeuNote is a local-first monorepo with a FastAPI backend and a React frontend.
+NeuNote is a local-first monorepo with a FastAPI backend and a React frontend. Runtime user data is stored outside the source checkout in an independent knowledge-base root (default `~/.neunote`).
 
 ## Runtime Shape
 
