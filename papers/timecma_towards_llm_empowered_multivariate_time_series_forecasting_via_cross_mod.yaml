@@ -1,0 +1,157 @@
+id: timecma_towards_llm_empowered_multivariate_time_series_forecasting_via_cross_mod
+title: 'TimeCMA: Towards LLM-Empowered Multivariate Time Series Forecasting via Cross-Modality
+  Alignment'
+authors:
+- Chenxi Liu
+- Qianxiong Xu
+- Hao Miao
+- Sun Yang
+- Lingzheng Zhang
+- Cheng Long
+- Ziyue Li
+- Rui Zhao
+year: 2025
+venue: AAAI 2025
+doi: ''
+arxiv_id: '2406.01638'
+source_pdf: originals/papers/2406_01638v5.pdf
+pages: 9
+tags:
+- forecasting
+- llm
+- representation_learning
+- retrieval
+- time_series
+status: profiled
+confidence: medium
+reading_status: unread
+priority: normal
+needs_review: false
+abstract: 'Multivariate time series forecasting (MTSF) aims to learn temporal dynamics
+  among variables to forecast future time series. Existing statistical and deep learning-based
+  methods suffer from limited learnable parameters and small-scale training data.
+  Recently, large language models (LLMs) combining time series with textual prompts
+  have achieved promising performance in MTSF. However, we discovered that current
+  LLM-based solutions fall short in learning disentangled embeddings. We introduce
+  TimeCMA, an intuitive yet effective framework for MTSF via cross-modality alignment.
+  Specifically, we present a dual-modality encoding with two branches: the time series
+  encoding branch extracts disentangled yet weak time series embeddings, and the LLM-empowered
+  encoding branch wraps the same time series with text as prompts to obtain entangled
+  yet robust prompt embeddings. As a result, such a cross-modality alignment retrieves
+  both disentangled and robust time series embeddings, ''the best of two worlds'',
+  from the prompt embeddings based on time series and prompt modality similarities.
+  As another key design, to reduce the computational costs from time series with their
+  length textual prompts, we design an effective prompt to encourage the most essential
+  temporal information to be encapsulated in the last token: only the last token is
+  passed to downstream prediction. We further store the last token embeddings to accelerate
+  inference speed. Extensive experiments on eight real datasets demonstrate that TimeCMA
+  outperforms state-of-the-arts.'
+one_sentence: TimeCMA is an LLM-empowered framework for multivariate time series forecasting
+  that achieves state-of-the-art performance by using cross-modality alignment to
+  retrieve disentangled and robust time series embeddings from prompt embeddings.
+problem: However, we discovered that current LLM-based solutions fall short in learning
+  disentangled embeddings.
+contributions:
+- We identify data entanglement issues in the embeddings of dual-modality LLMs for
+  time series forecasting and proposed a TimeCMA framework to learn disentangled embeddings
+  from LLM with text-time series data.
+- The cross-modality alignment module retrieves disentangled and robust time series
+  embeddings from the LLM-empowered prompt embeddings via channel-wise similarity
+  to enhance forecasting.
+- We tailor the last token of each prompt to reduce the computational costs. We then
+  store these last token embeddings to avoid repetitive processings with the frozen
+  LLM for efficient forecasting.
+- Extensive experiments on eight datasets demonstrate that TimeCMA outperforms state-of-the-arts.
+method:
+- Dual-modality encoding with a time series encoding branch (inverted embedding and
+  Transformer encoder) and an LLM-empowered prompt encoding branch (frozen LLM and
+  prompt encoder).
+- Cross-modality alignment that retrieves robust time series components from prompt
+  embeddings using channel-wise similarity and aggregates them with disentangled time
+  series embeddings.
+- Prompt design that encapsulates essential temporal information in the last token,
+  so only the last token is used for downstream forecasting.
+- Offline storage of last token embeddings to avoid repetitive processing with the
+  frozen LLM, reducing computational cost and accelerating inference.
+experiments:
+- 'Extensive experiments on eight real-world datasets: ETTm1, ETTm2, ETTh1, ETTh2,
+  and others.'
+- Compared with seven baseline models across five categories (statistical, CNN, Transformer,
+  time series-based LLM, prompt-based LLM).
+- TimeCMA consistently outperforms state-of-the-art methods in forecasting accuracy.
+- Ablation studies confirm the effectiveness of cross-modality alignment and last
+  token storage, and efficiency analyses show reduced computational cost.
+limitations:
+- However, we discovered that current LLM-based solutions fall short in learning disentangled
+  em- beddings.
+- However, the limited number of learnable parameters and the small-scale training
+  data prevent these methods from achieving better performance and being more robust
+  (Jin et al.
+- However, this embedding layer initial- ized with random weights often results in
+  weak embeddings due to a domain gap between time series and language data.
+- Although prompt-based LLMs have achieved notable per- formance, they were challenged
+  by the data entanglement issue (Chang et al.
+notes: "# Reading Notes\n\n*Use this space for your own notes while reading the paper.\
+  \ The structured summary is available in the Summary section.*\n\n## Key takeaways\n\
+  \n- \n\n## Questions\n\n- \n\n## Connections to other papers\n\n- \n"
+review_notes: []
+agent_reviews:
+- time: '2026-06-15T12:04:46.308918+00:00'
+  model: deepseek-v4-flash
+  notes:
+  - 'authors: [] → [''Chenxi Liu'', ''Qianxiong Xu'', ''Hao Miao'', ''Sun Yang'',
+    ''Ling...'
+  - 'year: None → 2025'
+  - 'venue:  → AAAI 2025'
+  - 'arxiv_id:  → 2406.01638'
+  - 'abstract: updated (was: ''Multivariate time series forecasting (MTSF) aims to
+    learn te...'')'
+  - 'one_sentence: updated (was: ''Multivariate time series forecasting (MTSF) aims
+    to learn te...'')'
+  - 'problem: updated (was: ''However, we discovered that current LLM-based solutions
+    fall...'')'
+  - 'contributions: replaced 0 items → 4 items'
+  - 'method: replaced 5 items → 4 items'
+  - 'experiments: replaced 5 items → 4 items'
+  - 'tags: added [''representation_learning'']'
+  - Corrected authors from empty to the 8 listed authors from PDF.
+  - Set year to 2025 based on copyright notice.
+  - Set venue to 'AAAI 2025' based on copyright notice.
+  - Added arxiv_id '2406.01638' from PDF header.
+  - Replaced truncated abstract with full abstract from PDF.
+  - Replaced one_sentence with a concise summary of the core contribution.
+  - Filled contributions list with the four bullet points from the introduction.
+  - Updated method to concise bullet points describing key components (dual-modality
+    encoding, cross-modality alignment, last token design, storage).
+  - Updated experiments to list datasets, baselines, and key results.
+  - Set limitations to null because the paper does not discuss limitations of the
+    proposed method.
+  - Added 'representation_learning' tag as the paper focuses on learning disentangled
+    representations via cross-modality alignment.
+created_at: '2026-06-15T12:04:09.613623+00:00'
+updated_at: '2026-06-15T12:04:55.570502+00:00'
+agent_reviewed_at: '2026-06-15T12:04:46.308923+00:00'
+translations:
+  abstract: 多元时间序列预测（MTSF）旨在学习变量之间的时间动态以预测未来的时间序列。现有的统计和基于深度学习的方法由于可学习参数有限和训练数据规模较小而表现不佳。最近，将时间序列与文本提示相结合的大语言模型（LLM）在MTSF中取得了有前景的性能。然而，我们发现当前基于LLM的解决方案在学习解耦嵌入方面存在不足。我们提出TimeCMA，一个通过跨模态对齐进行MTSF的直观且有效的框架。具体地，我们提出一种双模态编码，包含两个分支：时间序列编码分支提取解耦但较弱的时间序列嵌入，而LLM赋能的编码分支将相同的时间序列与文本作为提示包裹，以获得耦合但鲁棒的提示嵌入。结果，这种跨模态对齐基于时间序列和提示模态的相似性，从提示嵌入中检索出既解耦又鲁棒的时间序列嵌入，即“两个世界的最佳”。作为另一个关键设计，为了减少由时间序列及其长度文本提示带来的计算成本，我们设计了一种有效的提示，鼓励最核心的时间信息被封装在最后一个token中：仅最后一个token被传递给下游预测。我们还存储最后一个token嵌入以加速推理速度。在八个真实数据集上的大量实验表明，TimeCMA优于现有最先进方法。
+  one_sentence: TimeCMA是一个LLM赋能的多元时间序列预测框架，通过跨模态对齐从提示嵌入中检索解耦且鲁棒的时间序列嵌入，实现了最先进的性能。
+  problem: 然而，我们发现当前基于LLM的解决方案在学习解耦嵌入方面存在不足。
+  contributions:
+  - 我们识别出用于时间序列预测的双模态LLM嵌入中的数据纠缠问题，并提出了TimeCMA框架，用于从带有文本-时间序列数据的LLM中学习解耦嵌入。
+  - 跨模态对齐模块通过通道级相似性从LLM赋能的提示嵌入中检索解耦且鲁棒的时间序列嵌入，以增强预测性能。
+  - 我们针对每个提示的最后一个token进行定制以减少计算成本。然后存储这些最后一个token嵌入，以避免重复处理冻结的LLM，从而实现高效预测。
+  - 在八个数据集上的大量实验表明，TimeCMA优于现有最先进方法。
+  method:
+  - 双模态编码，包含时间序列编码分支（倒置嵌入和Transformer编码器）和LLM赋能的提示编码分支（冻结的LLM和提示编码器）。
+  - 跨模态对齐，通过通道级相似性从提示嵌入中检索鲁棒的时间序列分量，并将其与解耦的时间序列嵌入聚合。
+  - 提示设计，将关键时间信息封装在最后一个token中，因此仅使用最后一个token进行下游预测。
+  - 离线存储最后一个token嵌入，避免重复处理冻结的LLM，从而降低计算成本并加速推理。
+  experiments:
+  - 在八个真实世界数据集上进行了大量实验：ETTm1、ETTm2、ETTh1、ETTh2等。
+  - 与七个基线模型（涵盖统计、CNN、Transformer、基于时间序列的LLM、基于提示的LLM五类）进行比较。
+  - TimeMCA在预测准确性上持续优于最先进方法。
+  - 消融研究证实了跨模态对齐和最后一个token存储的有效性，效率分析显示计算成本降低。
+  limitations:
+  - 然而，我们发现当前基于LLM的解决方案在学习解耦嵌入方面存在不足。
+  - 然而，有限的可学习参数和小规模的训练数据阻碍了这些方法实现更好的性能和更强的鲁棒性（Jin et al.）。
+  - 然而，这个用随机权重初始化的嵌入层由于时间序列和语言数据之间的领域差距，通常导致弱嵌入。
+  - 尽管基于提示的LLM取得了显著性能，但它们面临数据纠缠问题的挑战（Chang et al.）。

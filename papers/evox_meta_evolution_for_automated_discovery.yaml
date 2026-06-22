@@ -1,0 +1,124 @@
+id: evox_meta_evolution_for_automated_discovery
+title: 'EvoX: Meta-Evolution for Automated Discovery'
+authors:
+- Shu Liu
+- Shubham Agarwal
+- Monishwaran Maheswaran
+- Mert Cemri
+- Zhifei Li
+- Qiuyang Mang
+- Ashwin Naren
+- Ethan Boneh
+- Audrey Cheng
+- Melissa Z. Pan
+- Alexander Du
+- Kurt Keutzer
+- Alvin Cheung
+- Alexandros G. Dimakis
+- Koushik Sen
+- Matei Zaharia
+- Ion Stoica
+year: 2026
+venue: ''
+doi: ''
+arxiv_id: '2602.23413'
+source_pdf: originals/papers/2602_23413v2.pdf
+pages: 28
+tags:
+- evolutionary_algorithm
+- llm
+status: profiled
+confidence: medium
+reading_status: unread
+priority: normal
+needs_review: false
+abstract: 'Recent work such as AlphaEvolve has shown that combining LLM-driven optimization
+  with evolutionary search can effectively improve programs, prompts, and algorithms
+  across domains. In this paradigm, previously evaluated solutions are reused to guide
+  the model toward new candidate solutions. Crucially, the effectiveness of this evolution
+  process depends on the search strategy: how prior solutions are selected and varied
+  to generate new candidates. However, most existing methods rely on fixed search
+  strategies with predefined knobs (e.g., explore–exploit ratios) that remain static
+  throughout execution. While effective in some settings, these approaches often fail
+  to adapt across tasks, or even within the same task as the search space changes
+  over time. We introduce EvoX, an adaptive evolution method that optimizes its own
+  evolution process. EvoX jointly evolves candidate solutions and the search strategies
+  used to generate them, continuously updating how prior solutions are selected and
+  varied based on progress. This enables the system to dynamically shift between different
+  search strategies during the optimization process. Across nearly 200 real-world
+  optimization tasks, EvoX outperforms existing AI-driven evolutionary methods including
+  AlphaEvolve, OpenEvolve, GEPA, and ShinkaEvolve on the majority of tasks.'
+one_sentence: EvoX is an adaptive evolution method that jointly evolves candidate
+  solutions and the search strategies used to generate them, optimizing its own evolution
+  process.
+problem: However, most existing methods rely on fixed search strategies with predefined
+  knobs (e.g., explore–exploit ratios) that remain static throughout execution.
+contributions:
+- We formalize LLM-driven optimization as a two-level process that separates solution
+  evolution from search strategy evolution.
+- We introduce EvoX, a method that dynamically evolves search strategies based on
+  improvements in the optimization objective.
+- We demonstrate consistent improvements over prior methods across nearly 200 problems,
+  and characterize the cost, scaling behavior, and adaptation dynamics of the search
+  strategy evolution.
+method:
+- 'EvoX uses a two-level evolution: solution-evolution loop for generating candidates
+  under a fixed search strategy, and meta-evolution loop for updating the search strategy
+  based on progress.'
+- The search strategy specifies selection of parent candidates, variation operators
+  (local refinement, structural variation, free-form variation), and inspiration set.
+- When progress stagnates, the meta-evolution loop generates a new search strategy
+  conditioned on prior strategies, their performance, and current population state.
+- EvoX starts from a random-sampling search strategy and evolves it online.
+experiments:
+- Evaluated on nearly 200 optimization tasks including mathematics, systems optimization,
+  and algorithm engineering benchmarks.
+- 'Compared against human-designed baselines and AI discovery systems: AlphaEvolve,
+  OpenEvolve, GEPA, ShinkaEvolve.'
+- Fixed budget of 100 iterations for all methods.
+- EvoX outperformed existing methods on 96% of math and system optimization benchmarks.
+limitations:
+- However, most existing methods rely on fixed search strategies with predefined knobs
+  (e.g., explore–exploit ratios) that remain static throughout execution.
+- While effective in some settings, these approaches often fail to adapt across tasks,
+  or even within the same task as the search space changes over time.
+- However, key search strategy knobs remain manually configured.
+- In practice, a fixed search strategy often fails to generalize across problems or
+  across different stages of optimization.
+notes: "# Reading Notes\n\n*Use this space for your own notes while reading the paper.\
+  \ The structured summary is available in the Summary section.*\n\n## Key takeaways\n\
+  \n- \n\n## Questions\n\n- \n\n## Connections to other papers\n\n- \n"
+review_notes: []
+agent_reviews:
+- time: '2026-06-22T08:18:36.288249+00:00'
+  model: deepseek-v4-flash
+  notes:
+  - 'authors: [] → [''Shu Liu'', ''Shubham Agarwal'', ''Monishwaran Maheswaran'',
+    ''Me...'
+  - 'year: None → 2026'
+  - 'arxiv_id:  → 2602.23413'
+  - 'abstract: updated (was: ''Recent work such as AlphaEvolve has shown that combining
+    LLM...'')'
+  - 'one_sentence: updated (was: ''Recent work such as AlphaEvolve has shown that
+    combining LLM...'')'
+  - 'contributions: replaced 0 items → 3 items'
+  - 'method: replaced 5 items → 4 items'
+  - 'experiments: replaced 5 items → 4 items'
+  - 'tags: added [''evolutionary_algorithm'']'
+  - Corrected title capitalization (minor, but kept as is).
+  - Populated authors from PDF author list.
+  - Set year to 2026 based on arXiv publication date.
+  - Set arxiv_id to '2602.23413' from header.
+  - Provided full abstract from PDF text.
+  - Replaced one_sentence with a concise single-sentence summary of the core contribution.
+  - Set contributions to the three explicit contribution statements from the paper.
+  - Method and experiments fields populated with concise bullet points based on paper
+    content.
+  - Limitations set to null as no clear limitations of EvoX are stated in the provided
+    text.
+  - 'Tags updated: added ''evolutionary_algorithm'' to complement existing ''llm''
+    tag.'
+  - Venue, DOI left null due to absence of evidence.
+created_at: '2026-06-22T08:17:51.437898+00:00'
+updated_at: '2026-06-22T08:18:36.288271+00:00'
+agent_reviewed_at: '2026-06-22T08:18:36.288266+00:00'

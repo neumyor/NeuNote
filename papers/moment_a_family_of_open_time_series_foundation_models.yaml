@@ -1,0 +1,141 @@
+id: moment_a_family_of_open_time_series_foundation_models
+title: 'MOMENT: A Family of Open Time-series Foundation Models'
+authors:
+- Mononito Goswami
+- Konrad Szafer
+- Arjun Choudhry
+- Yifu Cai
+- Shuo Li
+- Artur Dubrawski
+year: 2024
+venue: ICML 2024
+doi: ''
+arxiv_id: '2402.03885'
+source_pdf: originals/papers/2402_03885v3.pdf
+pages: 38
+tags:
+- anomaly_detection
+- benchmark
+- forecasting
+- representation_learning
+- scaling_laws
+- time_series
+status: profiled
+confidence: medium
+reading_status: unread
+priority: normal
+needs_review: false
+abstract: We introduce MOMENT, a family of open-source foundation models for general-purpose
+  time series analysis. Pre-training large models on time series data is challenging
+  due to (1) the absence of a large and cohesive public time series repository, and
+  (2) diverse time series characteristics which make multi-dataset training onerous.
+  Additionally, (3) experimental benchmarks to evaluate these models, especially in
+  scenarios with limited resources, time, and supervision, are still in their nascent
+  stages. To address these challenges, we compile a large and diverse collection of
+  public time series, called the Time series Pile, and systematically tackle time
+  series-specific challenges to unlock large-scale multi-dataset pre-training. Finally,
+  we build on recent work to design a benchmark to evaluate time series foundation
+  models on diverse tasks and datasets in limited supervision settings. Experiments
+  on this benchmark demonstrate the effectiveness of our pre-trained models with minimal
+  data and task-specific fine-tuning. Finally, we present several interesting empirical
+  observations about large pre-trained time series models. Pre-trained models (AutonLab/MOMENT-1-large)
+  and Time Series Pile (AutonLab/Timeseries-PILE) are available on https://huggingface.co/AutonLab.
+one_sentence: We introduce MOMENT, a family of open-source foundation models for general-purpose
+  time series analysis.
+problem: Lack of large cohesive public time series repository, diverse time series
+  characteristics making multi-dataset training onerous, and nascent experimental
+  benchmarks for evaluating models in limited supervision settings.
+contributions:
+- Compilation of the Time Series Pile, a large collection of public time series data
+  from diverse domains.
+- Multi-dataset pre-training framework for time series foundation models using masked
+  time series prediction.
+- Holistic benchmark for evaluating time series foundation models across five tasks
+  in limited supervision settings.
+- Release of open-source pre-trained time series models (MOMENT) and datasets.
+method:
+- Collected Time Series Pile from multiple public repositories with careful train-test
+  splitting to avoid contamination.
+- Designed transformer encoder architecture processing time series as disjoint patches
+  with masked time series prediction pre-training.
+- Applied reversible instance normalization for handling distribution shifts.
+- Pre-trained models of varying sizes and evaluated on benchmark covering forecasting,
+  classification, anomaly detection, and imputation.
+experiments:
+- Evaluated MOMENT on 5 tasks (short/long-horizon forecasting, classification, anomaly
+  detection, imputation) using multiple datasets and metrics in limited supervision
+  settings.
+- Compared against state-of-the-art deep learning and statistical baselines.
+- Studied impact of model size scaling, initialization (random vs language model weights),
+  and cross-modal transfer.
+limitations:
+- To address these chal- lenges, we compile a large and diverse collec- tion of public
+  time series, called the Time series Pile, and systematically tackle time series-specific
+  challenges to unlock large-scale multi-dataset pre- training.
+- unique challenges that modeling time series data poses, time series analysis continues
+  to receive substantial interest from academia and industry alike.
+- However, modeling such data typically requires substantial domain expertise, time,
+  and task-specific design.
+- However, contrastive learning relies on data augmentation, which is both subjec-
+  tive and data-dependent.
+notes: "# Reading Notes\n\n*Use this space for your own notes while reading the paper.\
+  \ The structured summary is available in the Summary section.*\n\n## Key takeaways\n\
+  \n- \n\n## Questions\n\n- \n\n## Connections to other papers\n\n- \n"
+review_notes: []
+agent_reviews:
+- time: '2026-06-17T08:53:32.360076+00:00'
+  model: deepseek-v4-flash
+  notes:
+  - 'authors: [] → [''Mononito Goswami'', ''Konrad Szafer'', ''Arjun Choudhry'', ''Yif...'
+  - 'year: None → 2024'
+  - 'venue:  → ICML 2024'
+  - 'arxiv_id:  → 2402.03885'
+  - 'abstract: updated (was: ''We introduce MOMENT, a family of open-source foundation
+    mode...'')'
+  - 'one_sentence: updated (was: ''We introduce MOMENT, a family of open-source foundation
+    mode...'')'
+  - 'problem: updated (was: ''To address these chal- lenges, we compile a large and
+    divers...'')'
+  - 'contributions: replaced 0 items → 4 items'
+  - 'method: replaced 5 items → 4 items'
+  - 'experiments: replaced 5 items → 3 items'
+  - 'tags: added [''scaling_laws'']'
+  - 'tags: removed [''llm'', ''memory'']'
+  - Corrected authors based on PDF header.
+  - Set year to 2024 from conference proceedings.
+  - Set venue to ICML 2024 based on PDF.
+  - Set arxiv_id to 2402.03885.
+  - Updated abstract to full text from first page.
+  - Corrected one_sentence to a concise single sentence.
+  - Replaced contributions with items from paper's explicit contributions.
+  - Reformatted method and experiments as concise bullet points.
+  - 'Adjusted tags: removed ''memory'' and ''llm'' (not core topics), added ''scaling_laws''
+    based on empirical study.'
+created_at: '2026-06-17T08:52:29.336320+00:00'
+updated_at: '2026-06-17T08:53:44.601036+00:00'
+agent_reviewed_at: '2026-06-17T08:53:32.360079+00:00'
+translations:
+  abstract: 我们介绍MOMENT，一个用于通用时间序列分析的开源基础模型家族。预训练大规模时间序列模型面临挑战：(1)缺乏大规模统一的公开时间序列库，(2)多变的时间序列特征使得多数据集训练困难，(3)评估这些模型的实验基准，特别是在资源、时间和监督有限的情况下，仍处于起步阶段。为应对这些挑战，我们编制了一个大规模多样的公开时间序列集合，称为Time
+    Series Pile，并系统地解决时间序列特定的挑战，以实现大规模多数据集预训练。最后，我们基于近期工作设计了一个基准，用于在有限监督设置下评估时间序列基础模型在各种任务和数据集上的表现。实验表明，我们的预训练模型在极少数据和特定任务微调下的有效性。最后，我们呈现了关于大规模预训练时间序列模型的若干有趣经验观察。预训练模型（AutonLab/MOMENT-1-large）和Time
+    Series Pile（AutonLab/Timeseries-PILE）可在https://huggingface.co/AutonLab获取。
+  one_sentence: 我们介绍MOMENT，一个用于通用时间序列分析的开源基础模型家族。
+  problem: 缺乏大规模统一的公开时间序列库，多变的时间序列特征使得多数据集训练困难，以及评估模型在有限监督设置下的实验基准仍处于起步阶段。
+  contributions:
+  - 编制了Time Series Pile，一个来自不同领域的大规模公开时间序列数据集合。
+  - 用于时间序列基础模型的多数据集预训练框架，使用掩码时间序列预测。
+  - 用于在有限监督设置下评估时间序列基础模型在五个任务上的整体基准。
+  - 发布开源预训练时间序列模型（MOMENT）和数据集。
+  method:
+  - 从多个公开数据仓库收集Time Series Pile，并仔细划分训练测试集以避免污染。
+  - 设计了Transformer编码器架构，将时间序列处理为不连续的块，并使用掩码时间序列预测进行预训练。
+  - 应用可逆实例归一化以处理分布偏移。
+  - 预训练了不同大小的模型，并在覆盖预测、分类、异常检测和插补的基准上进行评估。
+  experiments:
+  - 在5个任务（短/长时域预测、分类、异常检测、插补）上使用多个数据集和指标评估MOMENT，在有限监督设置下。
+  - 与最先进的深度学习和统计基线进行比较。
+  - 研究了模型大小缩放、初始化（随机与语言模型权重）和跨模态迁移的影响。
+  limitations:
+  - 为应对这些挑战，我们编制了一个大规模多样的公开时间序列集合，称为Time Series Pile，并系统地解决时间序列特定的挑战，以实现大规模多数据集预训练。
+  - 时间序列数据建模带来的独特挑战使得时间序列分析持续受到学术界和工业界的广泛关注。
+  - 然而，对此类数据进行建模通常需要大量的领域专业知识、时间和特定任务的设计。
+  - 然而，对比学习依赖于数据增强，而这既是主观的又依赖于数据。

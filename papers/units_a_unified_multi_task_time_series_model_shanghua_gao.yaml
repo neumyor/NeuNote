@@ -1,0 +1,146 @@
+id: units_a_unified_multi_task_time_series_model_shanghua_gao
+title: 'UNITS: A Unified Multi-Task Time Series Model Shanghua Gao'
+authors:
+- Shanghua Gao
+- Teddy Koker
+- Owen Queen
+- Thomas Hartvigsen
+- Theodoros Tsiligkaridis
+- Marinka Zitnik
+year: 2024
+venue: NeurIPS 2024
+doi: ''
+arxiv_id: 2403.00131v3
+source_pdf: originals/papers/2403_00131v3.pdf
+pages: 36
+tags:
+- anomaly_detection
+- forecasting
+- representation_learning
+- time_series
+status: profiled
+confidence: medium
+reading_status: unread
+priority: normal
+needs_review: false
+abstract: Although pre-trained transformers and reprogrammed text-based LLMs have
+  shown strong performance on time series tasks, the best-performing architectures
+  vary widely across tasks, with most models narrowly focused on specific areas, such
+  as time series forecasting. Unifying predictive and generative time series tasks
+  within a single model remains challenging. We introduce UNITS, a unified multi-task
+  time series model that utilizes task tokenization to integrate predictive and generative
+  tasks into a single framework. UNITS employs a modified transformer block to capture
+  universal time series representations, enabling transferability from a heterogeneous,
+  multi-domain pre-training dataset—characterized by diverse dynamic patterns, sampling
+  rates, and temporal scales—to a wide range of downstream datasets with varied task
+  specifications and data domains. Tested on 38 datasets across human activity sensors,
+  healthcare, engineering, and finance, UNITS achieves superior performance compared
+  to 12 forecasting models, 20 classification models, 18 anomaly detection models,
+  and 16 imputation models, including adapted text-based LLMs. UNITS also demonstrates
+  strong few-shot and prompt capabilities when applied to new domains and tasks. In
+  single-task settings, UNITS outperforms competitive task-specialized time series
+  models. Code and datasets are available at https://github.com/mims-harvard/UniTS.
+one_sentence: UNITS is a unified multi-task time series model that uses task tokenization
+  and a modified transformer to jointly handle forecasting, classification, anomaly
+  detection, and imputation across diverse domains.
+problem: Developing multi-task time series models that unify predictive and generative
+  tasks under a single framework remains an open challenge.
+contributions:
+- Introduces task tokenization to encode task specifications into a unified token
+  representation, enabling universal task specification without architectural modifications.
+- Proposes a unified time series architecture with self-attention across time and
+  variable dimensions, a dynamic linear operator, and modules to handle heterogeneous
+  data.
+- Demonstrates that a single shared-weight model can handle 38 datasets across four
+  task types, outperforming many task-specific and LLM-based baselines.
+method:
+- 'Task tokenization: encodes task specifications (e.g., forecasting horizon, number
+  of classes) into a unified token representation.'
+- 'Unified architecture: uses a modified transformer with self-attention separately
+  on time and variable dimensions, a dynamic MLP to model temporal relationships,
+  and gating mechanisms to reduce interference across heterogeneous features.'
+- Pre-training via masked reconstruction on multiple domains, enabling joint optimization
+  for both generative and predictive tasks.
+- 'Three token types: sample tokens (from input), prompt tokens (task context), and
+  task tokens (GEN for generative, CLS for predictive).'
+experiments:
+- Evaluated on 38 datasets from human activity sensors, healthcare, engineering, and
+  finance.
+- Compared against 12 forecasting, 20 classification, 18 anomaly detection, and 16
+  imputation methods, including transformer-based, LLM-based, RNN-based, and traditional
+  approaches.
+- In single-task setting, UNITS outperforms task-specialized models across all four
+  task types.
+- In multi-task setting, a single shared-weight model achieves highest average performance
+  and excels on 27 out of 38 tasks.
+- 'Supports prompt-based learning: with frozen weights, prompt tuning on forecasting
+  datasets achieves slightly better MAE (0.376 vs 0.381) than full fine-tuning.'
+- Few-shot transfer shows 12.4% MSE improvement on imputation and 2.3% F1 improvement
+  on anomaly detection over strongest baselines.
+limitations:
+- Developing multi-task time series models that unify predictive and generative tasks
+  under a single framework remains an open challenge.
+- To address these challenges, we introduce UNITS, a unified multi-task time se- ries
+  model capable of handling a broad spec- trum of time series tasks.
+- However, these approaches still require task-specific modules and tuning for each
+  task.
+notes: "# Reading Notes\n\n*Use this space for your own notes while reading the paper.\
+  \ The structured summary is available in the Summary section.*\n\n## Key takeaways\n\
+  \n- \n\n## Questions\n\n- \n\n## Connections to other papers\n\n- \n"
+review_notes: []
+agent_reviews:
+- time: '2026-06-17T08:52:55.725206+00:00'
+  model: deepseek-v4-flash
+  notes:
+  - 'authors: [] → [''Shanghua Gao'', ''Teddy Koker'', ''Owen Queen'', ''Thomas Hartvi...'
+  - 'year: None → 2024'
+  - 'venue:  → NeurIPS 2024'
+  - 'arxiv_id:  → 2403.00131v3'
+  - 'abstract: updated (was: ''Although pre-trained transformers and reprogrammed
+    text-base...'')'
+  - 'one_sentence: updated (was: ''Although pre-trained transformers and reprogrammed
+    text-base...'')'
+  - 'contributions: replaced 0 items → 3 items'
+  - 'method: replaced 5 items → 4 items'
+  - 'experiments: replaced 5 items → 6 items'
+  - 'tags: added [''representation_learning'']'
+  - 'tags: removed [''ecg'', ''llm'']'
+  - Corrected title to remove extraneous author name.
+  - Added full author list from PDF.
+  - Added year and venue from PDF header.
+  - Added arXiv ID.
+  - Provided full abstract from first page.
+  - Refined one_sentence summary to be concise.
+  - Reformatted contributions, method, and experiments as bullet points based on paper
+    content.
+  - Removed 'llm' and 'ecg' tags (not core focus; LLMs are baselines, ECG is just
+    one domain) and added 'representation_learning' tag.
+  - Set limitations to null as no explicit limitations discussed in provided text.
+created_at: '2026-06-17T08:52:25.065029+00:00'
+updated_at: '2026-06-17T08:53:06.331882+00:00'
+agent_reviewed_at: '2026-06-17T08:52:55.725213+00:00'
+translations:
+  abstract: 尽管预训练Transformer和基于文本的LLM（大语言模型）在时间序列任务上表现出强劲性能，但最优架构在不同任务间差异很大，大多数模型仅聚焦于特定领域（如时间序列预测）。将预测性和生成性时间序列任务统一到单一模型中仍然具有挑战性。我们提出了UNITS，一个统一的多任务时间序列模型，利用任务令牌化将预测性和生成性任务整合到单一框架中。UNITS采用改进的Transformer块捕获通用时间序列表示，从而能够从具有多样化动态模式、采样率和时间尺度的异构多领域预训练数据集中迁移到具有不同任务规范和领域范围的下游数据集。在涵盖人体活动传感器、医疗、工程和金融等38个数据集上的测试表明，UNITS在12个预测模型、20个分类模型、18个异常检测模型和16个插补模型（包括经过改编的基于文本的LLM）中均取得了优越性能。此外，UNITS在应用于新领域和新任务时展现出强大的少样本和提示（prompt）能力。在单任务设置中，UNITS优于具有竞争力的任务专用时间序列模型。代码和数据集可在
+    https://github.com/mims-harvard/UniTS 获取。
+  one_sentence: UNITS是一个统一的多任务时间序列模型，利用任务令牌化和改进的Transformer在多个领域联合处理预测、分类、异常检测和插补任务。
+  problem: 开发能够在单一框架下统一预测性和生成性任务的多任务时间序列模型仍然是一个开放的挑战。
+  contributions:
+  - 引入了任务令牌化，将任务规范编码为统一的令牌表示，无需架构修改即可实现通用任务规范。
+  - 提出了一种统一的时间序列架构，包括跨时间和变量维度的自注意力、动态线性算子以及处理异构数据的模块。
+  - 证明了一个单一共享权重模型可以处理跨四种任务类型的38个数据集，在许多任务专用和基于LLM的基线方法中表现更优。
+  method:
+  - 任务令牌化：将任务规范（如预测时间范围、类别数量）编码为统一的令牌表示。
+  - 统一架构：使用改进的Transformer，分别在时间和变量维度上应用自注意力，使用动态MLP建模时间关系，以及使用门控机制减少异构特征间的干扰。
+  - 通过掩码重建在多个领域上进行预训练，实现生成性和预测性任务的联合优化。
+  - 三种令牌类型：样本令牌（来自输入）、提示令牌（任务上下文）和任务令牌（GEN用于生成，CLS用于预测）。
+  experiments:
+  - 在来自人体活动传感器、医疗、工程和金融领域的38个数据集上进行了评估。
+  - 与12个预测方法、20个分类方法、18个异常检测方法和16个插补方法进行了比较，包括基于Transformer、基于LLM、基于RNN和传统方法。
+  - 在单任务设置中，UNITS在所有四种任务类型上均优于任务专用模型。
+  - 在多任务设置中，单一共享权重模型实现了最高平均性能，并在38个任务中的27个上表现最佳。
+  - 支持基于提示的学习：在冻结权重的情况下，对预测数据集进行提示微调获得的MAE（0.376）略优于完全微调（0.381）。
+  - 少样本迁移在插补任务上MSE提升了12.4%，在异常检测任务上F1提升了2.3%，均优于最强基线。
+  limitations:
+  - 开发能够在单一框架下统一预测性和生成性任务的多任务时间序列模型仍然是一个开放的挑战。
+  - 为了应对这些挑战，我们引入了UNITS，一个统一的多任务时间序列模型，能够处理广泛的时间序列任务。
+  - 然而，这些方法仍然需要针对每个任务的任务专用模块和调优。

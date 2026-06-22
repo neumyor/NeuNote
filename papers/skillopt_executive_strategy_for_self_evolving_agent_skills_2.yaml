@@ -142,9 +142,16 @@ agent_reviews:
   - Limitations left null as paper does not discuss explicit limitations.
   - 'Tags updated: added ''recursive_self_improvement'' and ''tool_use'' to reflect
     skill evolution and tool-related procedures.'
+- time: '2026-06-15T13:43:29.249229+00:00'
+  model: deepseek-v4-flash
+  notes:
+  - Updated abstract to full text from PDF first page (was truncated).
+  - Set limitations to null because the paper does not explicitly list limitations
+    in the provided text; previously filled entries were not actually limitations
+    but part of the method/introduction.
 created_at: '2026-06-13T01:31:32.586439+00:00'
-updated_at: '2026-06-13T01:33:17.188183+00:00'
-agent_reviewed_at: '2026-06-13T01:33:03.711132+00:00'
+updated_at: '2026-06-15T13:43:29.249259+00:00'
+agent_reviewed_at: '2026-06-15T13:43:29.249254+00:00'
 translations:
   abstract: 今天的代理技能是手工制作的,产生一发子弹,或者通过松散的自译自审来演化,其中没有任何一种表现得像技能的深层学习优化器,没有任何一种在反馈下可以可靠地改进它的起点.
     我们主张技能应该作为冷冻剂的外部状态来训练,具有同样的学科,使得重量空间优化可以再生产. 据我们所知,SkillOpt是代理技能的首个系统可控文本空间优化器:一个单独的优化器模型将打分的推出转换成在单一技能文档上绑定的添加/删除/替换编辑,只有在严格改进被搁置的验证分数时才接受编辑.

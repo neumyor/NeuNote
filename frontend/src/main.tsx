@@ -193,6 +193,7 @@ function App() {
   const [chatSessionId, setChatSessionId] = useState<string | null>(null);
   const [chatSessions, setChatSessions] = useState<ChatSessionSummary[]>([]);
   const [mentionedPaperIds, setMentionedPaperIds] = useState<string[]>([]);
+  const [mentionedTags, setMentionedTags] = useState<string[]>([]);
   const chatAbortRef = useRef<AbortController | null>(null);
 
   const activeJobCount = jobs.filter((j) => j.status === "queued" || j.status === "running").length;
@@ -584,6 +585,7 @@ function App() {
 
   function openPaperChat(paper: Paper) {
     setMentionedPaperIds([paper.id]);
+    setMentionedTags([]);
     setChatMessages([]);
     setChatSessionId(null);
     setError("");
@@ -592,6 +594,7 @@ function App() {
 
   function openGeneralChat() {
     setMentionedPaperIds([]);
+    setMentionedTags([]);
     setChatMessages([]);
     setChatSessionId(null);
     setError("");
@@ -608,6 +611,7 @@ function App() {
       setChatSessionId(data.session?.id ?? sessionId);
       setChatMessages(messages);
       setMentionedPaperIds(extractSessionPaperIds(data.session));
+      setMentionedTags([]);
       setPage("chat");
     } catch (err) {
       setError(String((err as Error).message ?? err));
@@ -625,7 +629,7 @@ function App() {
 
   async function sendChatMessage(question: string) {
     if (!question.trim() || busy === "chat") return;
-    const paperIds = mentionedPaperIds;
+    const paperIds = expandMentionedPaperIds(papers, mentionedPaperIds, mentionedTags);
     const userMessage: ChatMessage = { id: `user-${Date.now()}`, role: "user", content: question.trim(), paperIds };
     const assistantId = `assistant-${Date.now()}`;
     const assistantMessage: ChatMessage = { id: assistantId, role: "assistant", content: "", tools: [], segments: [], pending: true };
@@ -643,6 +647,7 @@ function App() {
           root: savedRoot,
           session_id: chatSessionId,
           paper_ids: paperIds,
+          tag_mentions: mentionedTags,
           question: question.trim(),
           claude_api_key: claudeApiKey,
           claude_endpoint: claudeEndpoint,
@@ -778,6 +783,8 @@ function App() {
             activeSessionId={chatSessionId}
             mentionedPaperIds={mentionedPaperIds}
             setMentionedPaperIds={setMentionedPaperIds}
+            mentionedTags={mentionedTags}
+            setMentionedTags={setMentionedTags}
             messages={chatMessages}
             busy={busy}
             newChat={openGeneralChat}
@@ -1801,6 +1808,22 @@ function extractSessionPaperIds(session: any): string[] {
   return [];
 }
 
+function expandMentionedPaperIds(papers: Paper[], paperIds: string[], tags: string[]): string[] {
+  const expanded: string[] = [];
+  for (const paperId of paperIds) {
+    if (paperId && !expanded.includes(paperId)) expanded.push(paperId);
+  }
+  const selectedTags = tags.map((tag) => tag.trim().toLowerCase()).filter(Boolean);
+  if (!selectedTags.length) return expanded;
+  for (const paper of papers) {
+    const paperTags = new Set((paper.tags ?? []).map((tag) => tag.toLowerCase()));
+    if (selectedTags.every((tag) => paperTags.has(tag)) && !expanded.includes(paper.id)) {
+      expanded.push(paper.id);
+    }
+  }
+  return expanded;
+}
+
 function formatDateShort(value?: string): string {
   if (!value) return "未知时间";
   const date = new Date(value);
@@ -1816,6 +1839,8 @@ function ChatPage(props: {
   activeSessionId: string | null;
   mentionedPaperIds: string[];
   setMentionedPaperIds: (ids: string[]) => void;
+  mentionedTags: string[];
+  setMentionedTags: (tags: string[]) => void;
   messages: ChatMessage[];
   busy: string;
   newChat: () => void;
@@ -1833,17 +1858,38 @@ function ChatPage(props: {
   const justComposedRef = useRef(false);
   const isStreaming = props.busy === "chat";
   const paperById = useMemo(() => new Map(props.papers.map((paper) => [paper.id, paper])), [props.papers]);
-  const mentionedPapers = props.mentionedPaperIds
+  const tagCounts = useMemo(() => {
+    const counts = new Map<string, number>();
+    for (const paper of props.papers) {
+      for (const tag of paper.tags ?? []) counts.set(tag, (counts.get(tag) ?? 0) + 1);
+    }
+    return [...counts.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]));
+  }, [props.papers]);
+  const expandedMentionedPaperIds = useMemo(
+    () => expandMentionedPaperIds(props.papers, props.mentionedPaperIds, props.mentionedTags),
+    [props.papers, props.mentionedPaperIds, props.mentionedTags],
+  );
+  const explicitMentionedPapers = props.mentionedPaperIds
     .map((id) => paperById.get(id))
     .filter(Boolean) as Paper[];
+  const mentionedPapers = expandedMentionedPaperIds
+    .map((id) => paperById.get(id))
+    .filter(Boolean) as Paper[];
+  const mentionedPaperCountFromTags = Math.max(0, expandedMentionedPaperIds.length - props.mentionedPaperIds.length);
   const mentionMatches = useMemo(() => {
     const term = mentionQuery.trim().toLowerCase();
-    if (!term) return props.papers.slice(0, 8);
-    return props.papers.filter((paper) => {
+    const tagMatches = tagCounts
+      .filter(([tag]) => !props.mentionedTags.includes(tag))
+      .filter(([tag]) => !term || tag.toLowerCase().includes(term))
+      .slice(0, 5)
+      .map(([tag, count]) => ({ type: "tag" as const, tag, count }));
+    const paperMatches = props.papers.filter((paper) => {
       const haystack = `${paper.id} ${paper.title ?? ""} ${(paper.authors ?? []).join(" ")} ${(paper.tags ?? []).join(" ")}`.toLowerCase();
-      return haystack.includes(term);
-    }).slice(0, 8);
-  }, [mentionQuery, props.papers]);
+      return !term || haystack.includes(term);
+    }).slice(0, Math.max(3, 8 - tagMatches.length))
+      .map((paper) => ({ type: "paper" as const, paper }));
+    return [...tagMatches, ...paperMatches];
+  }, [mentionQuery, props.mentionedTags, props.papers, tagCounts]);
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
@@ -1876,6 +1922,17 @@ function ChatPage(props: {
     if (!props.mentionedPaperIds.includes(paper.id)) {
       props.setMentionedPaperIds([...props.mentionedPaperIds, paper.id]);
     }
+    clearMentionTrigger();
+  }
+
+  function addTagMention(tag: string) {
+    if (!props.mentionedTags.includes(tag)) {
+      props.setMentionedTags([...props.mentionedTags, tag]);
+    }
+    clearMentionTrigger();
+  }
+
+  function clearMentionTrigger() {
     setInput((current) => current.replace(/(?:^|\s)@([^\s@]*)$/, " ").replace(/\s{2,}/g, " "));
     setMentionActive(false);
     setMentionQuery("");
@@ -1884,6 +1941,10 @@ function ChatPage(props: {
 
   function removeMention(paperId: string) {
     props.setMentionedPaperIds(props.mentionedPaperIds.filter((id) => id !== paperId));
+  }
+
+  function removeTagMention(tag: string) {
+    props.setMentionedTags(props.mentionedTags.filter((item) => item !== tag));
   }
 
   function onCompositionEnd() {
@@ -1958,7 +2019,7 @@ function ChatPage(props: {
           </div>
           <div className="chat-composer-wrap">
             <div className="mention-strip">
-              {mentionedPapers.map((paper) => (
+              {explicitMentionedPapers.map((paper) => (
                 <span className="mention-chip" key={paper.id}>
                   <BookOpen size={13} />
                   <span>{paper.title || paper.id}</span>
@@ -1967,7 +2028,18 @@ function ChatPage(props: {
                   </button>
                 </span>
               ))}
-              <span className="mention-hint">输入 @ 可 mention 论文</span>
+              {props.mentionedTags.map((tag) => (
+                <span className="mention-chip tag-mention-chip" key={tag}>
+                  <Tags size={13} />
+                  <span>{tag}</span>
+                  <button type="button" onClick={() => removeTagMention(tag)} aria-label={`移除 tag ${tag}`}>
+                    <XCircle size={13} />
+                  </button>
+                </span>
+              ))}
+              <span className="mention-hint">
+                输入 @ 可 mention 论文或 tag{props.mentionedTags.length ? `，tag 匹配 ${mentionedPaperCountFromTags} 篇` : ""}
+              </span>
             </div>
             <div className="chat-composer">
               <textarea
@@ -1983,12 +2055,20 @@ function ChatPage(props: {
               />
               {mentionActive && (
                 <div className="mention-menu">
-                  {mentionMatches.length ? mentionMatches.map((paper) => (
-                    <button key={paper.id} type="button" onClick={() => addMention(paper)}>
-                      <span className="mention-menu-title">{paper.title || paper.id}</span>
-                      <span className="mention-menu-authors">{(paper.authors ?? []).join(", ") || "Unknown authors"}</span>
+                  {mentionMatches.length ? mentionMatches.map((item) => (
+                    <button
+                      key={item.type === "tag" ? `tag-${item.tag}` : item.paper.id}
+                      type="button"
+                      onClick={() => item.type === "tag" ? addTagMention(item.tag) : addMention(item.paper)}
+                    >
+                      <span className="mention-menu-title">
+                        {item.type === "tag" ? `# ${item.tag}` : item.paper.title || item.paper.id}
+                      </span>
+                      <span className="mention-menu-authors">
+                        {item.type === "tag" ? `${item.count} 篇论文，多个 tag 自动取交集` : (item.paper.authors ?? []).join(", ") || "Unknown authors"}
+                      </span>
                     </button>
-                  )) : <p>没有匹配的论文</p>}
+                  )) : <p>没有匹配的论文或 tag</p>}
                 </div>
               )}
               {isStreaming ? (

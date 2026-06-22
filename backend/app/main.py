@@ -447,6 +447,7 @@ class AskRequest(BaseModel):
     session_id: str | None = None
     paper_id: str | None = None
     paper_ids: list[str] = Field(default_factory=list)
+    tag_mentions: list[str] = Field(default_factory=list)
     claude_api_key: str | None = None
     claude_endpoint: str | None = None
     claude_model: str | None = None
@@ -454,15 +455,39 @@ class AskRequest(BaseModel):
     max_context_files: int = Field(default=8, ge=1, le=20)
 
 
+def _paper_ids_for_tags(kb_root: Path, tags: list[str]) -> list[str]:
+    selected_tags = [tag.strip() for tag in tags if tag and tag.strip()]
+    if not selected_tags:
+        return []
+    selected = {tag.lower() for tag in selected_tags}
+    matches: list[str] = []
+    for paper in list_papers(kb_root):
+        paper_tags = {str(tag).lower() for tag in paper.get("tags", [])}
+        if selected.issubset(paper_tags) and paper.get("id"):
+            matches.append(str(paper["id"]))
+    return matches
+
+
+def _expand_mentioned_paper_ids(kb_root: Path, request: AskRequest) -> list[str]:
+    paper_ids: list[str] = []
+    for paper_id in [request.paper_id, *request.paper_ids]:
+        if paper_id and paper_id not in paper_ids:
+            paper_ids.append(paper_id)
+    for paper_id in _paper_ids_for_tags(kb_root, request.tag_mentions):
+        if paper_id not in paper_ids:
+            paper_ids.append(paper_id)
+    return paper_ids
+
+
 @app.post("/api/ask")
 def api_ask(request: AskRequest) -> dict[str, Any]:
     kb_root = resolve_root(request.root)
+    paper_ids = _expand_mentioned_paper_ids(kb_root, request)
     parts: list[str] = []
     final_session = None
     for payload in run_agent_answer_sync(kb_root, request.question,
                                           request.session_id, request.model_dump(),
-                                          paper_id=request.paper_id,
-                                          paper_ids=request.paper_ids):
+                                          paper_ids=paper_ids):
         if payload.get("type") == "delta":
             parts.append(payload.get("delta", ""))
         elif payload.get("type") in ("session", "done"):
@@ -475,6 +500,7 @@ def api_ask(request: AskRequest) -> dict[str, Any]:
 @app.post("/api/chat/stream")
 def api_chat_stream(request: AskRequest) -> StreamingResponse:
     kb_root = resolve_root(request.root)
+    paper_ids = _expand_mentioned_paper_ids(kb_root, request)
 
     def event(payload: dict[str, Any]) -> str:
         return f"data: {json.dumps(payload, ensure_ascii=False)}\n\n"
@@ -482,8 +508,7 @@ def api_chat_stream(request: AskRequest) -> StreamingResponse:
     def generate():
         for payload in run_agent_answer_sync(kb_root, request.question,
                                               request.session_id, request.model_dump(),
-                                              paper_id=request.paper_id,
-                                              paper_ids=request.paper_ids):
+                                              paper_ids=paper_ids):
             yield event(payload)
 
     return StreamingResponse(generate(), media_type="text/event-stream")

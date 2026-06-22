@@ -111,9 +111,18 @@ agent_reviews:
   - Tags kept as is; existing tags adequately cover the paper's topics (ecg, representation_learning,
     time_series).
   - No DOI or arXiv ID found in provided PDF pages.
+- time: '2026-06-15T12:03:43.385332+00:00'
+  model: deepseek-v4-flash
+  notes:
+  - Corrected title from all-caps to Title Case and fixed 'T EMPORAL' to 'Temporal'
+    and added missing 'Electrocardiogram'.
+  - Replaced truncated abstract with full abstract from PDF.
+  - Set limitations to null because the paper does not have a dedicated Limitations
+    section in the provided text.
+  - Kept tags unchanged as they accurately reflect the paper's topics.
 created_at: '2026-06-14T02:46:58.333446+00:00'
-updated_at: '2026-06-14T02:48:35.802593+00:00'
-agent_reviewed_at: '2026-06-14T02:48:23.491164+00:00'
+updated_at: '2026-06-15T12:03:43.385338+00:00'
+agent_reviewed_at: '2026-06-15T12:03:43.385336+00:00'
 translations:
   abstract: 心电图（ECG）广泛应用于监测心脏电信号的诊断工具。近期机器学习研究聚焦于利用心电图信号筛查多种疾病。然而，由于带标签的心电图数据有限，将其应用于疾病筛查颇具挑战。通过自监督学习（SSL）获得通用表征是克服标注数据稀缺的公认方法；然而，若不考虑心电图信号固有的时空关系而简单应用SSL，可能产生次优结果。本文提出ST-MEM（时空掩码心电图建模），通过重建掩码的12导联心电数据学习时空特征。ST-MEM在多种心律失常分类实验设置中优于其他SSL基线方法。此外，我们证明ST-MEM可适配多种导联组合。通过定量和定性分析，我们揭示了心电图数据中的时空关系。代码开源：https://github.com/bakqui/ST-MEM。
   one_sentence: 我们提出ST-MEM，一种自监督生成框架，通过时空分块和带导联共享解码的掩码自编码器捕获12导联心电信号的时空关系。

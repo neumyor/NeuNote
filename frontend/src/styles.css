@@ -2129,6 +2129,15 @@ h1 {
   box-shadow: none;
 }
 
+.tag-mention-chip {
+  border-color: rgba(45,95,105,.28);
+  color: #2d5f69;
+}
+
+.tag-mention-chip button {
+  color: rgba(45,95,105,.74);
+}
+
 .mention-hint {
   color: var(--muted);
   font-family: var(--ui);
