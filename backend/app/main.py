@@ -25,6 +25,7 @@ from .kb import (
     create_session,
     delete_job,
     delete_paper,
+    delete_session,
     enrich_paper,
     ensure_kb,
     find_duplicates,
@@ -37,6 +38,7 @@ from .kb import (
     load_job,
     load_paper,
     load_session,
+    mark_paper_viewed,
     log,
     now_iso,
     run_enrichment_job,
@@ -45,7 +47,7 @@ from .kb import (
     save_session,
     update_job,
 )
-from .translate import translate_paper_summary
+from .translate import translate_paper_summary, translate_paper_summary_llm
 
 APP_CONFIG = Path(".kb_app_config.yaml")
 DEFAULT_ROOT = Path(os.environ.get("KB_DEFAULT_ROOT", Path.home() / ".neunote")).expanduser().resolve()
@@ -229,6 +231,9 @@ class RootConfig(BaseModel):
     claude_model: str | None = None
     max_concurrency: int | None = Field(default=None, ge=1, le=20)
     translation_engine: str | None = Field(default=None, pattern=r"^(local|llm)$")
+    default_summary_language: str | None = Field(default=None, pattern=r"^(en|zh)$")
+    figure_extraction_mode: str | None = Field(default=None, pattern=r"^(fast_pillow|agent_pymupdf)$")
+    figure_reextract_on_enrich: bool | None = None
     sync_mode: str | None = Field(default=None, pattern=r"^(local|git)$")
     git_remote: str | None = None
     git_remote_url: str | None = None
@@ -297,6 +302,16 @@ def api_get_paper(paper_id: str, root: str | None = None) -> dict[str, Any]:
     kb_root = resolve_root(root)
     try:
         paper = load_paper(kb_root, paper_id)
+    except FileNotFoundError as exc:
+        raise HTTPException(status_code=404, detail=str(exc))
+    return {"root": str(kb_root), "paper": paper}
+
+
+@app.post("/api/papers/{paper_id}/viewed")
+def api_mark_paper_viewed(paper_id: str, config: RootConfig) -> dict[str, Any]:
+    kb_root = resolve_root(config.root)
+    try:
+        paper = mark_paper_viewed(kb_root, paper_id)
     except FileNotFoundError as exc:
         raise HTTPException(status_code=404, detail=str(exc))
     return {"root": str(kb_root), "paper": paper}
@@ -384,6 +399,31 @@ def api_paper_pdf(paper_id: str, root: str | None = None) -> FileResponse:
     safe_name = pdf_path.name.replace('"', "").replace("\r", "").replace("\n", "")
     return FileResponse(pdf_path, media_type="application/pdf",
                         headers={"Content-Disposition": f'inline; filename="{safe_name}"'})
+
+
+@app.get("/api/papers/{paper_id}/figures/{figure_index}")
+def api_paper_figure(paper_id: str, figure_index: int, root: str | None = None) -> FileResponse:
+    kb_root = resolve_root(root)
+    try:
+        paper = load_paper(kb_root, paper_id)
+    except FileNotFoundError as exc:
+        raise HTTPException(status_code=404, detail=str(exc))
+
+    figures = paper.get("key_figures") or []
+    if figure_index < 0 or figure_index >= len(figures):
+        raise HTTPException(status_code=404, detail="Figure not found.")
+    figure = figures[figure_index]
+    if not isinstance(figure, dict) or not isinstance(figure.get("image_path"), str):
+        raise HTTPException(status_code=404, detail="Figure image unavailable.")
+
+    image_path = (kb_root / figure["image_path"]).resolve()
+    try:
+        image_path.relative_to(kb_root)
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Invalid figure path.")
+    if not image_path.exists():
+        raise HTTPException(status_code=404, detail="Figure image unavailable.")
+    return FileResponse(image_path, media_type="image/png")
 
 
 # ── upload ────────────────────────────────────────────────────────────
@@ -474,6 +514,17 @@ def api_list_jobs(root: str | None = None) -> dict[str, Any]:
     return {"root": str(kb_root), "jobs": list_jobs(kb_root)}
 
 
+@app.post("/api/jobs/cancel-all")
+def api_cancel_all_jobs(config: RootConfig) -> dict[str, Any]:
+    kb_root = resolve_root(config.root)
+    cancelled = []
+    for job in list_jobs(kb_root):
+        if job.get("status") in {"queued", "running"}:
+            cancel_job(kb_root, job["id"])
+            cancelled.append(job["id"])
+    return {"root": str(kb_root), "cancelled": len(cancelled), "jobs": list_jobs(kb_root)}
+
+
 @app.get("/api/jobs/{job_id}")
 def api_get_job(job_id: str, root: str | None = None) -> dict[str, Any]:
     kb_root = resolve_root(root)
@@ -539,18 +590,35 @@ def api_cleanup_duplicates(root: str | None = None) -> dict[str, Any]:
 
 @app.post("/api/papers/{paper_id}/translate")
 def api_translate_paper(paper_id: str, config: RootConfig) -> dict[str, Any]:
-    """Translate the summary fields of a paper to Chinese using offline Argos Translate."""
+    """Translate the summary fields of a paper to Chinese using the configured engine."""
     kb_root = resolve_root(config.root)
     try:
         paper = load_paper(kb_root, paper_id)
     except FileNotFoundError as exc:
         raise HTTPException(status_code=404, detail=str(exc))
 
-    translations = translate_paper_summary(paper)
+    saved_config = load_app_config(kb_root)
+    request_config = config.model_dump(exclude={"root"}, exclude_none=True)
+    effective_config = {**saved_config, **request_config}
+    engine = (effective_config.get("translation_engine") or "local").lower()
+    if engine == "llm":
+        try:
+            translations = translate_paper_summary_llm(paper, effective_config)
+        except Exception as exc:
+            raise HTTPException(status_code=502, detail=f"LLM translation failed: {exc}") from exc
+    else:
+        translations = translate_paper_summary(paper)
+
     # Cache translations in the paper YAML
-    paper["translations"] = translations
+    existing = paper.get("translations") if isinstance(paper.get("translations"), dict) else {}
+    paper["translations"] = {**existing, **translations}
+    paper["translation_meta"] = {
+        "engine": engine,
+        "model": effective_config.get("claude_model") if engine == "llm" else None,
+        "updated_at": now_iso(),
+    }
     save_paper(kb_root, paper)
-    return {"root": str(kb_root), "translations": translations}
+    return {"root": str(kb_root), "paper": paper, "translations": paper["translations"], "translation_meta": paper["translation_meta"]}
 
 
 # ── sessions ──────────────────────────────────────────────────────────
@@ -572,6 +640,16 @@ def api_create_session(config: RootConfig) -> dict[str, Any]:
 def api_get_session(session_id: str, root: str | None = None) -> dict[str, Any]:
     kb_root = resolve_root(root)
     return {"root": str(kb_root), "session": load_session(kb_root, session_id)}
+
+
+@app.delete("/api/sessions/{session_id}")
+def api_delete_session(session_id: str, root: str | None = None) -> dict[str, Any]:
+    kb_root = resolve_root(root)
+    try:
+        delete_session(kb_root, session_id)
+    except FileNotFoundError as exc:
+        raise HTTPException(status_code=404, detail=str(exc))
+    return {"root": str(kb_root), "deleted": session_id, "sessions": list_sessions(kb_root)}
 
 
 # ── chat ──────────────────────────────────────────────────────────────

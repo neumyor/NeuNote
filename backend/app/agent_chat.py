@@ -421,8 +421,10 @@ Workflow:
 2. If papers are mentioned, read each mentioned paper YAML first. Otherwise list papers/ only when the question requires discovering relevant papers.
 3. If critical evidence is missing from a mentioned or discovered paper YAML, use kb_pdf_info and then kb_read_pdf_pages with precise pages or page ranges.
 4. Use kb_render_pdf_pages for figures, tables, equations, screenshots, or layout-sensitive claims that text extraction cannot verify.
-5. Answer with citations to paper IDs and mention when PDF text or visual verification was used.
-6. Only write paper updates when correcting verified errors.
+5. Answer strictly from paper YAML content and verified PDF evidence. Do not add outside knowledge.
+6. Separate evidence from inference: if a claim is explicitly stated by the paper, say so with the paper ID; if you infer it from paper content, label it as your inference; if the paper does not provide enough evidence, say that the paper does not explicitly state it.
+7. Answer with citations to paper IDs and mention when PDF text or visual verification was used.
+8. Only write paper updates when correcting verified errors.
 
 Tool UI:
 - Every tool call requires an `intend` field. This string is shown directly to the user as the tool status.
@@ -458,6 +460,11 @@ Tool UI:
         debug_stderr=stderr_temp,
         system_prompt=(
             "You are a paper knowledge-base agent. Use only the neunote tools. "
+            "Answer strictly according to the paper YAML files and source PDF evidence available through those tools. "
+            "Do not use outside knowledge, guesses, or unstated background facts as if they came from the paper. "
+            "When the original paper explicitly states something, attribute it to the paper ID. "
+            "When you make a necessary inference from paper content, clearly label it as inference. "
+            "When the paper does not explicitly state the answer or evidence is insufficient, say so directly. "
             "Never claim you read PDF text unless you called kb_read_pdf_pages. "
             "Never claim you visually inspected a PDF page, figure, table, or equation unless you called kb_render_pdf_pages. "
             "Prefer paper YAML files before PDF extraction. "
@@ -595,8 +602,41 @@ Rules:
 - Never invent authors, venues, DOIs, arXiv IDs, or years.
 - Citations in the references section are NOT the paper's own venue.
 - Keep method/experiment/limitation entries as concise, factual bullet points.
+- author_affiliations should list the paper authors' teams, labs, companies,
+  universities, or institutions when they are explicitly visible in the PDF.
+  Prefer team/institution names over postal addresses or email domains.
+- core_concepts should contain 5-8 central concepts needed to understand this
+  paper. Each explanation must be plain, accessible, and specific to how the
+  paper uses the concept.
+- key_figures should identify the 1-3 most important figures/pages for
+  understanding the paper. Use the page markers in the PDF text to find
+  candidate figures, then use the available PDF figure tools to visually inspect
+  the page and save a readable crop of the actual figure area. Do not output a
+  key_figure unless you have either reused an existing image_path or saved a new
+  crop with save_figure_crop. Include the exact figure label when visible, for
+  example "Figure 2" or "Fig. 3".
+- In fast_pillow mode, figure candidates are already provided in the prompt.
+  Do not call visual tools; choose from those candidates and copy image_path,
+  crop, and crop_method exactly. In agent_pymupdf mode, use the figure tools.
+- During re-enrichment, prefer newly extracted figure assets over existing
+  image_path values. Reuse old image_path only when the prompt explicitly says
+  no new figure extraction was performed.
+- Figure crops must tightly cover the figure graphic and optional caption only.
+  Do not save whole pages, page headers, author blocks, unrelated body text, or
+  neighboring tables. Use normalized top-left page coordinates from the rendered
+  page. After save_figure_crop returns, copy its image_path, crop, and crop_method
+  fields into the matching key_figures item in your final JSON.
+- Prefer list_figure_candidates and save_figure_candidate when available. These
+  tools use PDF drawing geometry near the caption and usually produce tighter
+  crops than manual coordinates. Use preview_figure_crop before saving a manual
+  crop. Use manual save_figure_crop only when no suitable candidate exists.
+- Write one_sentence, problem, contributions, method, experiments, and
+  limitations in a readable, self-contained style. Avoid vague fragments:
+  include the key object, action, mechanism, evidence, or tradeoff needed for a
+  reader to understand the point without rereading the PDF text.
 - contributions should be specific claims from the paper, not generic descriptions.
-- The one_sentence should be a single sentence summary of the core contribution.
+- The one_sentence should be a single sentence summary of the core contribution,
+  not just a restatement of the title.
 - For title: only provide it when the current title is clearly wrong (e.g. it looks \
   like a PDF filename slug, contains garbled text, or is a section heading). \
   Do NOT change a title that is merely imperfectly formatted.\n  The corrected title must be in Title Case (capitalize first letter of each\n  major word), never ALL CAPS. For example "MY PAPER TITLE" → "My Paper Title".
@@ -610,11 +650,14 @@ Output ONLY a valid JSON object with this schema:
 {
   "title": "string" | null,
   "authors": ["string"] | null,
+  "author_affiliations": ["string"] | null,
   "year": number | null,
   "venue": "string" | null,
   "doi": "string" | null,
   "arxiv_id": "string" | null,
   "abstract": "string" | null,
+  "core_concepts": [{"concept": "string", "explanation": "string"}] | null,
+  "key_figures": [{"label": "string", "title": "string", "page": number, "caption": "string", "reason": "string", "image_path": "string", "crop": {"x0": number, "y0": number, "x1": number, "y1": number}, "crop_method": "string"}] | null,
   "one_sentence": "string" | null,
   "problem": "string" | null,
   "contributions": ["string"] | null,
@@ -630,12 +673,19 @@ Include review_notes explaining what you changed and what remains unknown.
 """
 
 
-def _build_review_prompt(paper: dict[str, Any], pdf_text: str, known_tags: list[str] | None = None) -> str:
+def _build_review_prompt(
+    paper: dict[str, Any],
+    pdf_text: str,
+    known_tags: list[str] | None = None,
+    figure_candidates: list[dict[str, Any]] | None = None,
+    figure_mode: str = "agent_pymupdf",
+) -> str:
     identity = f"""\
 Current paper metadata:
 - id: {paper.get('id')}
 - title: {paper.get('title')}
 - authors: {json.dumps(paper.get('authors', []))}
+- author_affiliations: {json.dumps(paper.get('author_affiliations', []))}
 - year: {paper.get('year')}
 - venue: {paper.get('venue')}
 - doi: {paper.get('doi')}
@@ -649,6 +699,8 @@ Current extracted content:
 - one_sentence: {paper.get('one_sentence', '')}
 - problem: {paper.get('problem', '')}
 - abstract: {paper.get('abstract', '')[:300]}
+- core_concepts: {json.dumps(paper.get('core_concepts', []), ensure_ascii=False)}
+- key_figures: {json.dumps(paper.get('key_figures', []), ensure_ascii=False)}
 - contributions: {json.dumps(paper.get('contributions', []))}
 - method: {json.dumps(paper.get('method', []))}
 - experiments: {json.dumps(paper.get('experiments', []))}
@@ -661,6 +713,18 @@ Known tags across the library (avoid duplicates/synonyms):
 {json.dumps(sorted(known_tags))}
 
 """
+    figure_info = ""
+    if figure_mode == "fast_pillow":
+        figure_info = f"""\
+Fast figure extraction candidates:
+{json.dumps(figure_candidates or [], ensure_ascii=False, indent=2)}
+
+For key_figures, choose the most important 1-3 items from this candidate list.
+Do not call visual figure tools in fast_pillow mode. Copy image_path, crop, and
+crop_method exactly from the selected candidate. You may improve title, caption,
+and reason using the PDF text.
+
+"""
     pdf_snippet = pdf_text[:16000]
     return f"""\
 Review this paper's metadata against the source PDF text and output corrections.
@@ -669,7 +733,7 @@ Review this paper's metadata against the source PDF text and output corrections.
 
 {summary}
 
-{tags_info}Source PDF text (first pages):
+{tags_info}{figure_info}Source PDF text (first pages with 1-based page markers):
 ---
 {pdf_snippet}
 ---
@@ -731,7 +795,12 @@ def _titles_differ_substantially(current: str, suggested: str) -> bool:
     return similarity < 0.3
 
 
-def _merge_review_patch(paper: dict[str, Any], patch: dict[str, Any]) -> tuple[dict[str, Any], list[str]]:
+def _merge_review_patch(
+    paper: dict[str, Any],
+    patch: dict[str, Any],
+    *,
+    preserve_existing_figures: bool = True,
+) -> tuple[dict[str, Any], list[str]]:
     """Merge agent corrections into paper. Returns (paper, notes)."""
     notes: list[str] = []
 
@@ -744,7 +813,7 @@ def _merge_review_patch(paper: dict[str, Any], patch: dict[str, Any]) -> tuple[d
             notes.append(f"title: '{_brief(current)}' → '{_brief(title)}'")
 
     # ── identity fields: if agent provides a value, apply it ──
-    for key in ("authors", "year", "venue", "doi", "arxiv_id"):
+    for key in ("authors", "author_affiliations", "year", "venue", "doi", "arxiv_id"):
         value = patch.get(key)
         if value is not None and value != "" and value != []:
             old = paper.get(key)
@@ -758,6 +827,79 @@ def _merge_review_patch(paper: dict[str, Any], patch: dict[str, Any]) -> tuple[d
             old = str(paper.get(key, ""))[:60]
             paper[key] = value
             notes.append(f"{key}: updated (was: '{old}...')")
+
+    # ── structured concept definitions: keep only well-formed items ──
+    core_concepts = patch.get("core_concepts")
+    if isinstance(core_concepts, list):
+        normalized_concepts = []
+        for item in core_concepts:
+            if not isinstance(item, dict):
+                continue
+            concept = str(item.get("concept") or "").strip()
+            explanation = str(item.get("explanation") or "").strip()
+            if concept and explanation:
+                normalized_concepts.append({"concept": concept, "explanation": explanation})
+        if normalized_concepts:
+            current = paper.get("core_concepts") or []
+            paper["core_concepts"] = normalized_concepts[:8]
+            notes.append(f"core_concepts: replaced {len(current)} items → {len(paper['core_concepts'])} items")
+
+    # ── selected key figures: backend renders images after merge ──
+    key_figures = patch.get("key_figures")
+    if isinstance(key_figures, list):
+        normalized_figures = []
+        current_figures = [f for f in (paper.get("key_figures") or []) if isinstance(f, dict)]
+
+        def existing_figure_asset(page: int, label: str, title: str) -> dict[str, Any]:
+            label_low = label.lower()
+            title_low = title.lower()
+            for current in current_figures:
+                try:
+                    current_page = int(current.get("page") or 0)
+                except (TypeError, ValueError):
+                    continue
+                if current_page != page:
+                    continue
+                current_label = str(current.get("label") or "").lower()
+                current_title = str(current.get("title") or "").lower()
+                if label_low and current_label == label_low:
+                    return current
+                if title_low and current_title == title_low:
+                    return current
+                if not label_low and not title_low:
+                    return current
+            return {}
+
+        for item in key_figures:
+            if not isinstance(item, dict):
+                continue
+            try:
+                page = int(item.get("page") or 0)
+            except (TypeError, ValueError):
+                continue
+            title = str(item.get("title") or "").strip()
+            label = str(item.get("label") or "").strip()
+            caption = str(item.get("caption") or "").strip()
+            reason = str(item.get("reason") or "").strip()
+            if page >= 1 and (label or title or caption):
+                normalized = {
+                    "label": label,
+                    "title": title or f"Figure on page {page}",
+                    "page": page,
+                    "caption": caption,
+                    "reason": reason,
+                }
+                existing = existing_figure_asset(page, label, title) if preserve_existing_figures else {}
+                for asset_key in ("image_path", "crop", "crop_method"):
+                    if item.get(asset_key):
+                        normalized[asset_key] = item[asset_key]
+                    elif existing.get(asset_key):
+                        normalized[asset_key] = existing[asset_key]
+                normalized_figures.append(normalized)
+        if normalized_figures:
+            current = paper.get("key_figures") or []
+            paper["key_figures"] = normalized_figures[:3]
+            notes.append(f"key_figures: replaced {len(current)} items → {len(paper['key_figures'])} items")
 
     # ── list fields: if agent provides a list, apply it ──
     for key in ("contributions", "method", "experiments", "limitations"):
@@ -788,6 +930,210 @@ def _brief(value: Any) -> str:
     return (s[:60] + "...") if len(s) > 60 else s
 
 
+PAPER_REVIEW_TOOLS: list[dict[str, Any]] = [
+    {
+        "name": "list_figure_candidates",
+        "description": (
+            "List candidate figure crops detected from PDF captions and drawing geometry. "
+            "Prefer these candidates over manually guessed coordinates."
+        ),
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "paper_id": {"type": "string"},
+                "pages": {
+                    "type": "array",
+                    "items": {"type": "integer", "minimum": 1},
+                    "description": "Optional 1-based pages to inspect. Omit to scan the first 12 pages.",
+                },
+            },
+            "required": ["paper_id"],
+        },
+    },
+    {
+        "name": "render_pdf_page",
+        "description": (
+            "Render one source PDF page as an image for visual inspection. "
+            "Use this before choosing crop coordinates for key figures."
+        ),
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "paper_id": {"type": "string"},
+                "page": {"type": "integer", "minimum": 1},
+                "dpi": {"type": "integer", "minimum": 72, "maximum": 180},
+            },
+            "required": ["paper_id", "page"],
+        },
+    },
+    {
+        "name": "preview_figure_crop",
+        "description": (
+            "Preview a proposed normalized crop before saving it. Use this for manual crops "
+            "to ensure body text or unrelated tables are not included."
+        ),
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "paper_id": {"type": "string"},
+                "page": {"type": "integer", "minimum": 1},
+                "crop": {
+                    "type": "object",
+                    "properties": {
+                        "x0": {"type": "number", "minimum": 0, "maximum": 1},
+                        "y0": {"type": "number", "minimum": 0, "maximum": 1},
+                        "x1": {"type": "number", "minimum": 0, "maximum": 1},
+                        "y1": {"type": "number", "minimum": 0, "maximum": 1},
+                    },
+                    "required": ["x0", "y0", "x1", "y1"],
+                },
+                "dpi": {"type": "integer", "minimum": 72, "maximum": 180},
+            },
+            "required": ["paper_id", "page", "crop"],
+        },
+    },
+    {
+        "name": "save_figure_candidate",
+        "description": (
+            "Save a detected figure candidate as a cropped PNG. Use candidate_id from "
+            "list_figure_candidates."
+        ),
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "paper_id": {"type": "string"},
+                "candidate_id": {"type": "string"},
+                "figure_index": {"type": "integer", "minimum": 1, "maximum": 3},
+                "include_caption": {"type": "boolean"},
+                "dpi": {"type": "integer", "minimum": 120, "maximum": 240},
+            },
+            "required": ["paper_id", "candidate_id", "figure_index"],
+        },
+    },
+    {
+        "name": "save_figure_crop",
+        "description": (
+            "Save a cropped PNG for a key paper figure. Coordinates are normalized "
+            "page coordinates in [0, 1], measured from the top-left of the rendered page."
+        ),
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "paper_id": {"type": "string"},
+                "page": {"type": "integer", "minimum": 1},
+                "figure_index": {"type": "integer", "minimum": 1, "maximum": 3},
+                "crop": {
+                    "type": "object",
+                    "properties": {
+                        "x0": {"type": "number", "minimum": 0, "maximum": 1},
+                        "y0": {"type": "number", "minimum": 0, "maximum": 1},
+                        "x1": {"type": "number", "minimum": 0, "maximum": 1},
+                        "y1": {"type": "number", "minimum": 0, "maximum": 1},
+                    },
+                    "required": ["x0", "y0", "x1", "y1"],
+                },
+                "dpi": {"type": "integer", "minimum": 120, "maximum": 240},
+            },
+            "required": ["paper_id", "page", "figure_index", "crop"],
+        },
+    },
+]
+
+
+def _image_tool_result(tool_use_id: str, text: str, image_base64: str) -> dict[str, Any]:
+    return {
+        "type": "tool_result",
+        "tool_use_id": tool_use_id,
+        "content": [
+            {"type": "text", "text": text},
+            {
+                "type": "image",
+                "source": {
+                    "type": "base64",
+                    "media_type": "image/png",
+                    "data": image_base64,
+                },
+            },
+        ],
+    }
+
+
+def _text_tool_result(tool_use_id: str, text: str, *, is_error: bool = False) -> dict[str, Any]:
+    result: dict[str, Any] = {
+        "type": "tool_result",
+        "tool_use_id": tool_use_id,
+        "content": [{"type": "text", "text": text}],
+    }
+    if is_error:
+        result["is_error"] = True
+    return result
+
+
+def _execute_paper_review_tool(root: Path, tool_use: dict[str, Any]) -> dict[str, Any]:
+    from .figure_tools import (
+        list_figure_candidates,
+        preview_figure_crop,
+        render_pdf_page,
+        save_figure_candidate,
+        save_figure_crop,
+    )
+
+    tool_id = str(tool_use.get("id") or "")
+    name = str(tool_use.get("name") or "")
+    args = tool_use.get("input") if isinstance(tool_use.get("input"), dict) else {}
+    try:
+        if name == "list_figure_candidates":
+            pages = args.get("pages")
+            result = list_figure_candidates(
+                root,
+                str(args["paper_id"]),
+                [int(page) for page in pages] if isinstance(pages, list) else None,
+            )
+            return _text_tool_result(tool_id, json.dumps(result, ensure_ascii=False, indent=2))
+        if name == "render_pdf_page":
+            result = render_pdf_page(
+                root,
+                str(args["paper_id"]),
+                int(args["page"]),
+                int(args.get("dpi") or 120),
+            )
+            text = json.dumps({k: v for k, v in result.items() if k != "image_base64"}, ensure_ascii=False, indent=2)
+            return _image_tool_result(tool_id, text, result["image_base64"])
+        if name == "preview_figure_crop":
+            result = preview_figure_crop(
+                root,
+                str(args["paper_id"]),
+                int(args["page"]),
+                args["crop"],
+                int(args.get("dpi") or 120),
+            )
+            text = json.dumps({k: v for k, v in result.items() if k != "image_base64"}, ensure_ascii=False, indent=2)
+            return _image_tool_result(tool_id, text, result["image_base64"])
+        if name == "save_figure_candidate":
+            result = save_figure_candidate(
+                root,
+                str(args["paper_id"]),
+                str(args["candidate_id"]),
+                int(args["figure_index"]),
+                bool(args.get("include_caption") or False),
+                int(args.get("dpi") or 180),
+            )
+            return _text_tool_result(tool_id, json.dumps(result, ensure_ascii=False, indent=2))
+        if name == "save_figure_crop":
+            result = save_figure_crop(
+                root,
+                str(args["paper_id"]),
+                int(args["page"]),
+                int(args["figure_index"]),
+                args["crop"],
+                int(args.get("dpi") or 180),
+            )
+            return _text_tool_result(tool_id, json.dumps(result, ensure_ascii=False, indent=2))
+        return _text_tool_result(tool_id, f"Unknown tool: {name}", is_error=True)
+    except Exception as exc:
+        return _text_tool_result(tool_id, str(exc), is_error=True)
+
+
 async def run_agent_paper_review(root: Path, paper_id: str,
                                   config: dict[str, Any] | None = None,
                                   job_id: str | None = None) -> dict[str, Any]:
@@ -805,7 +1151,7 @@ async def run_agent_paper_review(root: Path, paper_id: str,
         return {"status": "skipped", "reason": "no source pdf"}
 
     _dbg(f"agent_review: reading PDF '{source}' (max 12 pages)")
-    pdf_text = extract_pdf_text(root / source, max_pages=12)
+    pdf_text = extract_pdf_text(root / source, max_pages=12, include_page_markers=True)
     if not pdf_text.strip():
         _dbg("agent_review: empty PDF text, skipping")
         return {"status": "skipped", "reason": "empty pdf text"}
@@ -815,13 +1161,24 @@ async def run_agent_paper_review(root: Path, paper_id: str,
     api_key = config.get("claude_api_key", "")
     endpoint = config.get("claude_endpoint", "")
     model = config.get("claude_model", "sonnet")
+    figure_mode = config.get("figure_extraction_mode") or "fast_pillow"
+    reextract_figures = bool(config.get("figure_reextract_on_enrich", True))
 
     if not api_key:
         _dbg("agent_review: no API key, skipping")
         return {"status": "skipped", "reason": "no api key configured"}
 
+    figure_candidates: list[dict[str, Any]] = []
+    if figure_mode == "fast_pillow" and reextract_figures:
+        try:
+            from .figure_tools import extract_fast_pillow_figures
+            figure_candidates = extract_fast_pillow_figures(root, paper_id, max_pages=12)
+            _dbg(f"agent_review: fast_pillow extracted {len(figure_candidates)} figure candidates")
+        except Exception as exc:
+            _dbg(f"agent_review: fast_pillow figure extraction failed: {exc}")
+
     known_tags = _known_tags(root)
-    prompt = _build_review_prompt(paper, pdf_text, known_tags)
+    prompt = _build_review_prompt(paper, pdf_text, known_tags, figure_candidates, figure_mode)
     _dbg(f"agent_review: calling {model} at {endpoint or 'default'}, prompt {len(prompt)} chars")
 
     import httpx
@@ -841,16 +1198,61 @@ async def run_agent_paper_review(root: Path, paper_id: str,
         "system": PAPER_REVIEW_SYSTEM_PROMPT,
         "messages": [{"role": "user", "content": prompt}],
     }
+    if figure_mode == "agent_pymupdf":
+        body["tools"] = PAPER_REVIEW_TOOLS
 
     async with httpx.AsyncClient(timeout=120) as client:
         t0 = datetime.now(timezone.utc)
-        resp = await client.post(url, headers=headers, json=body)
-        elapsed = (datetime.now(timezone.utc) - t0).total_seconds()
-        _dbg(f"agent_review: API response {resp.status_code} in {elapsed:.1f}s")
-        if resp.status_code != 200:
-            _dbg(f"agent_review: API error body: {resp.text[:300]}")
-            return {"status": "error", "detail": f"API error {resp.status_code}: {resp.text[:500]}"}
-        data = resp.json()
+        data: dict[str, Any] = {}
+        max_tool_turns = 8
+        for turn in range(1, max_tool_turns + 1):
+            resp = await client.post(url, headers=headers, json=body)
+            elapsed = (datetime.now(timezone.utc) - t0).total_seconds()
+            _dbg(f"agent_review: API response {resp.status_code} on turn {turn} in {elapsed:.1f}s")
+            if resp.status_code != 200:
+                _dbg(f"agent_review: API error body: {resp.text[:300]}")
+                return {"status": "error", "detail": f"API error {resp.status_code}: {resp.text[:500]}"}
+            data = resp.json()
+            content = data.get("content", [])
+            tool_uses = [block for block in content if isinstance(block, dict) and block.get("type") == "tool_use"]
+            if not tool_uses:
+                break
+
+            body["messages"].append({"role": "assistant", "content": content})
+            tool_results = []
+            for tool_use in tool_uses:
+                _dbg(f"agent_review: tool {tool_use.get('name')} input={_compact_json(tool_use.get('input'), 500)}")
+                result_block = _execute_paper_review_tool(root, tool_use)
+                tool_results.append(result_block)
+                result_text = result_block.get("content", [{}])[0].get("text", "")
+                _dbg(f"agent_review: tool {tool_use.get('name')} result={_compact(str(result_text), 500)}")
+            body["messages"].append({"role": "user", "content": tool_results})
+
+            if turn == max_tool_turns:
+                _dbg("agent_review: tool turn limit reached; requesting final JSON without further tool use")
+                final_body = dict(body)
+                final_body.pop("tools", None)
+                final_body["messages"] = [
+                    *body["messages"],
+                    {
+                        "role": "user",
+                        "content": (
+                            "Tool-use budget is exhausted. Do not call any more tools. "
+                            "Return the final JSON patch now, reusing the image_path, crop, "
+                            "and crop_method values already returned by save_figure_crop."
+                        ),
+                    },
+                ]
+                resp = await client.post(url, headers=headers, json=final_body)
+                elapsed = (datetime.now(timezone.utc) - t0).total_seconds()
+                _dbg(f"agent_review: final JSON response {resp.status_code} in {elapsed:.1f}s")
+                if resp.status_code != 200:
+                    _dbg(f"agent_review: final JSON API error body: {resp.text[:300]}")
+                    return {"status": "error", "detail": f"API error {resp.status_code}: {resp.text[:500]}"}
+                data = resp.json()
+                break
+        else:
+            return {"status": "error", "detail": "agent review exceeded tool-use turn limit"}
 
     content = data.get("content", [])
     text_output = ""
@@ -869,7 +1271,11 @@ async def run_agent_paper_review(root: Path, paper_id: str,
 
     # Merge corrections
     review_notes = patch.get("review_notes", [])
-    paper, merge_notes = _merge_review_patch(paper, patch)
+    paper, merge_notes = _merge_review_patch(
+        paper,
+        patch,
+        preserve_existing_figures=not reextract_figures,
+    )
     all_notes = merge_notes + review_notes
     _dbg(f"agent_review: merge produced {len(all_notes)} notes")
     for note in all_notes:

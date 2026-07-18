@@ -52,7 +52,7 @@ def _validate(remote: str, branch: str) -> None:
 
 
 def sync_paths(config: dict[str, Any]) -> list[str]:
-    paths = [".gitignore", "papers"]
+    paths = [".gitignore", "papers", "assets/paper_figures"]
     if config.get("git_sync_chats"):
         paths.append("logs/chat_sessions")
     if config.get("git_sync_pdfs"):
@@ -75,6 +75,16 @@ def _ensure_data_gitignore(root: Path) -> None:
     path = root / ".gitignore"
     if not path.exists():
         path.write_text(DATA_GITIGNORE, encoding="utf-8")
+
+
+def _ensure_local_git_identity(root: Path) -> None:
+    """Set repo-local identity when the user's global Git identity is absent."""
+    name = _run(root, "config", "--get", "user.name", check=False).stdout.strip()
+    email = _run(root, "config", "--get", "user.email", check=False).stdout.strip()
+    if not name:
+        _run(root, "config", "user.name", "NeuNote Sync")
+    if not email:
+        _run(root, "config", "user.email", "neunote-sync@local")
 
 
 def git_sync_status(root: Path, config: dict[str, Any]) -> dict[str, Any]:
@@ -147,6 +157,7 @@ def _sync_with_git_unlocked(root: Path, config: dict[str, Any]) -> dict[str, Any
         current_branch = branch
     if current_branch != branch:
         raise GitSyncError(f"当前仓库位于 {current_branch} 分支，与配置的 {branch} 不一致。")
+    _ensure_local_git_identity(root)
 
     existing_remote = _run(root, "remote", "get-url", remote, check=False)
     if existing_remote.returncode != 0:
@@ -166,7 +177,8 @@ def _sync_with_git_unlocked(root: Path, config: dict[str, Any]) -> dict[str, Any
 
     _ensure_data_gitignore(root)
     paths = sync_paths(config)
-    _run(root, "add", "-A", "-f", "--", *paths)
+    add_paths = [path for path in paths if (root / path).exists()]
+    _run(root, "add", "-A", "-f", "--", *add_paths)
     committed = False
     if _run(root, "diff", "--cached", "--quiet", check=False).returncode != 0:
         stamp = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")

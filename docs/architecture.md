@@ -25,6 +25,7 @@ Backend code lives in `backend/app/`.
 - `main.py`: FastAPI routes, request models, streaming chat endpoints, background job entry points.
 - `kb.py`: knowledge-base filesystem operations, paper CRUD, job persistence, session persistence, duplicate detection, enrichment helpers.
 - `agent_chat.py`: Claude Code SDK integration, NeuNote MCP tools, paper chat, and paper review flows.
+- `figure_tools.py`: PyMuPDF/Pillow helpers for rendering PDF pages and extracting key-figure crops.
 - `translate.py`: local Argos Translate and LLM-backed translation utilities.
 
 The backend treats the selected knowledge-base root as the source of truth. `resolve_root()` initializes a folder with the expected layout before route handlers operate on it.
@@ -65,4 +66,4 @@ The chat agent cannot use arbitrary shell, web, or raw filesystem tools.
 bun run check
 ```
 
-The check command currently runs frontend TypeScript/Vite build and backend bytecode compilation. Add targeted tests as the codebase grows.
+The check command runs frontend TypeScript/Vite build, backend bytecode compilation, and backend unit tests. GitHub Actions runs the same command on pull requests.

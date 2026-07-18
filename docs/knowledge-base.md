@@ -28,6 +28,8 @@ id: example_paper
 title: Example Paper
 authors:
   - Ada Lovelace
+author_affiliations:
+  - Example Lab, Example University
 year: 2026
 venue: arXiv
 doi: ""
@@ -42,15 +44,25 @@ reading_status: unread
 priority: normal
 needs_review: false
 abstract: ""
+core_concepts:
+  - concept: Example concept
+    explanation: Plain-language explanation of how the paper uses it.
+key_figures:
+  - title: Main method overview
+    page: 3
+    caption: Figure caption or concise description.
+    reason: Why this figure is central to the paper.
+    image_path: assets/paper_figures/example_paper_figure_1_p3.png
 one_sentence: ""
 problem: ""
 contributions: []
 method: []
 experiments: []
 limitations: []
-notes: ""
-review_notes: []
+notes: ""        # legacy side-note field retained for backward compatibility
+review_notes: [] # canonical user review notes
 translations: {}
+translation_meta: {}
 created_at: "2026-06-14T00:00:00+00:00"
 updated_at: "2026-06-14T00:00:00+00:00"
 ```
@@ -85,8 +97,16 @@ claude_api_key: ""
 claude_endpoint: ""
 claude_model: sonnet
 max_concurrency: 4
-translation_engine: local
+translation_engine: llm
+default_summary_language: en
+figure_extraction_mode: fast_pillow
+figure_reextract_on_enrich: true
 sync_mode: local
+git_remote: origin
+git_remote_url: ""
+git_branch: main
+git_sync_pdfs: false
+git_sync_chats: false
 git_auto_sync: false
 git_sync_interval_minutes: 10
 ```
@@ -100,6 +120,7 @@ NeuNote classifies stored data as follows:
 | Path | Classification | Git sync |
 | --- | --- | --- |
 | `papers/*.yaml` | Core user library data: notes, tags, reading state, summaries | Always included when Git sync is enabled |
+| `assets/paper_figures/*` | Enrichment-rendered key-figure images referenced by paper YAML | Always included when Git sync is enabled |
 | `logs/chat_sessions/*.json` | User conversations and research context | Optional, off by default |
 | `originals/papers/*` | User-provided source documents | Optional, off by default |
 | `metadata/app_config.yaml` | Local configuration and API credentials | Never included |

@@ -22,6 +22,7 @@ Each `papers/<id>.yaml` contains:
 id: paper_id
 title: "Paper Title"
 authors: [Author One, Author Two]
+author_affiliations: [Lab or Institution]
 year: 2025
 venue: "Conference Name"
 doi: ""
@@ -36,6 +37,15 @@ priority: normal
 needs_review: true
 
 abstract: "..."
+core_concepts:
+  - concept: "..."
+    explanation: "..."
+key_figures:
+  - title: "..."
+    page: 3
+    caption: "..."
+    reason: "..."
+    image_path: assets/paper_figures/paper_id_figure_1_p3.png
 one_sentence: "..."
 problem: "..."
 contributions: [...]
@@ -43,11 +53,8 @@ method: [...]
 experiments: [...]
 limitations: [...]
 
-notes: |
-  # Markdown notes
-  Free-form reading notes...
-
-review_notes: [...]
+notes: ""        # legacy side-note field retained for backward compatibility
+review_notes: [] # canonical user review notes
 agent_reviews: [...]
 created_at: "2026-..."
 updated_at: "2026-..."

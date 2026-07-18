@@ -3,6 +3,7 @@ node_modules/
 frontend/node_modules/
 frontend/dist/
 frontend/tsconfig.tsbuildinfo
+frontend/bun.lock
 backend/.venv/
 __pycache__/
 *.py[cod]
@@ -23,6 +24,7 @@ metadata/app_config.yaml
 # runtime data
 /papers/
 /originals/
+/assets/
 /logs/
 /metadata/
 logs/chat_sessions/

@@ -1,4 +1,18 @@
 const root = new URL("..", import.meta.url).pathname.replace(/\/$/, "");
+const envFile = Bun.file(`${root}/.env`);
+if (await envFile.exists()) {
+  const content = await envFile.text();
+  for (const line of content.split(/\r?\n/)) {
+    const trimmed = line.trim();
+    if (!trimmed || trimmed.startsWith("#")) continue;
+    const eq = trimmed.indexOf("=");
+    if (eq <= 0) continue;
+    const key = trimmed.slice(0, eq).trim();
+    const value = trimmed.slice(eq + 1).trim().replace(/^["']|["']$/g, "");
+    if (!(key in process.env)) process.env[key] = value;
+  }
+}
+
 const dataRoot = process.env.KB_DEFAULT_ROOT ?? `${process.env.HOME ?? root}/.neunote`;
 
 function run(name: string, command: string[], cwd: string) {

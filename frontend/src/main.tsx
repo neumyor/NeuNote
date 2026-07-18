@@ -1,7 +1,10 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { createRoot } from "react-dom/client";
 import ReactMarkdown from "react-markdown";
+import rehypeKatex from "rehype-katex";
 import remarkGfm from "remark-gfm";
+import remarkMath from "remark-math";
+import "katex/dist/katex.min.css";
 import {
   ArrowDownUp,
   ArrowLeft,
@@ -49,12 +52,32 @@ import {
 } from "lucide-react";
 import "./styles.css";
 
-type Page = "dashboard" | "library" | "profile" | "chat" | "jobs" | "settings";
+type Page = "dashboard" | "library" | "review-search" | "profile" | "chat" | "jobs" | "settings";
+type SummaryLanguage = "en" | "zh";
+type FigureExtractionMode = "fast_pillow" | "agent_pymupdf";
+type CoreConcept = { concept: string; explanation: string };
+type TranslatedCoreConcept = { concept_en: string; concept_zh?: string; explanation_zh: string };
+type KeyFigure = {
+  title: string;
+  page: number;
+  caption?: string;
+  reason?: string;
+  image_path?: string;
+};
+type TranslatedKeyFigure = {
+  title_en?: string;
+  title_zh?: string;
+  caption_en?: string;
+  caption_zh?: string;
+  reason_en?: string;
+  reason_zh?: string;
+};
 
 type Paper = {
   id: string;
   title: string;
   authors: string[];
+  author_affiliations?: string[];
   year: number | null;
   venue: string;
   doi: string;
@@ -68,6 +91,8 @@ type Paper = {
   priority: string;
   needs_review: boolean;
   abstract: string;
+  core_concepts?: CoreConcept[];
+  key_figures?: KeyFigure[];
   one_sentence: string;
   problem: string;
   contributions: string[];
@@ -77,9 +102,11 @@ type Paper = {
   notes: string;
   review_notes: string[];
   agent_reviews: any[];
-  translations?: Record<string, string | string[]>;
+  translations?: Record<string, unknown>;
+  translation_meta?: { engine?: string; model?: string | null; updated_at?: string };
   created_at: string;
   updated_at: string;
+  last_read_at?: string;
 };
 
 type Stats = {
@@ -177,6 +204,9 @@ function App() {
   const [claudeEndpoint, setClaudeEndpoint] = useState("");
   const [claudeModel, setClaudeModel] = useState("sonnet");
   const [translationEngine, setTranslationEngine] = useState<"local" | "llm">("llm");
+  const [defaultSummaryLanguage, setDefaultSummaryLanguage] = useState<SummaryLanguage>("en");
+  const [figureExtractionMode, setFigureExtractionMode] = useState<FigureExtractionMode>("fast_pillow");
+  const [figureReextractOnEnrich, setFigureReextractOnEnrich] = useState(true);
   const [maxConcurrency, setMaxConcurrency] = useState(4);
   const [syncMode, setSyncMode] = useState<"local" | "git">("local");
   const [gitRemote, setGitRemote] = useState("origin");
@@ -338,6 +368,9 @@ function App() {
       claude_model?: string;
       max_concurrency?: number;
       translation_engine?: "local" | "llm";
+      default_summary_language?: SummaryLanguage;
+      figure_extraction_mode?: FigureExtractionMode;
+      figure_reextract_on_enrich?: boolean;
       sync_mode?: "local" | "git";
       git_remote?: string;
       git_remote_url?: string;
@@ -354,6 +387,9 @@ function App() {
     setClaudeModel(data.claude_model ?? "sonnet");
     setMaxConcurrency(data.max_concurrency ?? 4);
     setTranslationEngine(data.translation_engine ?? "local");
+    setDefaultSummaryLanguage(data.default_summary_language ?? "en");
+    setFigureExtractionMode(data.figure_extraction_mode ?? "fast_pillow");
+    setFigureReextractOnEnrich(data.figure_reextract_on_enrich ?? true);
     setSyncMode(data.sync_mode ?? "local");
     setGitRemote(data.git_remote ?? "origin");
     setGitRemoteUrl(data.git_remote_url ?? "");
@@ -433,7 +469,13 @@ function App() {
     setBusy("root");
     setError("");
     try {
-      const data = await request<{ root: string; translation_engine?: "local" | "llm" }>("/api/config", {
+      const data = await request<{
+        root: string;
+        translation_engine?: "local" | "llm";
+        default_summary_language?: SummaryLanguage;
+        figure_extraction_mode?: FigureExtractionMode;
+        figure_reextract_on_enrich?: boolean;
+      }>("/api/config", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -443,6 +485,9 @@ function App() {
           claude_model: claudeModel,
           max_concurrency: maxConcurrency,
           translation_engine: translationEngine,
+          default_summary_language: defaultSummaryLanguage,
+          figure_extraction_mode: figureExtractionMode,
+          figure_reextract_on_enrich: figureReextractOnEnrich,
           sync_mode: syncMode,
           git_remote: gitRemote,
           git_remote_url: gitRemoteUrl,
@@ -456,6 +501,9 @@ function App() {
       setSavedRoot(data.root);
       setRoot(data.root);
       if (data.translation_engine) setTranslationEngine(data.translation_engine);
+      if (data.default_summary_language) setDefaultSummaryLanguage(data.default_summary_language);
+      if (data.figure_extraction_mode) setFigureExtractionMode(data.figure_extraction_mode);
+      if (typeof data.figure_reextract_on_enrich === "boolean") setFigureReextractOnEnrich(data.figure_reextract_on_enrich);
       await loadPapers(data.root);
       await loadJobs(data.root);
       await loadSessions(data.root);
@@ -477,7 +525,11 @@ function App() {
         body: JSON.stringify({
           root, claude_api_key: claudeApiKey, claude_endpoint: claudeEndpoint,
           claude_model: claudeModel, max_concurrency: maxConcurrency,
-          translation_engine: translationEngine, sync_mode: syncMode,
+          translation_engine: translationEngine,
+          default_summary_language: defaultSummaryLanguage,
+          figure_extraction_mode: figureExtractionMode,
+          figure_reextract_on_enrich: figureReextractOnEnrich,
+          sync_mode: syncMode,
           git_remote: gitRemote, git_remote_url: gitRemoteUrl,
           git_branch: gitBranch, git_sync_pdfs: gitSyncPdfs,
           git_sync_chats: gitSyncChats,
@@ -542,6 +594,14 @@ function App() {
       const data = await request<{ paper: Paper }>(`/api/papers/${encodeURIComponent(paperId)}${params}`);
       if (seq !== openProfileSeq.current) return; // stale, newer click won
       setSelectedPaper(data.paper);
+      const viewed = await request<{ paper: Paper }>(`/api/papers/${encodeURIComponent(paperId)}/viewed`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ root: savedRoot }),
+      });
+      if (seq !== openProfileSeq.current) return;
+      setSelectedPaper(viewed.paper);
+      setPapers((prev) => prev.map((paper) => paper.id === paperId ? viewed.paper : paper));
     } catch (err) {
       if (seq !== openProfileSeq.current) return; // stale, don't surface error
       setError(String((err as Error).message ?? err));
@@ -569,15 +629,29 @@ function App() {
     setBusy("translate");
     setError("");
     try {
-      const data = await request<{ translations: Record<string, string | string[]> }>(
+      const data = await request<{ paper?: Paper; translations: Record<string, unknown>; translation_meta?: Paper["translation_meta"] }>(
         `/api/papers/${encodeURIComponent(paperId)}/translate`,
-        { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ root: savedRoot }) }
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            root: savedRoot,
+            translation_engine: translationEngine,
+            claude_api_key: claudeApiKey,
+            claude_endpoint: claudeEndpoint,
+            claude_model: claudeModel,
+          }),
+        }
       );
       // Spread from selectedPaperRef (live) so concurrent fields updated by
       // loadPapers during the await aren't clobbered. Guard on id to avoid
       // clobbering a different paper the user has navigated to.
       if (selectedPaperIdRef.current === paperId && selectedPaperRef.current) {
-        setSelectedPaper({ ...selectedPaperRef.current, translations: data.translations });
+        setSelectedPaper(data.paper ?? {
+          ...selectedPaperRef.current,
+          translations: data.translations,
+          translation_meta: data.translation_meta,
+        });
       }
       await loadPapers();
     } catch (err) {
@@ -660,6 +734,23 @@ function App() {
     }
   }
 
+  async function cancelAllJobs() {
+    setBusy("cancel-all");
+    setError("");
+    try {
+      await request("/api/jobs/cancel-all", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ root: savedRoot }),
+      });
+      await loadJobs();
+    } catch (err) {
+      setError(String((err as Error).message ?? err));
+    } finally {
+      setBusy("");
+    }
+  }
+
   async function deleteJob(jobId: string) {
     setBusy(`delete-${jobId}`);
     setError("");
@@ -723,6 +814,29 @@ function App() {
       setMentionedPaperIds(extractSessionPaperIds(data.session));
       setMentionedTags([]);
       setPage("chat");
+    } catch (err) {
+      setError(String((err as Error).message ?? err));
+    } finally {
+      setBusy("");
+    }
+  }
+
+  async function deleteChatSession(sessionId: string) {
+    if (!window.confirm("删除这段对话？此操作会移除本地历史记录。")) return;
+    setBusy(`delete-session-${sessionId}`);
+    setError("");
+    try {
+      const params = savedRoot ? `?root=${encodeURIComponent(savedRoot)}` : "";
+      const data = await request<{ sessions: ChatSessionSummary[] }>(`/api/sessions/${encodeURIComponent(sessionId)}${params}`, {
+        method: "DELETE",
+      });
+      setChatSessions(data.sessions);
+      if (chatSessionId === sessionId) {
+        setChatSessionId(null);
+        setChatMessages([]);
+        setMentionedPaperIds([]);
+        setMentionedTags([]);
+      }
     } catch (err) {
       setError(String((err as Error).message ?? err));
     } finally {
@@ -872,6 +986,14 @@ function App() {
             refresh={() => { loadPapers(); loadJobs(); }}
             busy={busy} uploadProgress={uploadProgress}
             paperJobs={paperJobs} enrichAll={enrichAll}
+            openReviewSearch={() => setPage("review-search")}
+          />
+        )}
+        {page === "review-search" && (
+          <ReviewNotesSearchPage
+            papers={papers}
+            openProfile={openProfile}
+            goBack={() => setPage("library")}
           />
         )}
         {page === "profile" && (
@@ -884,6 +1006,9 @@ function App() {
             deletePaper={deletePaper} openPdf={openPdf}
             paperJob={selectedPaperId ? paperJobs.get(selectedPaperId) : undefined}
             tagCounts={tagCounts}
+            defaultSummaryLanguage={defaultSummaryLanguage}
+            translationEngine={translationEngine}
+            kbRoot={savedRoot}
           />
         )}
         {page === "chat" && (
@@ -899,13 +1024,14 @@ function App() {
             busy={busy}
             newChat={openGeneralChat}
             openSession={loadChatSession}
+            deleteSession={deleteChatSession}
             openPdf={openPdf}
             sendMessage={sendChatMessage}
             stopChat={stopChat}
           />
         )}
         {page === "jobs" && (
-          <JobsPage jobs={jobs} refresh={() => loadJobs()} cancelJob={cancelJob} deleteJob={deleteJob} cleanupJobs={cleanupJobs} busy={busy} />
+          <JobsPage jobs={jobs} refresh={() => loadJobs()} cancelJob={cancelJob} cancelAllJobs={cancelAllJobs} deleteJob={deleteJob} cleanupJobs={cleanupJobs} busy={busy} />
         )}
         {page === "settings" && (
           <SettingsPage
@@ -915,6 +1041,9 @@ function App() {
             claudeModel={claudeModel} setClaudeModel={setClaudeModel}
             maxConcurrency={maxConcurrency} setMaxConcurrency={setMaxConcurrency}
             translationEngine={translationEngine} setTranslationEngine={setTranslationEngine}
+            defaultSummaryLanguage={defaultSummaryLanguage} setDefaultSummaryLanguage={setDefaultSummaryLanguage}
+            figureExtractionMode={figureExtractionMode} setFigureExtractionMode={setFigureExtractionMode}
+            figureReextractOnEnrich={figureReextractOnEnrich} setFigureReextractOnEnrich={setFigureReextractOnEnrich}
             syncMode={syncMode} setSyncMode={setSyncMode}
             gitRemote={gitRemote} setGitRemote={setGitRemote}
             gitRemoteUrl={gitRemoteUrl} setGitRemoteUrl={setGitRemoteUrl}
@@ -949,7 +1078,7 @@ function AppNav({ page, setPage, openChat, paperCount, jobCount }: {
       </button>
       <nav>
         <button className={page === "dashboard" ? "active" : ""} onClick={() => setPage("dashboard")}><Gauge size={16} /> 档案总览</button>
-        <button className={page === "library" || page === "profile" ? "active" : ""} onClick={() => setPage("library")}><Library size={16} /> 文献档案</button>
+        <button className={["library", "review-search", "profile"].includes(page) ? "active" : ""} onClick={() => setPage("library")}><Library size={16} /> 文献档案</button>
         <button className={page === "chat" ? "active" : ""} onClick={openChat}><MessageCircle size={16} /> 对话</button>
         <button className={page === "jobs" ? "active" : ""} onClick={() => setPage("jobs")}><Play size={16} /> 整理队列 {jobCount > 0 ? jobCount : ""}</button>
         <button className={page === "settings" ? "active" : ""} onClick={() => setPage("settings")}><Settings size={16} /> 设置</button>
@@ -969,6 +1098,11 @@ function DashboardPage(props: {
   busy: string; uploadProgress: string;
   duplicates: DuplicateGroup[]; cleanupDuplicates: () => void;
 }) {
+  const recentPapers = [...props.papers]
+    .filter((paper) => Boolean(paper.last_read_at))
+    .sort((a, b) => (b.last_read_at ?? "").localeCompare(a.last_read_at ?? ""))
+    .slice(0, 5);
+
   return (
     <div className="dashboard-page">
       <section className="page-heading inline">
@@ -992,14 +1126,14 @@ function DashboardPage(props: {
             <span>RECENT FOLIOS</span>
           </div>
           <div className="recent-stack">
-            {props.papers.slice(0, 5).map((paper) => (
+            {recentPapers.map((paper) => (
               <button className="recent-item" key={paper.id} onClick={() => props.openProfile(paper.id)}>
                 <span>{paper.year ?? "n.d."}</span>
                 <strong>{paper.title || paper.id}</strong>
                 <small>{(paper.authors ?? []).slice(0, 3).join(", ") || "Unknown author"}</small>
               </button>
             ))}
-            {props.papers.length === 0 && <EmptyState title="档案尚未启封" body="归档第一篇 PDF 后，这里会出现最近整理和翻阅的文献。" />}
+            {recentPapers.length === 0 && <EmptyState title="暂无翻阅记录" body="打开一篇论文详情后，这里会显示最近翻阅的文献。" />}
           </div>
         </article>
         <div className="panel chart-panel">
@@ -1158,7 +1292,7 @@ function LibraryPage(props: {
   sortBy: string; setSortBy: (v: "year" | "added" | "title") => void;
   openProfile: (id: string) => void; uploadPapers: (e: React.ChangeEvent<HTMLInputElement>) => void;
   refresh: () => void; busy: string; uploadProgress: string;
-  paperJobs: Map<string, Job>; enrichAll: () => void;
+  paperJobs: Map<string, Job>; enrichAll: () => void; openReviewSearch: () => void;
 }) {
   return (
     <div className="library-page">
@@ -1173,6 +1307,9 @@ function LibraryPage(props: {
           <button onClick={props.refresh}><RefreshCw size={16} /> 刷新</button>
           <button onClick={props.enrichAll} disabled={props.busy === "enrich-all"}>
             <Sparkles size={16} /> 批量整理
+          </button>
+          <button onClick={props.openReviewSearch}>
+            <Search size={16} /> 校阅札记搜索
           </button>
         </div>
       </section>
@@ -1240,6 +1377,156 @@ function LibraryPage(props: {
       </section>
     </div>
   );
+}
+
+type ReviewSearchHit = {
+  paper: Paper;
+  note: ReviewNote;
+  noteIndex: number;
+  snippet: string;
+  score: number;
+};
+
+function ReviewNotesSearchPage({ papers, openProfile, goBack }: {
+  papers: Paper[];
+  openProfile: (id: string) => void;
+  goBack: () => void;
+}) {
+  const [query, setQuery] = useState("");
+  const noteCount = useMemo(() => papers.reduce((sum, paper) => sum + normalizeReviewNotes(paper.review_notes).length, 0), [papers]);
+  const results = useMemo(() => searchReviewNotes(papers, query), [papers, query]);
+  const terms = useMemo(() => tokenizeSearch(query), [query]);
+  const hasQuery = query.trim().length > 0;
+
+  return (
+    <div className="review-search-page">
+      <section className="review-search-hero">
+        <button type="button" className="ghost-button back-button" onClick={goBack}>
+          <ArrowLeft size={15} /> 返回文献档案
+        </button>
+        <div className="review-search-brand">
+          <p className="kicker">Review Notes Search</p>
+          <h1>校阅札记搜索</h1>
+          <p>在 {papers.length} 篇论文的 {noteCount} 条校阅札记中检索。</p>
+        </div>
+        <label className="review-search-box">
+          <Search size={22} />
+          <input
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            autoFocus
+            placeholder="搜索方法、问题、实验、局限或你的校阅判断..."
+          />
+        </label>
+      </section>
+
+      <section className="review-search-results">
+        {hasQuery && (
+          <div className="review-search-summary">
+            <span>{results.length} 条结果</span>
+            <small>点击任一卡片进入对应论文详情</small>
+          </div>
+        )}
+        {!hasQuery && (
+          <EmptyState title="输入关键词开始搜索" body="校阅札记正文、论文题名、作者和标签都会参与匹配。" />
+        )}
+        {hasQuery && results.length === 0 && (
+          <EmptyState title="未找到相关校阅札记" body="换一个关键词，或先在论文详情页补充校阅札记。" />
+        )}
+        <div className="review-note-result-list">
+          {results.map((hit) => (
+            <button
+              type="button"
+              className="review-note-result-card"
+              key={`${hit.paper.id}-${hit.noteIndex}-${hit.note.created_at ?? "note"}`}
+              onClick={() => openProfile(hit.paper.id)}
+            >
+              <div className="review-note-result-meta">
+                <span>{formatReviewTime(hit.note.created_at)}</span>
+                <span>{hit.paper.year ?? "n.d."}</span>
+              </div>
+              <strong>{hit.paper.title || hit.paper.id}</strong>
+              <small>{(hit.paper.authors ?? []).slice(0, 3).join(", ") || "Unknown author"}</small>
+              <p><HighlightedText text={hit.snippet} terms={terms} /></p>
+              <TagLine tags={hit.paper.tags ?? []} />
+            </button>
+          ))}
+        </div>
+      </section>
+    </div>
+  );
+}
+
+function searchReviewNotes(papers: Paper[], rawQuery: string): ReviewSearchHit[] {
+  const terms = tokenizeSearch(rawQuery);
+  if (!terms.length) return [];
+  const hits: ReviewSearchHit[] = [];
+  for (const paper of papers) {
+    const haystackMeta = [
+      paper.title,
+      ...(paper.authors ?? []),
+      ...(paper.tags ?? []),
+      paper.venue,
+      String(paper.year ?? ""),
+    ].join(" ").toLowerCase();
+    const notes = normalizeReviewNotes(paper.review_notes);
+    notes.forEach((note, noteIndex) => {
+      const text = note.text.trim();
+      if (!text) return;
+      const lowerText = text.toLowerCase();
+      const matchedTerms = terms.filter((term) => lowerText.includes(term) || haystackMeta.includes(term));
+      if (!matchedTerms.length) return;
+      const textMatches = matchedTerms.filter((term) => lowerText.includes(term)).length;
+      const metaMatches = matchedTerms.length - textMatches;
+      hits.push({
+        paper,
+        note,
+        noteIndex,
+        snippet: makeSearchSnippet(text, matchedTerms),
+        score: textMatches * 10 + metaMatches * 3 + Math.min(text.length / 240, 2),
+      });
+    });
+  }
+  return hits.sort((a, b) => {
+    if (b.score !== a.score) return b.score - a.score;
+    return (b.note.created_at ?? "").localeCompare(a.note.created_at ?? "");
+  });
+}
+
+function tokenizeSearch(raw: string): string[] {
+  return Array.from(new Set(raw.toLowerCase().split(/[\s,，。；;：:、]+/).map((term) => term.trim()).filter(Boolean)));
+}
+
+function makeSearchSnippet(text: string, terms: string[]): string {
+  const normalized = text.replace(/\s+/g, " ").trim();
+  const lower = normalized.toLowerCase();
+  const firstIndex = terms.reduce((best, term) => {
+    const idx = lower.indexOf(term);
+    if (idx < 0) return best;
+    return best < 0 ? idx : Math.min(best, idx);
+  }, -1);
+  if (firstIndex < 0) return normalized.slice(0, 220);
+  const start = Math.max(0, firstIndex - 80);
+  const end = Math.min(normalized.length, firstIndex + 180);
+  return `${start > 0 ? "..." : ""}${normalized.slice(start, end)}${end < normalized.length ? "..." : ""}`;
+}
+
+function HighlightedText({ text, terms }: { text: string; terms: string[] }) {
+  if (!terms.length) return <>{text}</>;
+  const pattern = new RegExp(`(${terms.map(escapeRegExp).join("|")})`, "ig");
+  return (
+    <>
+      {text.split(pattern).map((part, i) => (
+        terms.includes(part.toLowerCase())
+          ? <mark key={`${part}-${i}`}>{part}</mark>
+          : <React.Fragment key={`${part}-${i}`}>{part}</React.Fragment>
+      ))}
+    </>
+  );
+}
+
+function escapeRegExp(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
 function TagLine({ tags }: { tags: string[] }) {
@@ -1322,15 +1609,6 @@ function formatReviewTime(iso: string | null | undefined): string {
   return sameYear
     ? `${d.getMonth() + 1}/${d.getDate()} ${d.toTimeString().slice(0, 5)}`
     : `${d.getFullYear()}/${d.getMonth() + 1}/${d.getDate()}`;
-}
-
-function computeNoteStats(text: string): { words: number; minutes: number } {
-  const stripped = text.replace(/```[\s\S]*?```/g, "").replace(/[#>*_`~\-]/g, " ");
-  const cjk = (text.match(/[\u4e00-\u9fff\u3400-\u4dbf]/g) || []).length;
-  const asciiWords = stripped.split(/\s+/).filter(Boolean).length;
-  const words = cjk + asciiWords;
-  const minutes = Math.max(1, Math.round(cjk / 300 + asciiWords / 200));
-  return { words, minutes };
 }
 
 // ── TagEditor (chip-based, debounced auto-save, autocomplete) ─────
@@ -1578,123 +1856,6 @@ function ReviewNotesEditor(props: {
   );
 }
 
-// ── NotesEditor (边注: debounced auto-save + markdown preview) ────
-
-type NotesStatus = "clean" | "dirty" | "saving" | "saved" | "error";
-type ViewMode = "edit" | "preview" | "split";
-
-function NotesEditor(props: {
-  notes: string;
-  busy: boolean;
-  onCommit: (next: string) => Promise<void> | void;
-}) {
-  const [local, setLocal] = useState<string>(props.notes);
-  const [status, setStatus] = useState<NotesStatus>("clean");
-  const [mode, setMode] = useState<ViewMode>("edit");
-  const lastSentRef = useRef<string>(props.notes);
-  const debounceRef = useRef<number | null>(null);
-  const fadeTimerRef = useRef<number | null>(null);
-
-  async function flush() {
-    if (debounceRef.current !== null) {
-      window.clearTimeout(debounceRef.current);
-      debounceRef.current = null;
-    }
-    if (local === lastSentRef.current) return;
-    setStatus("saving");
-    try {
-      await props.onCommit(local);
-      lastSentRef.current = local;
-      setStatus("saved");
-      if (fadeTimerRef.current) window.clearTimeout(fadeTimerRef.current);
-      fadeTimerRef.current = window.setTimeout(() => setStatus("clean"), 2000);
-    } catch {
-      setStatus("error");
-    }
-  }
-
-  useEffect(() => {
-    if (local === lastSentRef.current) return;
-    setStatus("dirty");
-    if (debounceRef.current !== null) window.clearTimeout(debounceRef.current);
-    debounceRef.current = window.setTimeout(() => {
-      debounceRef.current = null;
-      void flush();
-    }, 1200);
-  }, [local]);
-
-  useEffect(() => () => {
-    if (debounceRef.current !== null) window.clearTimeout(debounceRef.current);
-    if (fadeTimerRef.current !== null) window.clearTimeout(fadeTimerRef.current);
-  }, []);
-
-  const onKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    if (e.key === "s" && (e.metaKey || e.ctrlKey)) {
-      e.preventDefault();
-      void flush();
-    } else if (e.key === "Escape") {
-      (e.target as HTMLTextAreaElement).blur();
-    }
-  };
-
-  const stats = useMemo(() => computeNoteStats(local), [local]);
-
-  return (
-    <div className="notes-editor">
-      <div className="notes-toolbar">
-        <div className="notes-mode">
-          <button type="button" className={mode === "edit" ? "active" : ""} onClick={() => setMode("edit")}>
-            <FileText size={13} /> 编辑
-          </button>
-          <button type="button" className={mode === "preview" ? "active" : ""} onClick={() => setMode("preview")}>
-            <ExternalLink size={13} /> 预览
-          </button>
-          <button type="button" className={mode === "split" ? "active" : ""} onClick={() => setMode("split")}>
-            <Copy size={13} /> 分栏
-          </button>
-        </div>
-        <div className="notes-stats">
-          <span>{stats.words} 字 · ≈{stats.minutes} 分钟阅读</span>
-        </div>
-        <div className={`notes-status notes-status-${status}`}>
-          {status === "clean" && <span>·</span>}
-          {status === "dirty" && <span>● 未保存</span>}
-          {status === "saving" && <span><Loader2 className="spin" size={12} /> 保存中</span>}
-          {status === "saved" && <span><CheckCircle2 size={12} /> 已保存</span>}
-          {status === "error" && <span>✗ 失败</span>}
-        </div>
-      </div>
-      <div className={`notes-body notes-body-${mode}`}>
-        {(mode === "edit" || mode === "split") && (
-          <textarea
-            className="notes-textarea"
-            value={local}
-            onChange={(e) => setLocal(e.target.value)}
-            onKeyDown={onKeyDown}
-            placeholder="写下你的边注… 支持 Markdown（# 标题, - 列表, > 引用, **加粗**, `代码`）。Cmd/Ctrl+S 强制保存。"
-            rows={16}
-            spellCheck={false}
-          />
-        )}
-        {(mode === "preview" || mode === "split") && (
-          <div className="notes-preview markdown-body">
-            {local.trim()
-              ? <ReactMarkdown remarkPlugins={[remarkGfm]}>{local}</ReactMarkdown>
-              : <p className="muted small">暂无内容</p>}
-          </div>
-        )}
-      </div>
-      <div className="notes-footer">
-        <span className="muted small">Cmd/Ctrl + S 立即保存 · Esc 收起</span>
-        <button type="button" onClick={() => void flush()} disabled={status === "saving" || local === lastSentRef.current}>
-          {status === "saving" ? <Loader2 className="spin" size={14} /> : <RefreshCw size={14} />}
-          立即保存
-        </button>
-      </div>
-    </div>
-  );
-}
-
 // ── Profile ──────────────────────────────────────────────────────────
 
 function ProfilePage(props: {
@@ -1706,27 +1867,56 @@ function ProfilePage(props: {
   deletePaper: (id: string) => void; openPdf: (p: Paper) => void;
   paperJob?: Job;
   tagCounts: [string, number][];
+  defaultSummaryLanguage: SummaryLanguage;
+  translationEngine: "local" | "llm";
+  kbRoot: string;
 }) {
   const paper = props.paper;
   const [showChinese, setShowChinese] = useState(false);
+  const conceptTranslationRequestRef = useRef<string | null>(null);
 
   useEffect(() => {
-    if (paper) setShowChinese(false);
-  }, [paper?.id]);
+    if (paper) setShowChinese(props.defaultSummaryLanguage === "zh");
+  }, [paper?.id, props.defaultSummaryLanguage]);
+
+  useEffect(() => {
+    if (!paper || !showChinese) return;
+    const concepts = paper.core_concepts ?? [];
+    const translated = paper.translations?.core_concepts;
+    const needsConceptTranslation = concepts.length > 0 && (!Array.isArray(translated) || translated.length < concepts.length);
+    const translatedFigures = paper.translations?.key_figures;
+    const figures = paper.key_figures ?? [];
+    const needsFigureTranslation = figures.length > 0 && (!Array.isArray(translatedFigures) || translatedFigures.length < figures.length);
+    const needsLlmRefresh = props.translationEngine === "llm" && paper.translation_meta?.engine !== "llm";
+    if (!needsConceptTranslation && !needsFigureTranslation && !needsLlmRefresh) return;
+    const requestKey = `${paper.id}:${concepts.length}:${paper.key_figures?.length ?? 0}:${props.translationEngine}`;
+    if (conceptTranslationRequestRef.current === requestKey) return;
+    conceptTranslationRequestRef.current = requestKey;
+    void props.translatePaper(paper.id);
+  }, [paper?.id, paper?.core_concepts?.length, paper?.key_figures?.length, paper?.translations?.core_concepts, paper?.translations?.key_figures, paper?.translation_meta?.engine, showChinese, props.translationEngine]);
 
   if (!paper || props.busy === "profile") {
     return <div className="loading-state"><Loader2 className="spin" size={20} /> Loading paper...</div>;
   }
 
   const hasZh = Boolean(paper.translations && Object.keys(paper.translations).length > 0);
+  const effectiveChinese = showChinese && hasZh;
   const jobRunning = props.paperJob && ["queued", "running"].includes(props.paperJob.status);
+  const figureVersion = paper.updated_at || "";
 
   async function handleTranslate() {
-    if (showChinese) {
+    if (effectiveChinese) {
       setShowChinese(false);
       return;
     }
-    if (!hasZh) {
+    const concepts = paper!.core_concepts ?? [];
+    const translated = paper!.translations?.core_concepts;
+    const needsConceptTranslation = concepts.length > 0 && (!Array.isArray(translated) || translated.length < concepts.length);
+    const translatedFigures = paper!.translations?.key_figures;
+    const figures = paper!.key_figures ?? [];
+    const needsFigureTranslation = figures.length > 0 && (!Array.isArray(translatedFigures) || translatedFigures.length < figures.length);
+    const needsLlmRefresh = props.translationEngine === "llm" && paper!.translation_meta?.engine !== "llm";
+    if (!hasZh || needsConceptTranslation || needsFigureTranslation || needsLlmRefresh) {
       await props.translatePaper(paper!.id);
     }
     setShowChinese(true);
@@ -1748,7 +1938,7 @@ function ProfilePage(props: {
             </button>
             <button className="action-button" onClick={handleTranslate} disabled={props.busy === "translate"}>
               {props.busy === "translate" ? <Loader2 className="spin" size={15} /> : null}
-              {showChinese ? "English" : "中文"}
+              {effectiveChinese ? "English" : "中文"}
             </button>
             <button className="danger-button" onClick={() => props.deletePaper(paper.id)} disabled={props.busy === "delete"}>
               {props.busy === "delete" ? <Loader2 className="spin" size={15} /> : <Trash2 size={15} />} 删除
@@ -1773,55 +1963,34 @@ function ProfilePage(props: {
             <Bookmark size={18} />
             <h2>文献摘录</h2>
           </div>
-          <Field label="一句话摘要" value={showChinese && hasZh ? (paper.translations?.one_sentence as string) : paper.one_sentence} />
-          <Field label="研究问题" value={showChinese && hasZh ? (paper.translations?.problem as string) : paper.problem} />
-          <ListField label="主要贡献" values={showChinese && hasZh ? (paper.translations?.contributions as string[] || []) : (paper.contributions ?? [])} />
-          <ListField label="方法" values={showChinese && hasZh ? (paper.translations?.method as string[] || []) : (paper.method ?? [])} />
-          <ListField label="实验" values={showChinese && hasZh ? (paper.translations?.experiments as string[] || []) : (paper.experiments ?? [])} />
-          <ListField label="局限" values={showChinese && hasZh ? (paper.translations?.limitations as string[] || []) : (paper.limitations ?? [])} />
-          <Field label="摘要" value={showChinese && hasZh ? (paper.translations?.abstract as string) : paper.abstract} />
+          <KeyFigures
+            figures={paper.key_figures ?? []}
+            translatedFigures={effectiveChinese ? (paper.translations?.key_figures as TranslatedKeyFigure[] | undefined) : undefined}
+            paperId={paper.id}
+            kbRoot={props.kbRoot}
+            cacheKey={figureVersion}
+          />
+          <ConceptTable
+            concepts={paper.core_concepts ?? []}
+            translatedConcepts={effectiveChinese ? (paper.translations?.core_concepts as TranslatedCoreConcept[] | undefined) : undefined}
+          />
+          <Field label="一句话摘要" value={effectiveChinese ? (paper.translations?.one_sentence as string) : paper.one_sentence} />
+          <Field label="研究问题" value={effectiveChinese ? (paper.translations?.problem as string) : paper.problem} />
+          <ListField label="主要贡献" values={effectiveChinese ? (paper.translations?.contributions as string[] || []) : (paper.contributions ?? [])} />
+          <ListField label="方法" values={effectiveChinese ? (paper.translations?.method as string[] || []) : (paper.method ?? [])} />
+          <ListField label="实验" values={effectiveChinese ? (paper.translations?.experiments as string[] || []) : (paper.experiments ?? [])} />
+          <ListField label="局限" values={effectiveChinese ? (paper.translations?.limitations as string[] || []) : (paper.limitations ?? [])} />
+          <Field label="摘要" value={effectiveChinese ? (paper.translations?.abstract as string) : paper.abstract} />
         </article>
         <aside className="profile-side">
           <section className="panel">
             <h2>题录</h2>
             <Info label="作者" value={(paper.authors ?? []).join(", ") || "Unknown"} />
+            <Info label="团队" value={(paper.author_affiliations ?? []).join("; ") || "-"} />
             <Info label="年份" value={String(paper.year ?? "?")} />
             <Info label="来源" value={paper.venue || "-"} />
             <Info label="DOI" value={paper.doi || "-"} />
             <Info label="arXiv" value={paper.arxiv_id || "-"} />
-          </section>
-          <section className="panel">
-            <h2>馆藏管理</h2>
-            <label className="label-stack">
-              阅读状态
-              <select value={paper.reading_status ?? "unread"} onChange={(e) => props.updatePaper(paper.id, { reading_status: e.target.value })}>
-                <option value="unread">未读</option>
-                <option value="reading">阅读中</option>
-                <option value="read">已读</option>
-              </select>
-            </label>
-            <label className="label-stack">
-              优先级
-              <select value={paper.priority ?? "normal"} onChange={(e) => props.updatePaper(paper.id, { priority: e.target.value })}>
-                <option value="low">低</option>
-                <option value="normal">普通</option>
-                <option value="high">高</option>
-              </select>
-            </label>
-            <label className="checkbox-row">
-              <input type="checkbox" checked={Boolean(paper.needs_review)} onChange={(e) => props.updatePaper(paper.id, { needs_review: e.target.checked })} />
-              需要校阅
-            </label>
-            <label className="label-stack">
-              <span>标签</span>
-              <TagEditor
-                key={paper.id}
-                tags={paper.tags ?? []}
-                knownTags={props.tagCounts.map(([t]) => t)}
-                busy={props.busy === "save"}
-                onCommit={(next) => props.updatePaper(paper.id, { tags: next })}
-              />
-            </label>
           </section>
           <section className="panel">
             <h2>校阅札记</h2>
@@ -1833,13 +2002,17 @@ function ProfilePage(props: {
             />
           </section>
           <section className="panel">
-            <h2>边注</h2>
-            <NotesEditor
-              key={paper.id}
-              notes={paper.notes ?? ""}
-              busy={props.busy === "save"}
-              onCommit={(next) => props.updatePaper(paper.id, { notes: next })}
-            />
+            <h2>馆藏管理</h2>
+            <label className="label-stack">
+              <span>标签</span>
+              <TagEditor
+                key={paper.id}
+                tags={paper.tags ?? []}
+                knownTags={props.tagCounts.map(([t]) => t)}
+                busy={props.busy === "save"}
+                onCommit={(next) => props.updatePaper(paper.id, { tags: next })}
+              />
+            </label>
           </section>
           <section className="panel">
             <h2>档案信息</h2>
@@ -1870,6 +2043,110 @@ function ListField({ label, values }: { label: string; values: string[] }) {
       {values.length ? <ul>{values.map((v, i) => <li key={`${label}-${i}`}>{v}</li>)}</ul> : <p>Not extracted yet.</p>}
     </section>
   );
+}
+
+function KeyFigures({ figures, translatedFigures, paperId, kbRoot, cacheKey }: {
+  figures: KeyFigure[];
+  translatedFigures?: TranslatedKeyFigure[];
+  paperId: string;
+  kbRoot: string;
+  cacheKey: string;
+}) {
+  const [open, setOpen] = useState(false);
+  const hasTranslation = Boolean(translatedFigures?.length);
+  return (
+    <section className="field-block figure-field collapsible-field">
+      <button type="button" className="collapsible-field-toggle" onClick={() => setOpen((v) => !v)} aria-expanded={open}>
+        <span>{open ? <ChevronDown size={16} /> : <ChevronRight size={16} />} 关键图示</span>
+        <small>{figures.length ? `${figures.length} 张` : "暂无"}</small>
+      </button>
+      {open && (figures.length ? (
+        <div className="collapsible-field-content">
+          <div className="figure-strip">
+            {figures.map((figure, i) => {
+              const translated = hasTranslation ? translatedFigures?.[i] : undefined;
+              const title = translated?.title_zh || figure.title || `Figure on page ${figure.page}`;
+              const caption = translated?.caption_zh || figure.caption || "";
+              const reason = translated?.reason_zh || figure.reason || "";
+              const titleEn = translated?.title_en || figure.title || "";
+              const captionEn = translated?.caption_en || figure.caption || "";
+              const reasonEn = translated?.reason_en || figure.reason || "";
+              return (
+                <figure className="paper-figure" key={`${figure.page}-${i}`}>
+                  {figure.image_path ? (
+                    <img src={figureImageUrl(paperId, i, kbRoot, cacheKey)} alt={title} />
+                  ) : (
+                    <div className="figure-placeholder">Page {figure.page}</div>
+                  )}
+                  <figcaption>
+                    <strong>{title}</strong>
+                    <span>p. {figure.page}</span>
+                    {hasTranslation && titleEn && titleEn !== title ? <em>{titleEn}</em> : null}
+                    {caption ? <p>{caption}</p> : null}
+                    {hasTranslation && captionEn && captionEn !== caption ? <p className="figure-original">{captionEn}</p> : null}
+                    {reason ? <small>{reason}</small> : null}
+                    {hasTranslation && reasonEn && reasonEn !== reason ? <small className="figure-original">{reasonEn}</small> : null}
+                  </figcaption>
+                </figure>
+              );
+            })}
+          </div>
+        </div>
+      ) : <p>Not extracted yet.</p>)}
+    </section>
+  );
+}
+
+function ConceptTable({ concepts, translatedConcepts }: {
+  concepts: CoreConcept[];
+  translatedConcepts?: TranslatedCoreConcept[];
+}) {
+  const [open, setOpen] = useState(false);
+  const rows = translatedConcepts?.length ? translatedConcepts : concepts;
+  const isTranslated = Boolean(translatedConcepts?.length);
+  return (
+    <section className="field-block concept-field collapsible-field">
+      <button type="button" className="collapsible-field-toggle" onClick={() => setOpen((v) => !v)} aria-expanded={open}>
+        <span>{open ? <ChevronDown size={16} /> : <ChevronRight size={16} />} 核心概念定义</span>
+        <small>{rows.length ? `${rows.length} 个` : "暂无"}</small>
+      </button>
+      {open && (rows.length ? (
+        <div className="collapsible-field-content">
+          <table className="concept-table">
+            <thead>
+              <tr>
+                <th>概念</th>
+                <th>通俗解释</th>
+              </tr>
+            </thead>
+            <tbody>
+              {rows.map((item, i) => (
+                <tr key={`${isTranslated ? (item as TranslatedCoreConcept).concept_en : (item as CoreConcept).concept}-${i}`}>
+                  <td>
+                    {isTranslated ? (
+                      <>
+                        {(item as TranslatedCoreConcept).concept_zh || (item as TranslatedCoreConcept).concept_en}
+                        <small>{(item as TranslatedCoreConcept).concept_en}</small>
+                      </>
+                    ) : (item as CoreConcept).concept}
+                  </td>
+                  <td>{isTranslated ? (item as TranslatedCoreConcept).explanation_zh : (item as CoreConcept).explanation}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      ) : <p>Not extracted yet.</p>)}
+    </section>
+  );
+}
+
+function figureImageUrl(paperId: string, figureIndex: number, kbRoot: string, cacheKey: string): string {
+  const params = new URLSearchParams();
+  if (kbRoot) params.set("root", kbRoot);
+  if (cacheKey) params.set("v", cacheKey);
+  const suffix = params.toString();
+  return `${API}/api/papers/${encodeURIComponent(paperId)}/figures/${figureIndex}${suffix ? `?${suffix}` : ""}`;
 }
 
 function Info({ label, value }: { label: string; value: string }) {
@@ -1950,6 +2227,14 @@ function formatDateShort(value?: string): string {
   return date.toLocaleDateString(undefined, { month: "short", day: "numeric" });
 }
 
+function MarkdownView({ children }: { children: string }) {
+  return (
+    <ReactMarkdown remarkPlugins={[remarkGfm, remarkMath]} rehypePlugins={[rehypeKatex]}>
+      {children}
+    </ReactMarkdown>
+  );
+}
+
 // ── Chat ─────────────────────────────────────────────────────────────
 
 function ChatPage(props: {
@@ -1964,6 +2249,7 @@ function ChatPage(props: {
   busy: string;
   newChat: () => void;
   openSession: (sessionId: string) => void;
+  deleteSession: (sessionId: string) => void;
   openPdf: (paper: Paper) => void;
   sendMessage: (question: string) => Promise<void> | void;
   stopChat: () => void;
@@ -2094,15 +2380,26 @@ function ChatPage(props: {
         </div>
         <div className="chat-session-list">
           {props.sessions.length ? props.sessions.map((session) => (
-            <button
-              key={session.id}
-              type="button"
-              className={session.id === props.activeSessionId ? "active" : ""}
-              onClick={() => props.openSession(session.id)}
-            >
-              <strong>{session.title}</strong>
-              <span>{session.message_count} 条消息 · {formatDateShort(session.updated_at)}</span>
-            </button>
+            <div className={`chat-session-row ${session.id === props.activeSessionId ? "active" : ""}`} key={session.id}>
+              <button
+                type="button"
+                className="chat-session-open"
+                onClick={() => props.openSession(session.id)}
+              >
+                <strong>{session.title}</strong>
+                <span>{session.message_count} 条消息 · {formatDateShort(session.updated_at)}</span>
+              </button>
+              <button
+                type="button"
+                className="icon-button chat-session-delete"
+                onClick={() => props.deleteSession(session.id)}
+                aria-label={`删除对话 ${session.title}`}
+                title="删除对话"
+                disabled={props.busy === `delete-session-${session.id}` || (props.busy === "chat" && session.id === props.activeSessionId)}
+              >
+                {props.busy === `delete-session-${session.id}` ? <Loader2 className="spin" size={14} /> : <Trash2 size={14} />}
+              </button>
+            </div>
           )) : (
             <p className="empty-note">暂无历史对话</p>
           )}
@@ -2257,7 +2554,7 @@ function ChatMessageView({ message, paperById }: { message: ChatMessage; paperBy
               <ToolCallView key={segment.id} tool={segment.tool} />
             ) : (
               <div className="markdown-body chat-markdown chat-segment" key={segment.id}>
-                <ReactMarkdown remarkPlugins={[remarkGfm]}>{segment.content}</ReactMarkdown>
+                <MarkdownView>{segment.content}</MarkdownView>
               </div>
             )
           ))
@@ -2268,7 +2565,7 @@ function ChatMessageView({ message, paperById }: { message: ChatMessage; paperBy
             ))}
             {message.content ? (
               <div className="markdown-body chat-markdown">
-                <ReactMarkdown remarkPlugins={[remarkGfm]}>{message.content}</ReactMarkdown>
+                <MarkdownView>{message.content}</MarkdownView>
               </div>
             ) : null}
           </>
@@ -2364,9 +2661,9 @@ function stringifyToolPayload(value: unknown): string {
 
 // ── Jobs ─────────────────────────────────────────────────────────────
 
-function JobsPage({ jobs, refresh, cancelJob, deleteJob, cleanupJobs, busy }: {
+function JobsPage({ jobs, refresh, cancelJob, cancelAllJobs, deleteJob, cleanupJobs, busy }: {
   jobs: Job[]; refresh: () => void;
-  cancelJob: (id: string) => void; deleteJob: (id: string) => void;
+  cancelJob: (id: string) => void; cancelAllJobs: () => void; deleteJob: (id: string) => void;
   cleanupJobs: () => void; busy: string;
 }) {
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
@@ -2380,6 +2677,7 @@ function JobsPage({ jobs, refresh, cancelJob, deleteJob, cleanupJobs, busy }: {
   }
 
   const finishedCount = jobs.filter((j) => ["completed", "failed", "cancelled"].includes(j.status)).length;
+  const activeCount = jobs.filter((j) => ["queued", "running"].includes(j.status)).length;
 
   return (
     <div className="jobs-page">
@@ -2390,6 +2688,12 @@ function JobsPage({ jobs, refresh, cancelJob, deleteJob, cleanupJobs, busy }: {
           <p>后台文献整理任务，并发数量可在设置中调整。</p>
         </div>
         <div className="toolbar">
+          {activeCount > 0 && (
+            <button onClick={cancelAllJobs} disabled={busy === "cancel-all"}>
+              {busy === "cancel-all" ? <Loader2 className="spin" size={16} /> : <XCircle size={16} />}
+              停止全部 {activeCount} 项
+            </button>
+          )}
           {finishedCount > 0 && (
             <button onClick={cleanupJobs} disabled={busy === "cleanup"}>
               {busy === "cleanup" ? <Loader2 className="spin" size={16} /> : <Trash2 size={16} />}
@@ -2457,6 +2761,12 @@ function SettingsPage(props: {
   maxConcurrency: number; setMaxConcurrency: (v: number) => void;
   translationEngine: "local" | "llm";
   setTranslationEngine: (v: "local" | "llm") => void;
+  defaultSummaryLanguage: SummaryLanguage;
+  setDefaultSummaryLanguage: (v: SummaryLanguage) => void;
+  figureExtractionMode: FigureExtractionMode;
+  setFigureExtractionMode: (v: FigureExtractionMode) => void;
+  figureReextractOnEnrich: boolean;
+  setFigureReextractOnEnrich: (v: boolean) => void;
   syncMode: "local" | "git"; setSyncMode: (v: "local" | "git") => void;
   gitRemote: string; setGitRemote: (v: string) => void;
   gitRemoteUrl: string; setGitRemoteUrl: (v: string) => void;
@@ -2622,6 +2932,76 @@ function SettingsPage(props: {
             {props.translationEngine === "llm"
               ? "使用上方配置的 Claude 兼容接口生成翻译，质量更好但需要联网和 API 配额。"
               : "使用本地 Argos Translate 离线模型，无需联网，但译文偏直译、术语一致性较弱。"}
+          </p>
+        </div>
+
+        <div className="panel settings-panel">
+          <label className="label"><BookOpen size={15} /> 文献详情默认语言</label>
+          <div
+            className="ios-segmented"
+            role="radiogroup"
+            aria-label="文献详情默认语言"
+          >
+            <button
+              type="button"
+              className={props.defaultSummaryLanguage === "en" ? "active" : ""}
+              role="radio"
+              aria-checked={props.defaultSummaryLanguage === "en"}
+              onClick={() => props.setDefaultSummaryLanguage("en")}
+            >
+              English
+            </button>
+            <button
+              type="button"
+              className={props.defaultSummaryLanguage === "zh" ? "active" : ""}
+              role="radio"
+              aria-checked={props.defaultSummaryLanguage === "zh"}
+              onClick={() => props.setDefaultSummaryLanguage("zh")}
+            >
+              中文
+            </button>
+          </div>
+          <p className="hint">进入论文详情页时的摘要展示语言；选择中文时，已有译文会优先显示，未生成译文的论文仍显示英文。</p>
+        </div>
+
+        <div className="panel settings-panel">
+          <label className="label"><Sparkles size={15} /> 配图提取方式</label>
+          <div
+            className="ios-segmented"
+            role="radiogroup"
+            aria-label="配图提取方式"
+          >
+            <button
+              type="button"
+              className={props.figureExtractionMode === "fast_pillow" ? "active" : ""}
+              role="radio"
+              aria-checked={props.figureExtractionMode === "fast_pillow"}
+              onClick={() => props.setFigureExtractionMode("fast_pillow")}
+            >
+              快速识别
+            </button>
+            <button
+              type="button"
+              className={props.figureExtractionMode === "agent_pymupdf" ? "active" : ""}
+              role="radio"
+              aria-checked={props.figureExtractionMode === "agent_pymupdf"}
+              onClick={() => props.setFigureExtractionMode("agent_pymupdf")}
+            >
+              Agent 精裁
+            </button>
+          </div>
+          <label className="sync-check-row">
+            <input
+              type="checkbox"
+              checked={props.figureReextractOnEnrich}
+              onChange={(e) => props.setFigureReextractOnEnrich(e.target.checked)}
+            />
+            <span><strong>重新整理时重提取配图</strong><small>开启后不会沿用旧图片；快速识别会先用 Pillow 生成候选，再由 agent 补充 caption。</small></span>
+          </label>
+          <p className="hint">
+            {props.figureExtractionMode === "fast_pillow"
+              ? "快速识别使用 Pillow 扫描彩色区域，速度更快；agent 负责选择候选图并完善标题、caption 与说明。"
+              : "Agent 精裁使用 PyMuPDF 页面工具让 agent 查看页面并保存 crop，通常更慢但适合复杂版式。"}
           </p>
         </div>
 

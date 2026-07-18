@@ -20,9 +20,11 @@ class GitSyncTests(unittest.TestCase):
             root = base / "library"
             remote = base / "remote.git"
             (root / "papers").mkdir(parents=True)
+            (root / "assets/paper_figures").mkdir(parents=True)
             (root / "logs/chat_sessions").mkdir(parents=True)
             (root / "originals/papers").mkdir(parents=True)
             (root / "papers/example.yaml").write_text("id: example\nnotes: private note\n")
+            (root / "assets/paper_figures/example_figure_1_p3.png").write_bytes(b"png")
             (root / "logs/chat_sessions/chat.json").write_text('{"id":"chat"}')
             (root / "originals/papers/example.pdf").write_bytes(b"not-a-real-pdf")
             (root / "unrelated.txt").write_text("must stay local")
@@ -50,6 +52,7 @@ class GitSyncTests(unittest.TestCase):
                 capture_output=True, text=True,
             ).stdout.splitlines()
             self.assertIn("papers/example.yaml", tracked)
+            self.assertIn("assets/paper_figures/example_figure_1_p3.png", tracked)
             self.assertIn(".gitignore", tracked)
             self.assertIn("logs/chat_sessions/chat.json", tracked)
             self.assertNotIn("originals/papers/example.pdf", tracked)
@@ -63,6 +66,43 @@ class GitSyncTests(unittest.TestCase):
             self.assertEqual(
                 (clone_root / "papers/example.yaml").read_text(),
                 "id: example\nnotes: private note\n",
+            )
+            self.assertEqual(
+                (clone_root / "assets/paper_figures/example_figure_1_p3.png").read_bytes(),
+                b"png",
+            )
+
+    def test_first_sync_sets_repo_local_identity_when_missing(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            base = Path(directory)
+            root = base / "library"
+            remote = base / "remote.git"
+            fake_home = base / "home"
+            (root / "papers").mkdir(parents=True)
+            fake_home.mkdir()
+            (root / "papers/example.yaml").write_text("id: example\n")
+            subprocess.run(["git", "init", "--bare", str(remote)], check=True,
+                           capture_output=True)
+
+            config = {
+                "sync_mode": "git",
+                "git_remote": "origin",
+                "git_remote_url": str(remote),
+                "git_branch": "main",
+            }
+            with unittest.mock.patch.dict("os.environ", {"HOME": str(fake_home)}, clear=False):
+                result = sync_with_git(root, config)
+
+            self.assertTrue(result["ok"])
+            self.assertEqual(
+                subprocess.run(["git", "-C", str(root), "config", "--get", "user.name"],
+                               check=True, capture_output=True, text=True).stdout.strip(),
+                "NeuNote Sync",
+            )
+            self.assertEqual(
+                subprocess.run(["git", "-C", str(root), "config", "--get", "user.email"],
+                               check=True, capture_output=True, text=True).stdout.strip(),
+                "neunote-sync@local",
             )
 
     def test_rejects_library_nested_inside_another_repository(self) -> None:

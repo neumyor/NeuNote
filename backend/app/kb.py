@@ -4,11 +4,13 @@ import json
 import os
 import re
 import shutil
+import subprocess
 import tempfile as tempfile_mod
 import uuid
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
+from xml.etree import ElementTree
 
 import yaml
 from pypdf import PdfReader
@@ -68,7 +70,28 @@ REQUIRED_DIRS = [
     "logs/chat_sessions",
     "logs/jobs",
     "logs/debug",
+    "assets/paper_figures",
 ]
+
+PAPER_SCHEMA_DEFAULTS: dict[str, Any] = {
+    "author_affiliations": [],
+    "core_concepts": [],
+    "key_figures": [],
+}
+
+
+def normalize_paper_schema(paper: dict[str, Any]) -> dict[str, Any]:
+    """Return a copy with fields added by newer app versions.
+
+    Older YAML records intentionally remain valid. Defaults are added at read
+    time for API/frontend compatibility, and persisted the next time the paper
+    is saved or enriched.
+    """
+    normalized = dict(paper)
+    for key, value in PAPER_SCHEMA_DEFAULTS.items():
+        if key not in normalized or normalized[key] is None:
+            normalized[key] = list(value) if isinstance(value, list) else value
+    return normalized
 
 
 def ensure_kb(root: Path) -> None:
@@ -125,10 +148,14 @@ def list_papers(root: Path) -> list[dict[str, Any]]:
     ensure_kb(root)
     papers = []
     for path in sorted(papers_dir(root).glob("*.yaml")):
+        if path.name.startswith("."):
+            continue
         try:
             data = yaml.safe_load(path.read_text(encoding="utf-8")) or {}
             if data.get("id"):
-                papers.append(data)
+                papers.append(normalize_paper_schema(data))
+        except (FileNotFoundError, OSError):
+            continue
         except yaml.YAMLError:
             continue
     papers.sort(key=lambda p: (p.get("title") or p.get("id") or "").lower())
@@ -139,13 +166,14 @@ def load_paper(root: Path, paper_id: str) -> dict[str, Any]:
     path = paper_path(root, paper_id)
     if not path.exists():
         raise FileNotFoundError(f"Paper not found: {paper_id}")
-    return yaml.safe_load(path.read_text(encoding="utf-8")) or {}
+    return normalize_paper_schema(yaml.safe_load(path.read_text(encoding="utf-8")) or {})
 
 
 def save_paper(root: Path, paper: dict[str, Any]) -> None:
     paper_id = paper.get("id")
     if not paper_id:
         raise ValueError("Paper requires an id.")
+    paper.update(normalize_paper_schema(paper))
     paper["updated_at"] = now_iso()
     content = yaml.safe_dump(paper, sort_keys=False, allow_unicode=True)
     path = paper_path(root, paper_id)
@@ -173,6 +201,14 @@ def save_paper(root: Path, paper: dict[str, Any]) -> None:
         raise
 
 
+def mark_paper_viewed(root: Path, paper_id: str) -> dict[str, Any]:
+    paper = load_paper(root, paper_id)
+    paper["last_read_at"] = now_iso()
+    content = yaml.safe_dump(paper, sort_keys=False, allow_unicode=True)
+    paper_path(root, paper_id).write_text(content, encoding="utf-8")
+    return paper
+
+
 def delete_paper(root: Path, paper_id: str) -> dict[str, Any]:
     path = paper_path(root, paper_id)
     if not path.exists():
@@ -186,6 +222,20 @@ def delete_paper(root: Path, paper_id: str) -> dict[str, Any]:
         if pdf_path.exists() and root.resolve() in pdf_path.parents:
             pdf_path.unlink()
             deleted.append(source)
+    for figure in paper.get("key_figures") or []:
+        if not isinstance(figure, dict):
+            continue
+        image_path = figure.get("image_path")
+        if not isinstance(image_path, str):
+            continue
+        fig_path = (root / image_path).resolve()
+        try:
+            fig_path.relative_to(root)
+        except ValueError:
+            continue
+        if fig_path.exists():
+            fig_path.unlink()
+            deleted.append(image_path)
     # Delete paper yaml
     path.unlink()
     deleted.append(f"papers/{paper_id}.yaml")
@@ -209,12 +259,510 @@ def extract_pdf_info(path: Path) -> tuple[str, int, str]:
     return title, pages, text
 
 
-def extract_pdf_text(path: Path, max_pages: int = 8) -> str:
+def extract_pdf_text(path: Path, max_pages: int = 8, include_page_markers: bool = False) -> str:
     reader = PdfReader(str(path))
     parts = []
-    for page in reader.pages[:max_pages]:
-        parts.append(page.extract_text() or "")
+    for idx, page in enumerate(reader.pages[:max_pages], start=1):
+        text = page.extract_text() or ""
+        if include_page_markers:
+            parts.append(f"\n--- PAGE {idx} ---\n{text}")
+        else:
+            parts.append(text)
     return "\n".join(parts)
+
+
+def _pdf_page_size_points(path: Path, page: int) -> tuple[float, float]:
+    reader = PdfReader(str(path))
+    box = reader.pages[page - 1].mediabox
+    return float(box.width), float(box.height)
+
+
+def _pdf_page_words(path: Path, page: int) -> list[dict[str, Any]]:
+    extractor = shutil.which("pdftotext")
+    if not extractor:
+        return []
+    try:
+        result = subprocess.run(
+            [extractor, "-bbox", "-f", str(page), "-l", str(page), str(path), "-"],
+            check=True,
+            capture_output=True,
+            text=True,
+            timeout=30,
+        )
+    except (OSError, subprocess.CalledProcessError, subprocess.TimeoutExpired):
+        return []
+
+    try:
+        root = ElementTree.fromstring(result.stdout)
+    except ElementTree.ParseError:
+        return []
+
+    words = []
+    for elem in root.iter():
+        if not elem.tag.endswith("word"):
+            continue
+        text = "".join(elem.itertext()).strip()
+        if not text:
+            continue
+        try:
+            words.append({
+                "text": text,
+                "x_min": float(elem.attrib["xMin"]),
+                "y_min": float(elem.attrib["yMin"]),
+                "x_max": float(elem.attrib["xMax"]),
+                "y_max": float(elem.attrib["yMax"]),
+            })
+        except (KeyError, ValueError):
+            continue
+    return words
+
+
+def _line_text(line: list[dict[str, Any]]) -> str:
+    return " ".join(w["text"] for w in sorted(line, key=lambda w: w["x_min"]))
+
+
+def _caption_lines(words: list[dict[str, Any]]) -> list[list[dict[str, Any]]]:
+    lines: list[list[dict[str, Any]]] = []
+    for word in sorted(words, key=lambda w: (w["y_min"], w["x_min"])):
+        if not lines or abs(lines[-1][0]["y_min"] - word["y_min"]) > 3.0:
+            lines.append([word])
+        else:
+            lines[-1].append(word)
+    return lines
+
+
+def _figure_number(value: str) -> str | None:
+    match = re.search(r"\b(?:fig(?:ure)?\.?|figure)\s*([0-9]+[a-z]?)\b", value, re.I)
+    return match.group(1).lower() if match else None
+
+
+def _figure_crop_points(path: Path, page: int, figure: dict[str, Any]) -> tuple[float, float, float, float] | None:
+    words = _pdf_page_words(path, page)
+    if not words:
+        return None
+
+    width, height = _pdf_page_size_points(path, page)
+    haystacks = [
+        str(figure.get("label") or ""),
+        str(figure.get("caption") or ""),
+        str(figure.get("title") or ""),
+    ]
+    target_number = next((_figure_number(text) for text in haystacks if _figure_number(text)), None)
+
+    caption_line: list[dict[str, Any]] | None = None
+    for line in _caption_lines(words):
+        text = _line_text(line)
+        text_low = text.lower()
+        number = _figure_number(text)
+        if target_number and number == target_number:
+            caption_line = line
+            break
+        if not target_number and re.search(r"\b(?:fig(?:ure)?\.?|figure)\s+[0-9]+", text_low):
+            caption_line = line
+            break
+    if not caption_line:
+        return None
+
+    cap_x_min = min(w["x_min"] for w in caption_line)
+    cap_x_max = max(w["x_max"] for w in caption_line)
+    cap_y_min = min(w["y_min"] for w in caption_line)
+    cap_center = (cap_x_min + cap_x_max) / 2
+    cap_width = cap_x_max - cap_x_min
+
+    margin = 24.0
+    if cap_width < width * 0.58:
+        if cap_center < width / 2:
+            x0, x1 = margin, width / 2 - 8
+        else:
+            x0, x1 = width / 2 + 8, width - margin
+    else:
+        x0, x1 = margin, width - margin
+
+    crop_height = min(height * 0.48, max(height * 0.24, cap_y_min - margin))
+    y1 = max(margin + 24, cap_y_min - 6)
+    y0 = max(margin, y1 - crop_height)
+    if y1 <= y0 or x1 <= x0:
+        return None
+    return x0, y0, x1, y1
+
+
+def _pdf_page_layout_lines(path: Path, page: int) -> list[str]:
+    extractor = shutil.which("pdftotext")
+    if not extractor:
+        return []
+    try:
+        result = subprocess.run(
+            [extractor, "-layout", "-f", str(page), "-l", str(page), str(path), "-"],
+            check=True,
+            capture_output=True,
+            text=True,
+            timeout=30,
+        )
+    except (OSError, subprocess.CalledProcessError, subprocess.TimeoutExpired):
+        return []
+    return [line.rstrip("\f\r\n") for line in result.stdout.splitlines()]
+
+
+def _figure_layout_hint(path: Path, page: int, figure: dict[str, Any]) -> dict[str, Any] | None:
+    lines = _pdf_page_layout_lines(path, page)
+    if not lines:
+        return None
+    haystacks = [
+        str(figure.get("label") or ""),
+        str(figure.get("caption") or ""),
+        str(figure.get("title") or ""),
+    ]
+    target_number = next((_figure_number(text) for text in haystacks if _figure_number(text)), None)
+    max_width = max((len(line) for line in lines), default=0) or 1
+    for idx, line in enumerate(lines):
+        number = _figure_number(line)
+        if target_number and number != target_number:
+            continue
+        if not target_number and not number:
+            continue
+        stripped = line.strip()
+        if not stripped:
+            continue
+        return {
+            "line_index": idx,
+            "line_count": len(lines),
+            "start_col": len(line) - len(line.lstrip()),
+            "end_col": len(line.rstrip()),
+            "max_width": max_width,
+        }
+    return None
+
+
+def _figure_column_bounds_points(path: Path, page: int, figure: dict[str, Any],
+                                 width: float) -> tuple[float, float]:
+    hint = _figure_layout_hint(path, page, figure)
+    margin = 24.0
+    if not hint:
+        return margin, width - margin
+    start_ratio = hint["start_col"] / hint["max_width"]
+    end_ratio = hint["end_col"] / hint["max_width"]
+    if start_ratio > 0.43:
+        return width / 2 + 8, width - margin
+    if end_ratio < 0.57:
+        return margin, width / 2 - 8
+    return margin, width - margin
+
+
+def _figure_crop_points_from_layout(path: Path, page: int, figure: dict[str, Any]) -> tuple[float, float, float, float] | None:
+    """Estimate a figure crop from `pdftotext -layout` when bbox XML fails.
+
+    Some PDFs crash Poppler's bbox mode but still produce stable layout text.
+    This fallback finds the caption line in the textual layout and maps its
+    approximate row/column back to PDF coordinates.
+    """
+    lines = _pdf_page_layout_lines(path, page)
+    if not lines:
+        return None
+
+    width, height = _pdf_page_size_points(path, page)
+    haystacks = [
+        str(figure.get("label") or ""),
+        str(figure.get("caption") or ""),
+        str(figure.get("title") or ""),
+    ]
+    target_number = next((_figure_number(text) for text in haystacks if _figure_number(text)), None)
+
+    caption_idx: int | None = None
+    caption_line = ""
+    for idx, line in enumerate(lines):
+        number = _figure_number(line)
+        if target_number and number == target_number:
+            caption_idx = idx
+            caption_line = line
+            break
+        if not target_number and number:
+            caption_idx = idx
+            caption_line = line
+            break
+    if caption_idx is None:
+        return None
+
+    max_width = max(len(line) for line in lines) or 1
+    start_col = len(caption_line) - len(caption_line.lstrip())
+    end_col = len(caption_line.rstrip())
+    cap_center_ratio = ((start_col + end_col) / 2) / max_width
+    cap_width_ratio = max((end_col - start_col) / max_width, 0.0)
+
+    margin = 24.0
+    if cap_width_ratio < 0.48:
+        if cap_center_ratio < 0.48:
+            x0, x1 = margin, width / 2 - 8
+        elif cap_center_ratio > 0.52:
+            x0, x1 = width / 2 + 8, width - margin
+        else:
+            x0, x1 = margin, width - margin
+    else:
+        x0, x1 = margin, width - margin
+
+    row_ratio = caption_idx / max(len(lines), 1)
+    cap_y = min(max(height * row_ratio, margin + 48), height - margin)
+    y1 = max(margin + 48, cap_y - 8)
+    crop_height = min(height * 0.45, max(height * 0.22, y1 - margin))
+    y0 = max(margin, y1 - crop_height)
+    if y1 <= y0 or x1 <= x0:
+        return None
+    return x0, y0, x1, y1
+
+
+def _read_ppm(path: Path) -> tuple[int, int, bytes] | None:
+    data = path.read_bytes()
+    idx = 0
+
+    def token() -> bytes:
+        nonlocal idx
+        while idx < len(data) and chr(data[idx]).isspace():
+            idx += 1
+        if idx < len(data) and data[idx:idx + 1] == b"#":
+            while idx < len(data) and data[idx:idx + 1] != b"\n":
+                idx += 1
+            return token()
+        start = idx
+        while idx < len(data) and not chr(data[idx]).isspace():
+            idx += 1
+        return data[start:idx]
+
+    try:
+        if token() != b"P6":
+            return None
+        width = int(token())
+        height = int(token())
+        max_value = int(token())
+        if max_value != 255:
+            return None
+        while idx < len(data) and chr(data[idx]).isspace():
+            idx += 1
+    except (ValueError, IndexError):
+        return None
+    pixels = data[idx:]
+    if len(pixels) < width * height * 3:
+        return None
+    return width, height, pixels
+
+
+def _colored_components_bbox(width: int, height: int, pixels: bytes,
+                             x0: int, x1: int) -> tuple[int, int, int, int] | None:
+    block = 4
+    max_y = int(height * 0.82)
+    mask: set[tuple[int, int]] = set()
+    for y in range(0, max_y, block):
+        for x in range(max(0, x0), min(width, x1), block):
+            hit = False
+            for yy in range(y, min(y + block, height), 2):
+                for xx in range(x, min(x + block, width), 2):
+                    off = (yy * width + xx) * 3
+                    r, g, b = pixels[off], pixels[off + 1], pixels[off + 2]
+                    if min(r, g, b) < 246 and max(r, g, b) - min(r, g, b) > 12:
+                        hit = True
+                        break
+                if hit:
+                    break
+            if hit:
+                mask.add((x // block, y // block))
+
+    seen: set[tuple[int, int]] = set()
+    components: list[tuple[int, int, int, int, int]] = []
+    for cell in list(mask):
+        if cell in seen:
+            continue
+        queue = [cell]
+        seen.add(cell)
+        xs: list[int] = []
+        ys: list[int] = []
+        for current in queue:
+            cx, cy = current
+            xs.append(cx)
+            ys.append(cy)
+            for neighbor in ((cx + 1, cy), (cx - 1, cy), (cx, cy + 1), (cx, cy - 1)):
+                if neighbor in mask and neighbor not in seen:
+                    seen.add(neighbor)
+                    queue.append(neighbor)
+        area = len(xs)
+        if area >= 4:
+            components.append((
+                area,
+                min(xs) * block,
+                min(ys) * block,
+                (max(xs) + 1) * block,
+                (max(ys) + 1) * block,
+            ))
+    if not components:
+        return None
+
+    components.sort(reverse=True)
+    seed_area, seed_x0, seed_y0, seed_x1, seed_y1 = components[0]
+    min_area = max(5, seed_area * 0.03)
+    vertical_gap = max(120, (seed_y1 - seed_y0) * 1.2)
+    selected = [
+        component for component in components
+        if (
+            component[0] >= min_area
+            and component[2] <= seed_y1 + vertical_gap
+            and component[4] >= seed_y0 - vertical_gap
+        )
+    ]
+    if not selected:
+        selected = [components[0]]
+    return (
+        min(component[1] for component in selected),
+        min(component[2] for component in selected),
+        max(component[3] for component in selected),
+        max(component[4] for component in selected),
+    )
+
+
+def _figure_crop_points_from_rendered_page(path: Path, page: int, figure: dict[str, Any],
+                                           renderer: str) -> tuple[float, float, float, float] | None:
+    width_pt, height_pt = _pdf_page_size_points(path, page)
+    column_x0_pt, column_x1_pt = _figure_column_bounds_points(path, page, figure, width_pt)
+    dpi = 96
+    scale = dpi / 72.0
+
+    with tempfile_mod.TemporaryDirectory() as directory:
+        output_prefix = Path(directory) / "page"
+        try:
+            subprocess.run(
+                [renderer, "-r", str(dpi), "-f", str(page), "-l", str(page),
+                 "-singlefile", str(path), str(output_prefix)],
+                check=True,
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+            )
+        except (OSError, subprocess.CalledProcessError):
+            return None
+        ppm = _read_ppm(output_prefix.with_suffix(".ppm"))
+        if not ppm:
+            return None
+
+    width_px, height_px, pixels = ppm
+    x0_px = round(column_x0_pt * scale)
+    x1_px = round(column_x1_pt * scale)
+    bbox = _colored_components_bbox(width_px, height_px, pixels, x0_px, x1_px)
+    if not bbox:
+        return None
+
+    bx0, by0, bx1, by1 = bbox
+    x0 = bx0 / scale
+    y0 = by0 / scale
+    x1 = bx1 / scale
+    y1 = by1 / scale
+    crop_width = x1 - x0
+    crop_height = y1 - y0
+    is_single_column = (column_x1_pt - column_x0_pt) < width_pt * 0.55
+    is_right_column = is_single_column and column_x0_pt > width_pt * 0.45
+    pad_x = min(64.0, max(18.0, crop_width * 0.22))
+    if is_right_column:
+        pad_top = min(20.0, max(10.0, crop_height * 0.15))
+        pad_bottom = min(10.0, max(6.0, crop_height * 0.08))
+    else:
+        pad_top = min(48.0, max(24.0, crop_height * 0.45))
+        pad_bottom = min(28.0, max(12.0, crop_height * 0.15))
+    return (
+        max(column_x0_pt, x0 - pad_x),
+        max(0.0, y0 - pad_top),
+        min(column_x1_pt, x1 + pad_x),
+        min(height_pt, y1 + pad_bottom),
+    )
+
+
+def _default_figure_crop_points(path: Path, page: int) -> tuple[float, float, float, float]:
+    width, height = _pdf_page_size_points(path, page)
+    margin_x = max(24.0, width * 0.05)
+    y0 = max(36.0, height * 0.08)
+    y1 = min(height * 0.68, height - 36.0)
+    return margin_x, y0, width - margin_x, y1
+
+
+def render_key_figures(root: Path, paper: dict[str, Any], job_id: str | None = None) -> list[dict[str, Any]]:
+    """Render selected key figures as cropped PNG assets.
+
+    The agent selects figure pages in `key_figures`; this function turns those
+    selections into durable local images for the paper profile. It crops above
+    the detected figure caption instead of rendering the full PDF page.
+    """
+    def _dbg(message: str) -> None:
+        if job_id:
+            job_debug_log(root, job_id, message)
+
+    figures = paper.get("key_figures") or []
+    if not isinstance(figures, list) or not figures:
+        return []
+
+    renderer = shutil.which("pdftoppm")
+    if not renderer:
+        _dbg("render_key_figures: pdftoppm unavailable; keeping figure metadata without images")
+        return [f for f in figures if isinstance(f, dict)][:3]
+
+    source = paper.get("source_pdf")
+    if not isinstance(source, str):
+        return []
+    pdf_path = (root / source).resolve()
+    if not pdf_path.exists():
+        return []
+
+    paper_id = slugify(str(paper.get("id") or "paper"))
+    page_count = int(paper.get("pages") or 0)
+    out_dir = root / "assets/paper_figures"
+    out_dir.mkdir(parents=True, exist_ok=True)
+    rendered: list[dict[str, Any]] = []
+
+    for idx, figure in enumerate(figures[:3], start=1):
+        if not isinstance(figure, dict):
+            continue
+        try:
+            page = int(figure.get("page") or 0)
+        except (TypeError, ValueError):
+            continue
+        if page < 1 or (page_count and page > page_count):
+            continue
+
+        crop = _figure_crop_points_from_rendered_page(pdf_path, page, figure, renderer)
+        crop_method = "rendered"
+        if not crop:
+            crop = _figure_crop_points(pdf_path, page, figure)
+            crop_method = "caption"
+        if not crop:
+            crop = _figure_crop_points_from_layout(pdf_path, page, figure)
+            crop_method = "layout"
+        if not crop:
+            crop = _default_figure_crop_points(pdf_path, page)
+            crop_method = "fallback"
+        item = dict(figure)
+        item["crop_method"] = crop_method
+
+        x0, y0, x1, y1 = crop
+        dpi = 144
+        scale = dpi / 72.0
+        output_prefix = out_dir / f"{paper_id}_figure_{idx}_p{page}"
+        try:
+            subprocess.run(
+                [renderer, "-png", "-singlefile", "-f", str(page), "-l", str(page),
+                 "-r", str(dpi),
+                 "-x", str(round(x0 * scale)),
+                 "-y", str(round(y0 * scale)),
+                 "-W", str(round((x1 - x0) * scale)),
+                 "-H", str(round((y1 - y0) * scale)),
+                 str(pdf_path), str(output_prefix)],
+                check=True,
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+            )
+        except (OSError, subprocess.CalledProcessError) as exc:
+            _dbg(f"render_key_figures: failed page {page}: {exc}")
+            rendered.append(item)
+            continue
+
+        image_file = output_prefix.with_suffix(".png")
+        if image_file.exists():
+            item["image_path"] = str(image_file.relative_to(root))
+            item["crop"] = {"x0": round(x0, 2), "y0": round(y0, 2), "x1": round(x1, 2), "y1": round(y1, 2)}
+        rendered.append(item)
+
+    return rendered
 
 
 def _infer_title(text: str, fallback: str) -> str:
@@ -301,6 +849,7 @@ def ingest_pdf(root: Path, temp_pdf: Path, original_name: str) -> dict[str, Any]
         "id": paper_id,
         "title": title,
         "authors": [],
+        "author_affiliations": [],
         "year": None,
         "venue": "",
         "doi": "",
@@ -314,6 +863,8 @@ def ingest_pdf(root: Path, temp_pdf: Path, original_name: str) -> dict[str, Any]
         "priority": "normal",
         "needs_review": True,
         "abstract": abstract,
+        "core_concepts": [],
+        "key_figures": [],
         "one_sentence": abstract or "First-pass summary from PDF text.",
         "problem": problem,
         "contributions": [],
@@ -635,6 +1186,10 @@ def run_enrichment_job(root: Path, paper_id: str, job_id: str, config: dict[str,
                         job_debug_log(root, job_id, f"  - {note}")
                     update_job(root, job_id, stage="agent_review", progress=90,
                                message=f"Agent reviewed: {notes_count} corrections.")
+                elif result.get("status") == "error":
+                    reason = result.get("detail", "unknown")
+                    job_debug_log(root, job_id, f"Agent review failed: {reason}")
+                    raise RuntimeError(f"Agent review failed: {reason}")
                 else:
                     reason = result.get('reason', result.get('detail', 'unknown'))
                     job_debug_log(root, job_id, f"Agent review skipped/failed: {reason}")
@@ -644,8 +1199,7 @@ def run_enrichment_job(root: Path, paper_id: str, job_id: str, config: dict[str,
                 job_debug_log(root, job_id, f"Agent review exception: {exc}")
                 import traceback as _tb
                 job_debug_log(root, job_id, _tb.format_exc())
-                update_job(root, job_id, stage="agent_review", progress=90,
-                           message=f"Agent review failed: {exc}")
+                raise
         else:
             job_debug_log(root, job_id, "Agent review skipped: no API key")
             update_job(root, job_id, stage="agent_review", progress=85,
@@ -655,7 +1209,26 @@ def run_enrichment_job(root: Path, paper_id: str, job_id: str, config: dict[str,
         try:
             from .translate import translate_paper_summary, translate_paper_summary_llm
             paper = load_paper(root, paper_id)
-            if not paper.get("translations") and _text_is_english(paper.get("abstract", "")):
+            existing_translations = paper.get("translations") if isinstance(paper.get("translations"), dict) else {}
+            missing_core_concepts_translation = (
+                bool(paper.get("core_concepts"))
+                and (
+                    not isinstance(existing_translations.get("core_concepts"), list)
+                    or len(existing_translations.get("core_concepts") or []) < len(paper.get("core_concepts") or [])
+                )
+            )
+            missing_key_figures_translation = (
+                bool(paper.get("key_figures"))
+                and (
+                    not isinstance(existing_translations.get("key_figures"), list)
+                    or len(existing_translations.get("key_figures") or []) < len(paper.get("key_figures") or [])
+                )
+            )
+            needs_translation = (
+                _text_is_english(paper.get("abstract", ""))
+                and (not existing_translations or missing_core_concepts_translation or missing_key_figures_translation)
+            )
+            if needs_translation:
                 engine = (config.get("translation_engine") or "local").lower()
                 if engine == "llm" and not (config.get("claude_api_key") or "").strip():
                     job_debug_log(root, job_id,
@@ -684,7 +1257,12 @@ def run_enrichment_job(root: Path, paper_id: str, job_id: str, config: dict[str,
                 else:
                     translations = translate_paper_summary(paper)
 
-                paper["translations"] = translations
+                paper["translations"] = {**existing_translations, **translations}
+                paper["translation_meta"] = {
+                    "engine": engine,
+                    "model": config.get("claude_model") if engine == "llm" else None,
+                    "updated_at": now_iso(),
+                }
                 save_paper(root, paper)
                 field_count = len(translations)
                 job_debug_log(root, job_id, f"Translation complete: {field_count} fields")
@@ -750,6 +1328,13 @@ def save_session(root: Path, session: dict[str, Any]) -> None:
         json.dumps(session, ensure_ascii=False, indent=2), encoding="utf-8")
 
 
+def delete_session(root: Path, session_id: str) -> None:
+    path = session_path(root, session_id)
+    if not path.exists():
+        raise FileNotFoundError(f"Session not found: {session_id}")
+    path.unlink()
+
+
 def list_sessions(root: Path) -> list[dict[str, Any]]:
     sessions_dir = root / "logs/chat_sessions"
     if not sessions_dir.exists():
@@ -807,6 +1392,9 @@ def load_app_config(root: Path) -> dict[str, Any]:
             "claude_model": "sonnet",
             "max_concurrency": 4,
             "translation_engine": "llm",
+            "default_summary_language": "en",
+            "figure_extraction_mode": "fast_pillow",
+            "figure_reextract_on_enrich": True,
             "sync_mode": "local",
             "git_remote": "origin",
             "git_remote_url": "",
@@ -825,6 +1413,9 @@ def load_app_config(root: Path) -> dict[str, Any]:
         "claude_model": data.get("claude_model") or "sonnet",
         "max_concurrency": data.get("max_concurrency", 4),
         "translation_engine": data.get("translation_engine") or "llm",
+        "default_summary_language": data.get("default_summary_language") if data.get("default_summary_language") in {"en", "zh"} else "en",
+        "figure_extraction_mode": data.get("figure_extraction_mode") if data.get("figure_extraction_mode") in {"fast_pillow", "agent_pymupdf"} else "fast_pillow",
+        "figure_reextract_on_enrich": bool(data.get("figure_reextract_on_enrich", True)),
         "sync_mode": data.get("sync_mode") or "local",
         "git_remote": data.get("git_remote") or "origin",
         "git_remote_url": data.get("git_remote_url") or "",
@@ -841,6 +1432,7 @@ def save_app_config(root: Path, config: dict[str, Any]) -> dict[str, Any]:
     current = load_app_config(root)
     for key in ("claude_api_key", "claude_endpoint", "claude_model",
                 "max_concurrency", "translation_engine", "sync_mode",
+                "default_summary_language", "figure_extraction_mode", "figure_reextract_on_enrich",
                 "git_remote", "git_remote_url", "git_branch",
                 "git_sync_pdfs", "git_sync_chats", "git_auto_sync",
                 "git_sync_interval_minutes"):

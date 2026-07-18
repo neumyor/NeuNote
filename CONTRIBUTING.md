@@ -37,4 +37,4 @@ This runs the frontend build and Python bytecode compilation for the backend app
 
 ## Data Fixtures
 
-The repository includes sample paper YAML records in `papers/`. Treat those as demo data, not as tests. Avoid adding large fixtures or copyrighted PDFs.
+Runtime library data is intentionally excluded from the repository. Do not add real `papers/`, `originals/`, `logs/`, or `metadata/` contents as fixtures. Prefer small synthetic test data created inside temporary directories.

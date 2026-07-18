@@ -51,6 +51,42 @@ def translate_paper_summary(paper: dict[str, Any]) -> dict[str, Any]:
             translated = [translate(item) for item in items if item.strip()]
             result[key] = translated
 
+    concepts = paper.get("core_concepts") or []
+    translated_concepts = []
+    for item in concepts:
+        if not isinstance(item, dict):
+            continue
+        concept = str(item.get("concept") or "").strip()
+        explanation = str(item.get("explanation") or "").strip()
+        if concept and explanation:
+            translated_concepts.append({
+                "concept_en": concept,
+                "concept_zh": translate(concept),
+                "explanation_zh": translate(explanation),
+            })
+    if translated_concepts:
+        result["core_concepts"] = translated_concepts
+
+    figures = paper.get("key_figures") or []
+    translated_figures = []
+    for item in figures:
+        if not isinstance(item, dict):
+            continue
+        title = str(item.get("title") or item.get("label") or "").strip()
+        caption = str(item.get("caption") or "").strip()
+        reason = str(item.get("reason") or "").strip()
+        if title or caption or reason:
+            translated_figures.append({
+                "title_en": title,
+                "title_zh": translate(title) if title else "",
+                "caption_en": caption,
+                "caption_zh": translate(caption) if caption else "",
+                "reason_en": reason,
+                "reason_zh": translate(reason) if reason else "",
+            })
+    if translated_figures:
+        result["key_figures"] = translated_figures
+
     return result
 
 
@@ -62,6 +98,8 @@ _TRANSLATABLE_FIELDS = (
     "abstract",
     "one_sentence",
     "problem",
+    "core_concepts",
+    "key_figures",
     "contributions",
     "method",
     "experiments",
@@ -74,6 +112,10 @@ paper-summary fields into idiomatic Simplified Chinese.
 
 Strict requirements:
 - Preserve technical accuracy and domain-specific terminology.
+- Use the supplied paper context to disambiguate terms. In software, AI, and
+  systems papers, "library" usually means a software library/package, not a
+  physical library. Avoid literal dictionary translations that break the
+  paper's technical meaning.
 - Keep proper nouns, model names, project names, and acronyms in their
   original form when conventionally used untranslated in Chinese CS
   literature (e.g. Transformer, GPT, LSTM, ResNet, CLIP, CNN, Adam, SGD,
@@ -82,8 +124,16 @@ Strict requirements:
 - Return a strict JSON object whose keys exactly match the input fields.
 - List-valued fields (e.g. contributions) must remain arrays; array
   lengths must match the input.
+- For core_concepts, return an array with the same length. Each item must be:
+  {"concept_en": original English concept, "concept_zh": Chinese concept name,
+  "explanation_zh": Chinese explanation}. Keep the English concept visible.
+- For key_figures, return an array with the same length. Each item must be:
+  {"title_en": original English title, "title_zh": Chinese title,
+  "caption_en": original English caption, "caption_zh": Chinese caption,
+  "reason_en": original English reason, "reason_zh": Chinese reason}. Preserve
+  figure labels, section numbers, model names, and technical terms accurately.
 - Do NOT add any commentary, prefix, suffix, or markdown fence — output
-  raw JSON only."""
+raw JSON only."""
 
 
 def _extract_translatable(paper: dict[str, Any]) -> dict[str, Any]:
@@ -95,9 +145,33 @@ def _extract_translatable(paper: dict[str, Any]) -> dict[str, Any]:
             if value.strip():
                 payload[key] = value
         elif isinstance(value, list):
-            non_empty = [v for v in value if isinstance(v, str) and v.strip()]
-            if non_empty:
-                payload[key] = non_empty
+            if key == "core_concepts":
+                concepts = []
+                for item in value:
+                    if not isinstance(item, dict):
+                        continue
+                    concept = str(item.get("concept") or "").strip()
+                    explanation = str(item.get("explanation") or "").strip()
+                    if concept and explanation:
+                        concepts.append({"concept": concept, "explanation": explanation})
+                if concepts:
+                    payload[key] = concepts
+            elif key == "key_figures":
+                figures = []
+                for item in value:
+                    if not isinstance(item, dict):
+                        continue
+                    title = str(item.get("title") or item.get("label") or "").strip()
+                    caption = str(item.get("caption") or "").strip()
+                    reason = str(item.get("reason") or "").strip()
+                    if title or caption or reason:
+                        figures.append({"title": title, "caption": caption, "reason": reason})
+                if figures:
+                    payload[key] = figures
+            else:
+                non_empty = [v for v in value if isinstance(v, str) and v.strip()]
+                if non_empty:
+                    payload[key] = non_empty
     return payload
 
 
@@ -149,9 +223,19 @@ def translate_paper_summary_llm(
     if not payload:
         return {}
 
+    context = {
+        "title": paper.get("title") or "",
+        "authors": paper.get("authors") or [],
+        "venue": paper.get("venue") or "",
+        "abstract": paper.get("abstract") or "",
+        "tags": paper.get("tags") or [],
+    }
     user_prompt = (
         "Translate the following English paper-summary fields into Simplified "
         "Chinese. Return a strict JSON object with the same keys.\n\n"
+        "Use this paper context only to choose accurate domain terminology; "
+        "do not translate fields that are not present in Input.\n\n"
+        f"Paper context:\n```json\n{json.dumps(context, ensure_ascii=False, indent=2)}\n```\n\n"
         f"Input:\n```json\n{json.dumps(payload, ensure_ascii=False, indent=2)}\n```"
     )
 
@@ -193,6 +277,46 @@ def translate_paper_summary_llm(
         if key in ("abstract", "one_sentence", "problem"):
             if isinstance(value, str) and value.strip():
                 result[key] = value
+        elif key == "core_concepts":
+            if isinstance(value, list):
+                concepts = []
+                for item in value:
+                    if not isinstance(item, dict):
+                        continue
+                    concept_en = str(item.get("concept_en") or item.get("concept") or "").strip()
+                    concept_zh = str(item.get("concept_zh") or "").strip()
+                    explanation_zh = str(item.get("explanation_zh") or item.get("explanation") or "").strip()
+                    if concept_en and explanation_zh:
+                        concepts.append({
+                            "concept_en": concept_en,
+                            "concept_zh": concept_zh,
+                            "explanation_zh": explanation_zh,
+                        })
+                if concepts:
+                    result[key] = concepts
+        elif key == "key_figures":
+            if isinstance(value, list):
+                figures = []
+                for item in value:
+                    if not isinstance(item, dict):
+                        continue
+                    title_en = str(item.get("title_en") or item.get("title") or "").strip()
+                    title_zh = str(item.get("title_zh") or "").strip()
+                    caption_en = str(item.get("caption_en") or item.get("caption") or "").strip()
+                    caption_zh = str(item.get("caption_zh") or "").strip()
+                    reason_en = str(item.get("reason_en") or item.get("reason") or "").strip()
+                    reason_zh = str(item.get("reason_zh") or "").strip()
+                    if title_en or caption_en or reason_en or title_zh or caption_zh or reason_zh:
+                        figures.append({
+                            "title_en": title_en,
+                            "title_zh": title_zh,
+                            "caption_en": caption_en,
+                            "caption_zh": caption_zh,
+                            "reason_en": reason_en,
+                            "reason_zh": reason_zh,
+                        })
+                if figures:
+                    result[key] = figures
         else:  # list-valued
             if isinstance(value, list):
                 items = [v for v in value if isinstance(v, str) and v.strip()]
