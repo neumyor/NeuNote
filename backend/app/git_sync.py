@@ -9,6 +9,8 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
+import yaml
+
 
 class GitSyncError(RuntimeError):
     pass
@@ -58,6 +60,42 @@ def sync_paths(config: dict[str, Any]) -> list[str]:
     if config.get("git_sync_pdfs"):
         paths.append("originals/papers")
     return paths
+
+
+def sync_inventory(root: Path, config: dict[str, Any]) -> dict[str, Any]:
+    """Summarize sync coverage and broken paper asset references."""
+    paper_files = sorted((root / "papers").glob("*.yaml"))
+    pdf_refs: list[str] = []
+    figure_refs: list[str] = []
+    invalid_papers: list[str] = []
+    for path in paper_files:
+        try:
+            paper = yaml.safe_load(path.read_text(encoding="utf-8")) or {}
+        except (OSError, yaml.YAMLError):
+            invalid_papers.append(path.name)
+            continue
+        source = paper.get("source_pdf")
+        if isinstance(source, str) and source:
+            pdf_refs.append(source)
+        for figure in paper.get("key_figures") or []:
+            image_path = figure.get("image_path") if isinstance(figure, dict) else None
+            if isinstance(image_path, str) and image_path:
+                figure_refs.append(image_path)
+
+    missing_pdfs = sorted({path for path in pdf_refs if not (root / path).is_file()})
+    missing_figures = sorted({path for path in figure_refs if not (root / path).is_file()})
+    return {
+        "paper_records": len(paper_files),
+        "pdf_files": sum(1 for path in (root / "originals/papers").glob("*") if path.is_file()),
+        "figure_files": sum(1 for path in (root / "assets/paper_figures").glob("*") if path.is_file()),
+        "chat_sessions": sum(1 for path in (root / "logs/chat_sessions").glob("*.json") if path.is_file()),
+        "pdf_sync_enabled": bool(config.get("git_sync_pdfs")),
+        "chat_sync_enabled": bool(config.get("git_sync_chats")),
+        "invalid_papers": invalid_papers,
+        "missing_pdf_references": missing_pdfs,
+        "missing_figure_references": missing_figures,
+        "complete": not invalid_papers and not missing_pdfs and not missing_figures,
+    }
 
 
 def _is_repo(root: Path) -> bool:
@@ -118,7 +156,38 @@ def git_sync_status(root: Path, config: dict[str, Any]) -> dict[str, Any]:
         "remote_configured": remote_result.returncode == 0,
         "pending_files": pending, "paths": paths, "last_commit": last_commit,
         "detail": "Git 同步已启用。" if enabled else "当前为仅本地模式。",
+        "inventory": sync_inventory(root, config),
     }
+
+
+def _is_path_tracked(root: Path, path: str) -> bool:
+    return bool(_run(root, "ls-files", "--", path, check=False).stdout.strip())
+
+
+def _remove_disabled_optional_data(root: Path, config: dict[str, Any]) -> None:
+    """Remove disabled private data from Git while retaining local files."""
+    disabled = []
+    if not config.get("git_sync_chats"):
+        disabled.append("logs/chat_sessions")
+    if not config.get("git_sync_pdfs"):
+        disabled.append("originals/papers")
+    for path in disabled:
+        if _is_path_tracked(root, path):
+            _run(root, "rm", "-r", "--cached", "--ignore-unmatch", "--", path)
+
+
+def _pull_rebase_or_recover(root: Path, remote: str, branch: str) -> None:
+    result = _run(root, "pull", "--rebase", "--autostash", remote, branch, check=False)
+    if result.returncode == 0:
+        return
+    detail = (result.stderr or result.stdout).strip()
+    git_dir = root / ".git"
+    if (git_dir / "rebase-merge").exists() or (git_dir / "rebase-apply").exists():
+        _run(root, "rebase", "--abort", check=False)
+    raise GitSyncError(
+        "远端与本地数据发生冲突，已自动恢复到同步前状态。"
+        "请检查冲突论文后重试。" + (f" Git: {detail}" if detail else "")
+    )
 
 
 def sync_with_git(root: Path, config: dict[str, Any]) -> dict[str, Any]:
@@ -177,7 +246,8 @@ def _sync_with_git_unlocked(root: Path, config: dict[str, Any]) -> dict[str, Any
 
     _ensure_data_gitignore(root)
     paths = sync_paths(config)
-    add_paths = [path for path in paths if (root / path).exists()]
+    _remove_disabled_optional_data(root, config)
+    add_paths = [path for path in paths if (root / path).exists() or _is_path_tracked(root, path)]
     _run(root, "add", "-A", "-f", "--", *add_paths)
     committed = False
     if _run(root, "diff", "--cached", "--quiet", check=False).returncode != 0:
@@ -186,10 +256,11 @@ def _sync_with_git_unlocked(root: Path, config: dict[str, Any]) -> dict[str, Any
         committed = True
 
     if remote_has_branch:
-        _run(root, "pull", "--rebase", "--autostash", remote, branch)
+        _pull_rebase_or_recover(root, remote, branch)
     _run(root, "push", "-u", remote, branch)
 
     result = git_sync_status(root, config)
     result.update({"ok": True, "initialized": initialized, "committed": committed,
+                   "inventory": sync_inventory(root, config),
                    "message": "用户数据已同步到 Git 远端。"})
     return result

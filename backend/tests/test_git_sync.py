@@ -4,8 +4,9 @@ import subprocess
 import tempfile
 import unittest
 from pathlib import Path
+from unittest import mock
 
-from app.git_sync import GitSyncError, git_sync_status, sync_with_git
+from app.git_sync import GitSyncError, git_sync_status, sync_inventory, sync_with_git
 
 
 class GitSyncTests(unittest.TestCase):
@@ -90,7 +91,7 @@ class GitSyncTests(unittest.TestCase):
                 "git_remote_url": str(remote),
                 "git_branch": "main",
             }
-            with unittest.mock.patch.dict("os.environ", {"HOME": str(fake_home)}, clear=False):
+            with mock.patch.dict("os.environ", {"HOME": str(fake_home)}, clear=False):
                 result = sync_with_git(root, config)
 
             self.assertTrue(result["ok"])
@@ -118,6 +119,59 @@ class GitSyncTests(unittest.TestCase):
             }
             with self.assertRaisesRegex(GitSyncError, "独立 Git 仓库"):
                 sync_with_git(root, config)
+
+    def test_pdf_opt_in_and_later_disable_removes_remote_copy_only(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            base = Path(directory)
+            root = base / "library"
+            remote = base / "remote.git"
+            (root / "papers").mkdir(parents=True)
+            (root / "originals/papers").mkdir(parents=True)
+            (root / "papers/example.yaml").write_text(
+                "id: example\nsource_pdf: originals/papers/example.pdf\n"
+            )
+            pdf = root / "originals/papers/example.pdf"
+            pdf.write_bytes(b"pdf")
+            subprocess.run(["git", "init", "--bare", str(remote)], check=True, capture_output=True)
+            config = {
+                "sync_mode": "git", "git_remote": "origin",
+                "git_remote_url": str(remote), "git_branch": "main",
+                "git_sync_pdfs": True,
+            }
+
+            sync_with_git(root, config)
+            self.assertIn(
+                "originals/papers/example.pdf",
+                subprocess.run(
+                    ["git", "-C", str(root), "ls-files"], check=True,
+                    capture_output=True, text=True,
+                ).stdout.splitlines(),
+            )
+
+            config["git_sync_pdfs"] = False
+            sync_with_git(root, config)
+            self.assertTrue(pdf.exists())
+            self.assertNotIn(
+                "originals/papers/example.pdf",
+                subprocess.run(
+                    ["git", "-C", str(root), "ls-files"], check=True,
+                    capture_output=True, text=True,
+                ).stdout.splitlines(),
+            )
+
+    def test_inventory_reports_missing_references(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            (root / "papers").mkdir()
+            (root / "papers/example.yaml").write_text(
+                "id: example\n"
+                "source_pdf: originals/papers/missing.pdf\n"
+                "key_figures:\n  - image_path: assets/paper_figures/missing.png\n"
+            )
+            inventory = sync_inventory(root, {"git_sync_pdfs": True})
+            self.assertFalse(inventory["complete"])
+            self.assertEqual(inventory["missing_pdf_references"], ["originals/papers/missing.pdf"])
+            self.assertEqual(inventory["missing_figure_references"], ["assets/paper_figures/missing.png"])
 
 
 if __name__ == "__main__":

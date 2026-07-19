@@ -6,7 +6,19 @@ from pathlib import Path
 from unittest.mock import patch
 
 from app.agent_chat import _merge_review_patch
-from app.kb import list_papers, load_paper, save_paper
+from app.kb import (
+    create_job,
+    ensure_kb,
+    fail_job,
+    list_papers,
+    load_job,
+    load_paper,
+    pause_job,
+    resume_job,
+    retry_job,
+    run_enrichment_job,
+    save_paper,
+)
 
 
 class KnowledgeBaseTests(unittest.TestCase):
@@ -105,6 +117,69 @@ class KnowledgeBaseTests(unittest.TestCase):
         self.assertEqual(merged["key_figures"][0]["crop"], {"x0": 0.1, "y0": 0.2, "x1": 0.7, "y1": 0.8})
         self.assertEqual(merged["key_figures"][0]["crop_method"], "agent_pymupdf")
         self.assertEqual(merged["key_figures"][0]["caption"], "New caption")
+
+    def test_job_pause_reason_prevents_queue_resume_from_manual_pause(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            ensure_kb(root)
+            manual = create_job(root, "paper-a", "Paper A")
+            queued = create_job(root, "paper-b", "Paper B")
+
+            pause_job(root, manual["id"])
+            pause_job(root, queued["id"], reason="queue")
+
+            self.assertEqual(resume_job(root, manual["id"], reason="queue")["status"], "paused")
+            resumed = resume_job(root, queued["id"], reason="queue")
+
+            self.assertEqual(resumed["status"], "queued")
+            self.assertIsNone(resumed["pause_reason"])
+
+    def test_failed_job_records_error_and_retry_resets_runnable_state(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            ensure_kb(root)
+            job = create_job(root, "paper-a", "Paper A")
+
+            failed = fail_job(root, job["id"], "Agent review failed")
+            retried = retry_job(root, job["id"])
+
+            self.assertEqual(failed["status"], "failed")
+            self.assertEqual(failed["last_error"], "Agent review failed")
+            self.assertEqual(retried["status"], "queued")
+            self.assertEqual(retried["progress"], 0)
+            self.assertIsNone(retried["started_at"])
+            self.assertIsNone(retried["completed_at"])
+            self.assertIsNone(retried["last_error"])
+
+    def test_required_translation_failure_marks_job_failed(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            ensure_kb(root)
+            save_paper(root, {
+                "id": "paper-a",
+                "title": "Paper A",
+                "abstract": "This paper studies agent systems and reports new experimental results.",
+                "source_pdf": "originals/paper-a.pdf",
+                "core_concepts": [{"concept": "Agent", "explanation": "A software actor."}],
+                "translations": {},
+            })
+            job = create_job(root, "paper-a", "Paper A")
+
+            with (
+                patch("app.kb.enrich_paper", return_value=None),
+                patch("app.agent_chat.run_agent_paper_review_sync", return_value={"status": "ok", "notes": []}),
+                patch("app.translate.translate_paper_summary_llm", side_effect=RuntimeError("could not parse JSON from LLM response:")),
+            ):
+                run_enrichment_job(root, "paper-a", job["id"], {
+                    "claude_api_key": "test-key",
+                    "claude_model": "test-model",
+                    "translation_engine": "llm",
+                })
+
+            saved = load_job(root, job["id"])
+            self.assertEqual(saved["status"], "failed")
+            self.assertEqual(saved["stage"], "failed")
+            self.assertIn("Translation failed", saved["last_error"])
 
 
 if __name__ == "__main__":

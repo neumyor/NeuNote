@@ -6,6 +6,7 @@ import re
 import shutil
 import subprocess
 import tempfile as tempfile_mod
+import time
 import uuid
 from datetime import datetime, timezone
 from pathlib import Path
@@ -1061,6 +1062,8 @@ def create_job(root: Path, paper_id: str, title: str) -> dict[str, Any]:
         "updated_at": created,
         "started_at": None,
         "completed_at": None,
+        "attempts": 0,
+        "last_error": None,
         "events": [{"time": created, "message": "Queued."}],
     }
     save_job(root, job)
@@ -1103,6 +1106,8 @@ def update_job(root: Path, job_id: str, *, status: str | None = None,
             job["started_at"] = now_iso()
         if status in {"completed", "failed", "cancelled"} and not job.get("completed_at"):
             job["completed_at"] = now_iso()
+        if status in {"queued", "paused", "running"}:
+            job["completed_at"] = None
         job["status"] = status
     if stage is not None:
         job["stage"] = stage
@@ -1126,6 +1131,78 @@ def cancel_job(root: Path, job_id: str) -> dict[str, Any]:
     return job
 
 
+def pause_job(root: Path, job_id: str, reason: str = "manual") -> dict[str, Any]:
+    job = load_job(root, job_id)
+    if job.get("status") not in {"queued", "running"}:
+        return job
+    job["status"] = "paused"
+    job["stage"] = "paused"
+    job["pause_reason"] = reason
+    job.setdefault("events", []).append({"time": now_iso(), "message": "Paused."})
+    save_job(root, job)
+    return job
+
+
+def resume_job(root: Path, job_id: str, reason: str | None = None) -> dict[str, Any]:
+    job = load_job(root, job_id)
+    if job.get("status") != "paused":
+        return job
+    if reason and job.get("pause_reason") != reason:
+        return job
+    job["status"] = "queued"
+    job["stage"] = "queued"
+    job["completed_at"] = None
+    job["pause_reason"] = None
+    job.setdefault("events", []).append({"time": now_iso(), "message": "Resumed."})
+    save_job(root, job)
+    return job
+
+
+def retry_job(root: Path, job_id: str) -> dict[str, Any]:
+    job = load_job(root, job_id)
+    if job.get("status") not in {"failed", "cancelled"}:
+        return job
+    job["status"] = "queued"
+    job["stage"] = "queued"
+    job["progress"] = 0
+    job["started_at"] = None
+    job["completed_at"] = None
+    job["last_error"] = None
+    job.setdefault("events", []).append({"time": now_iso(), "message": "Queued for retry."})
+    save_job(root, job)
+    return job
+
+
+def fail_job(root: Path, job_id: str, message: str) -> dict[str, Any]:
+    job = load_job(root, job_id)
+    job["status"] = "failed"
+    job["stage"] = "failed"
+    job["progress"] = 100
+    job["last_error"] = message
+    if not job.get("completed_at"):
+        job["completed_at"] = now_iso()
+    job.setdefault("events", []).append({"time": now_iso(), "message": message})
+    save_job(root, job)
+    return job
+
+
+def _job_should_continue(root: Path, job_id: str) -> bool:
+    pause_logged = False
+    while True:
+        job = load_job(root, job_id)
+        status = job.get("status")
+        if status == "cancelled":
+            return False
+        if status != "paused":
+            if status == "queued":
+                update_job(root, job_id, status="running", message="Resumed execution.")
+            return True
+        if not pause_logged:
+            job_debug_log(root, job_id, "Paused; waiting to resume.")
+            pause_logged = True
+        time.sleep(0.5)
+
+
 def delete_job(root: Path, job_id: str) -> None:
     path = job_path(root, job_id)
     if path.exists():
@@ -1137,7 +1214,7 @@ def run_enrichment_job(root: Path, paper_id: str, job_id: str, config: dict[str,
     job_debug_log(root, job_id, f"=== Job started: paper_id={paper_id} ===")
     try:
         job = load_job(root, job_id)
-        if job.get("status") == "cancelled":
+        if job.get("status") in {"cancelled", "paused"} and not _job_should_continue(root, job_id):
             job_debug_log(root, job_id, "Job was cancelled before start, exiting")
             return
 
@@ -1147,20 +1224,21 @@ def run_enrichment_job(root: Path, paper_id: str, job_id: str, config: dict[str,
         update_job(root, job_id, status="running", stage="extracting",
                    progress=15, message="Extracting text from PDF.")
         job_debug_log(root, job_id, "Stage: extracting")
-        job = load_job(root, job_id)
-        if job.get("status") == "cancelled":
+        if not _job_should_continue(root, job_id):
             job_debug_log(root, job_id, "Cancelled during extracting")
             return
 
         update_job(root, job_id, stage="enriching",
                    progress=35, message="Running keyword extraction.")
         job_debug_log(root, job_id, "Stage: enriching (regex)")
-        job = load_job(root, job_id)
-        if job.get("status") == "cancelled":
+        if not _job_should_continue(root, job_id):
             job_debug_log(root, job_id, "Cancelled during enriching")
             return
 
         enrich_paper(root, paper_id, job_id=job_id)
+        if not _job_should_continue(root, job_id):
+            job_debug_log(root, job_id, "Cancelled after enrichment extraction")
+            return
 
         # ── Agent review (if API key configured) ──
         config = config or load_app_config(root)
@@ -1168,8 +1246,7 @@ def run_enrichment_job(root: Path, paper_id: str, job_id: str, config: dict[str,
             update_job(root, job_id, stage="agent_review",
                        progress=60, message="AI agent reviewing metadata.")
             job_debug_log(root, job_id, f"Stage: agent_review (model={config.get('claude_model', 'sonnet')})")
-            job = load_job(root, job_id)
-            if job.get("status") == "cancelled":
+            if not _job_should_continue(root, job_id):
                 job_debug_log(root, job_id, "Cancelled before agent review")
                 return
 
@@ -1179,6 +1256,9 @@ def run_enrichment_job(root: Path, paper_id: str, job_id: str, config: dict[str,
                 result = run_agent_paper_review_sync(root, paper_id, job_id, config)
                 elapsed = (datetime.now(timezone.utc) - t0).total_seconds()
                 job_debug_log(root, job_id, f"Agent review completed in {elapsed:.1f}s, status={result.get('status')}")
+                if not _job_should_continue(root, job_id):
+                    job_debug_log(root, job_id, "Cancelled after agent review returned")
+                    return
                 if result.get("status") == "ok":
                     notes_count = len(result.get("notes", []))
                     job_debug_log(root, job_id, f"Agent corrections ({notes_count}):")
@@ -1206,29 +1286,29 @@ def run_enrichment_job(root: Path, paper_id: str, job_id: str, config: dict[str,
                        message="Agent review skipped: no API key configured.")
 
         # ── Translation (after enrichment, if paper is in English) ──
-        try:
-            from .translate import translate_paper_summary, translate_paper_summary_llm
-            paper = load_paper(root, paper_id)
-            existing_translations = paper.get("translations") if isinstance(paper.get("translations"), dict) else {}
-            missing_core_concepts_translation = (
-                bool(paper.get("core_concepts"))
-                and (
-                    not isinstance(existing_translations.get("core_concepts"), list)
-                    or len(existing_translations.get("core_concepts") or []) < len(paper.get("core_concepts") or [])
-                )
+        from .translate import translate_paper_summary, translate_paper_summary_llm
+        paper = load_paper(root, paper_id)
+        existing_translations = paper.get("translations") if isinstance(paper.get("translations"), dict) else {}
+        missing_core_concepts_translation = (
+            bool(paper.get("core_concepts"))
+            and (
+                not isinstance(existing_translations.get("core_concepts"), list)
+                or len(existing_translations.get("core_concepts") or []) < len(paper.get("core_concepts") or [])
             )
-            missing_key_figures_translation = (
-                bool(paper.get("key_figures"))
-                and (
-                    not isinstance(existing_translations.get("key_figures"), list)
-                    or len(existing_translations.get("key_figures") or []) < len(paper.get("key_figures") or [])
-                )
+        )
+        missing_key_figures_translation = (
+            bool(paper.get("key_figures"))
+            and (
+                not isinstance(existing_translations.get("key_figures"), list)
+                or len(existing_translations.get("key_figures") or []) < len(paper.get("key_figures") or [])
             )
-            needs_translation = (
-                _text_is_english(paper.get("abstract", ""))
-                and (not existing_translations or missing_core_concepts_translation or missing_key_figures_translation)
-            )
-            if needs_translation:
+        )
+        needs_translation = (
+            _text_is_english(paper.get("abstract", ""))
+            and (not existing_translations or missing_core_concepts_translation or missing_key_figures_translation)
+        )
+        if needs_translation:
+            try:
                 engine = (config.get("translation_engine") or "local").lower()
                 if engine == "llm" and not (config.get("claude_api_key") or "").strip():
                     job_debug_log(root, job_id,
@@ -1240,8 +1320,7 @@ def run_enrichment_job(root: Path, paper_id: str, job_id: str, config: dict[str,
                 update_job(root, job_id, stage="translating", progress=92,
                            message=f"Translating summary to Chinese ({engine_label}).")
                 job_debug_log(root, job_id, f"Stage: translating (engine={engine}, model={config.get('claude_model', 'sonnet') if engine == 'llm' else 'n/a'})")
-                job = load_job(root, job_id)
-                if job.get("status") == "cancelled":
+                if not _job_should_continue(root, job_id):
                     return
 
                 if engine == "llm":
@@ -1257,6 +1336,9 @@ def run_enrichment_job(root: Path, paper_id: str, job_id: str, config: dict[str,
                 else:
                     translations = translate_paper_summary(paper)
 
+                if not _job_should_continue(root, job_id):
+                    job_debug_log(root, job_id, "Cancelled after translation returned")
+                    return
                 paper["translations"] = {**existing_translations, **translations}
                 paper["translation_meta"] = {
                     "engine": engine,
@@ -1268,11 +1350,15 @@ def run_enrichment_job(root: Path, paper_id: str, job_id: str, config: dict[str,
                 job_debug_log(root, job_id, f"Translation complete: {field_count} fields")
                 update_job(root, job_id, stage="translating", progress=96,
                            message=f"Translated {field_count} summary fields via {engine_label}.")
-            else:
-                job_debug_log(root, job_id, "Translation skipped (already translated or non-English)")
-        except Exception as exc:
-            job_debug_log(root, job_id, f"Translation failed (non-fatal): {exc}")
+            except Exception as exc:
+                job_debug_log(root, job_id, f"Translation failed: {exc}")
+                raise RuntimeError(f"Translation failed: {exc}") from exc
+        else:
+            job_debug_log(root, job_id, "Translation skipped (already translated or non-English)")
 
+        if not _job_should_continue(root, job_id):
+            job_debug_log(root, job_id, "Cancelled before completion update")
+            return
         update_job(root, job_id, status="completed", stage="completed",
                    progress=100, message="Enrichment completed.")
         log(root, "update_log.md", f"Background enrichment completed for `{paper_id}`.")
@@ -1281,8 +1367,7 @@ def run_enrichment_job(root: Path, paper_id: str, job_id: str, config: dict[str,
         job_debug_log(root, job_id, f"=== Job FAILED: {exc} ===")
         import traceback as _tb
         job_debug_log(root, job_id, _tb.format_exc())
-        update_job(root, job_id, status="failed", stage="failed",
-                   progress=100, message=str(exc))
+        fail_job(root, job_id, str(exc))
 
 
 # ── sessions ──────────────────────────────────────────────────────────

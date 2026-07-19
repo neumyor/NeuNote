@@ -4,6 +4,31 @@ All notable changes to NeuNote will be documented in this file.
 
 The format is inspired by Keep a Changelog, and this project uses semantic versioning for formal releases.
 
+## [1.1.0] - 2026-07-19
+
+### Added
+
+- Queue-wide and per-job pause, resume, retry, cancellation, and batch controls.
+- Persistent job attempts, failure details, queue state, and restart recovery.
+- Git sync inventory for paper records, source PDFs, extracted figures, chats, and broken references.
+- Automatic Git rebase recovery and remote removal of optional PDF/chat data when sync is disabled.
+- Focused tests for job scheduling, translation failures, PDF sync opt-in, and sync integrity.
+
+### Changed
+
+- Redesigned the frontend around a consistent Chinese retro letterpress style.
+- Simplified navigation, library actions, paper-detail actions, and return behavior.
+- Constrained dashboard catalogue panels to equal heights with internal scrolling.
+- Improved enrichment translation completeness and made translation failures visible to the job scheduler.
+- Expanded the jobs page with status summaries and multi-select operations.
+
+### Fixed
+
+- Prevented stale asynchronous paper requests from replacing the currently open paper.
+- Preserved the latest paper state during translation and background refreshes.
+- Improved queue scheduling consistency across pause, resume, cancellation, and application restarts.
+- Fixed incomplete sync test coverage and invalid `unittest.mock` access.
+
 ## [1.0.0] - 2026-07-18
 
 ### Added

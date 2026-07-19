@@ -92,7 +92,7 @@ When Git sync is enabled, NeuNote initializes or uses a separate Git repository 
 
 ## Release Status
 
-This repository is prepared as the V1.0 release line. The app is designed for local deployment and personal or lab-scale literature workflows.
+This repository is prepared as the V1.1 release line. The app is designed for local deployment and personal or lab-scale literature workflows.
 
 ## License
 

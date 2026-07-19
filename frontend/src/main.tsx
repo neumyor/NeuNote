@@ -15,7 +15,6 @@ import {
   CheckCircle2,
   ChevronDown,
   ChevronRight,
-  Clock3,
   CloudUpload,
   Copy,
   Bot,
@@ -32,6 +31,7 @@ import {
   Loader2,
   MessageCircle,
   Minus,
+  MoreHorizontal,
   Play,
   Plus,
   RefreshCw,
@@ -135,7 +135,17 @@ type Job = {
   updated_at?: string;
   started_at?: string | null;
   completed_at?: string | null;
+  attempts?: number;
+  last_error?: string | null;
+  pause_reason?: string | null;
   events?: { time: string; message: string }[];
+};
+
+type QueueStatus = {
+  paused: boolean;
+  updated_at?: string;
+  counts?: Record<string, number>;
+  running_job_ids?: string[];
 };
 
 type ChatSessionSummary = {
@@ -158,6 +168,16 @@ type SyncStatus = {
   last_commit?: string;
   detail: string;
   message?: string;
+  inventory?: {
+    paper_records: number;
+    pdf_files: number;
+    figure_files: number;
+    chat_sessions: number;
+    complete: boolean;
+    invalid_papers: string[];
+    missing_pdf_references: string[];
+    missing_figure_references: string[];
+  };
   auto_sync?: {
     enabled: boolean;
     interval_minutes: number;
@@ -198,6 +218,7 @@ const API = "";
 
 function App() {
   const [page, setPage] = useState<Page>("dashboard");
+  const [profileReturnPage, setProfileReturnPage] = useState<Page>("library");
   const [root, setRoot] = useState("");
   const [savedRoot, setSavedRoot] = useState("");
   const [claudeApiKey, setClaudeApiKey] = useState("");
@@ -220,6 +241,7 @@ function App() {
   const [papers, setPapers] = useState<Paper[]>([]);
   const [stats, setStats] = useState<Stats>({ papers: 0, needs_review: 0, profiled: 0, tags: 0, duplicate_groups: 0, duplicate_papers: 0 });
   const [jobs, setJobs] = useState<Job[]>([]);
+  const [queueStatus, setQueueStatus] = useState<QueueStatus>({ paused: false });
   const [duplicates, setDuplicates] = useState<DuplicateGroup[]>([]);
   const [selectedPaperId, _setSelectedPaperId] = useState("");
   const [selectedPaper, _setSelectedPaper] = useState<Paper | null>(null);
@@ -261,7 +283,7 @@ function App() {
   const [mentionedTags, setMentionedTags] = useState<string[]>([]);
   const chatAbortRef = useRef<AbortController | null>(null);
 
-  const activeJobCount = jobs.filter((j) => j.status === "queued" || j.status === "running").length;
+  const activeJobCount = jobs.filter((j) => ["queued", "running", "paused"].includes(j.status)).length;
 
   const tagCounts = useMemo(() => {
     const counts = new Map<string, number>();
@@ -432,8 +454,9 @@ function App() {
   async function loadJobs(kbRoot = savedRoot) {
     if (!kbRoot) return;
     const params = `?root=${encodeURIComponent(kbRoot)}`;
-    const data = await request<{ jobs: Job[] }>(`/api/jobs${params}`);
+    const data = await request<{ jobs: Job[]; queue?: QueueStatus }>(`/api/jobs${params}`);
     setJobs(data.jobs);
+    if (data.queue) setQueueStatus(data.queue);
   }
 
   async function loadSessions(kbRoot = savedRoot) {
@@ -587,6 +610,7 @@ function App() {
     const seq = ++openProfileSeq.current;
     setBusy("profile");
     setError("");
+    if (page !== "profile") setProfileReturnPage(page);
     setSelectedPaperId(paperId);
     setPage("profile");
     try {
@@ -679,6 +703,25 @@ function App() {
     }
   }
 
+  async function enrichSelectedPapers(paperIds: string[]) {
+    if (!paperIds.length) return;
+    setBusy("enrich-selected");
+    setError("");
+    try {
+      await request("/api/papers/enrich-batch", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ root: savedRoot, paper_ids: paperIds }),
+      });
+      await loadJobs();
+      setPage("jobs");
+    } catch (err) {
+      setError(String((err as Error).message ?? err));
+    } finally {
+      setBusy("");
+    }
+  }
+
   async function deletePaper(paperId: string) {
     if (!window.confirm(`Delete "${selectedPaper?.title ?? paperId}"? This removes the paper entry and its source PDF.`)) return;
     setBusy("delete");
@@ -725,6 +768,58 @@ function App() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ root: savedRoot }),
+      });
+      await loadJobs();
+    } catch (err) {
+      setError(String((err as Error).message ?? err));
+    } finally {
+      setBusy("");
+    }
+  }
+
+  async function jobAction(jobId: string, action: "pause" | "resume" | "retry") {
+    setBusy(`${action}-${jobId}`);
+    setError("");
+    try {
+      await request(`/api/jobs/${encodeURIComponent(jobId)}/${action}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ root: savedRoot }),
+      });
+      await loadJobs();
+    } catch (err) {
+      setError(String((err as Error).message ?? err));
+    } finally {
+      setBusy("");
+    }
+  }
+
+  async function setQueuePaused(paused: boolean) {
+    setBusy(paused ? "pause-queue" : "resume-queue");
+    setError("");
+    try {
+      await request(paused ? "/api/jobs/pause" : "/api/jobs/resume", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ root: savedRoot }),
+      });
+      await loadJobs();
+    } catch (err) {
+      setError(String((err as Error).message ?? err));
+    } finally {
+      setBusy("");
+    }
+  }
+
+  async function batchJobAction(jobIds: string[], action: "pause" | "resume" | "retry" | "cancel") {
+    if (!jobIds.length) return;
+    setBusy(`batch-${action}`);
+    setError("");
+    try {
+      await request(`/api/jobs/batch/${action}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ root: savedRoot, job_ids: jobIds }),
       });
       await loadJobs();
     } catch (err) {
@@ -985,7 +1080,7 @@ function App() {
             openProfile={openProfile} uploadPapers={uploadPapers}
             refresh={() => { loadPapers(); loadJobs(); }}
             busy={busy} uploadProgress={uploadProgress}
-            paperJobs={paperJobs} enrichAll={enrichAll}
+            paperJobs={paperJobs} enrichAll={enrichAll} enrichSelectedPapers={enrichSelectedPapers}
             openReviewSearch={() => setPage("review-search")}
           />
         )}
@@ -999,7 +1094,7 @@ function App() {
         {page === "profile" && (
           <ProfilePage
             paper={selectedPaper} busy={busy}
-            goBack={() => setPage("library")}
+            goBack={() => setPage(profileReturnPage)}
             openChat={openPaperChat}
             enrichPaper={enrichPaper} translatePaper={translatePaper}
             updatePaper={updatePaper}
@@ -1031,7 +1126,21 @@ function App() {
           />
         )}
         {page === "jobs" && (
-          <JobsPage jobs={jobs} refresh={() => loadJobs()} cancelJob={cancelJob} cancelAllJobs={cancelAllJobs} deleteJob={deleteJob} cleanupJobs={cleanupJobs} busy={busy} />
+          <JobsPage
+            jobs={jobs}
+            queueStatus={queueStatus}
+            refresh={() => loadJobs()}
+            cancelJob={cancelJob}
+            cancelAllJobs={cancelAllJobs}
+            pauseJob={(id) => jobAction(id, "pause")}
+            resumeJob={(id) => jobAction(id, "resume")}
+            retryJob={(id) => jobAction(id, "retry")}
+            setQueuePaused={setQueuePaused}
+            batchJobAction={batchJobAction}
+            deleteJob={deleteJob}
+            cleanupJobs={cleanupJobs}
+            busy={busy}
+          />
         )}
         {page === "settings" && (
           <SettingsPage
@@ -1074,13 +1183,16 @@ function AppNav({ page, setPage, openChat, paperCount, jobCount }: {
     <header className="app-nav">
       <button className="brand-button" onClick={() => setPage("dashboard")}>
         <img src="/neunote-icon.svg" alt="" width={28} height={28} className="brand-mark" />
-        <span><strong>NeuNote</strong><small>{paperCount} entries archived</small></span>
+        <span><strong>纽记 NeuNote</strong><small>已收录 {paperCount} 篇文献</small></span>
       </button>
       <nav>
         <button className={page === "dashboard" ? "active" : ""} onClick={() => setPage("dashboard")}><Gauge size={16} /> 档案总览</button>
         <button className={["library", "review-search", "profile"].includes(page) ? "active" : ""} onClick={() => setPage("library")}><Library size={16} /> 文献档案</button>
         <button className={page === "chat" ? "active" : ""} onClick={openChat}><MessageCircle size={16} /> 对话</button>
-        <button className={page === "jobs" ? "active" : ""} onClick={() => setPage("jobs")}><Play size={16} /> 整理队列 {jobCount > 0 ? jobCount : ""}</button>
+        <button className={page === "jobs" ? "active" : ""} onClick={() => setPage("jobs")}>
+          <Play size={16} /> 整理队列
+          {jobCount > 0 && <span className="nav-count">{jobCount}</span>}
+        </button>
         <button className={page === "settings" ? "active" : ""} onClick={() => setPage("settings")}><Settings size={16} /> 设置</button>
       </nav>
     </header>
@@ -1123,7 +1235,7 @@ function DashboardPage(props: {
         <article className="panel recent-panel">
           <div className="panel-title-row">
             <h2>最近翻阅</h2>
-            <span>RECENT FOLIOS</span>
+            <span>最近翻阅</span>
           </div>
           <div className="recent-stack">
             {recentPapers.map((paper) => (
@@ -1139,14 +1251,14 @@ function DashboardPage(props: {
         <div className="panel chart-panel">
           <div className="panel-title-row">
             <h2>主题分布</h2>
-            <span>INDEX TERMS</span>
+            <span>主题索引</span>
           </div>
           <TagChart tagCounts={props.tagCounts} />
         </div>
         <div className="panel chart-panel">
           <div className="panel-title-row">
             <h2>作者索引</h2>
-            <span>AUTHOR CARDS</span>
+            <span>作者索引</span>
           </div>
           <AuthorChart authorCounts={props.authorCounts} />
         </div>
@@ -1276,7 +1388,7 @@ function UploadControl({ busy, uploadProgress, uploadPapers }: { busy: string; u
   return (
     <label className="upload-button">
       {busy === "upload" ? <Loader2 className="spin" size={16} /> : <Upload size={16} />}
-      <span>{busy === "upload" ? `归档中 ${uploadProgress}` : "归档新文献"}</span>
+      <span>{busy === "upload" ? `归档中 ${uploadProgress}` : "上传文献"}</span>
       <input type="file" accept="application/pdf" multiple onChange={uploadPapers} disabled={busy === "upload"} />
     </label>
   );
@@ -1292,25 +1404,83 @@ function LibraryPage(props: {
   sortBy: string; setSortBy: (v: "year" | "added" | "title") => void;
   openProfile: (id: string) => void; uploadPapers: (e: React.ChangeEvent<HTMLInputElement>) => void;
   refresh: () => void; busy: string; uploadProgress: string;
-  paperJobs: Map<string, Job>; enrichAll: () => void; openReviewSearch: () => void;
+  paperJobs: Map<string, Job>; enrichAll: () => void; enrichSelectedPapers: (ids: string[]) => void; openReviewSearch: () => void;
 }) {
+  const [selectedPaperIds, setSelectedPaperIds] = useState<Set<string>>(new Set());
+  const visibleIds = props.filteredPapers.map((paper) => paper.id);
+  const selectedVisibleCount = visibleIds.filter((id) => selectedPaperIds.has(id)).length;
+  const selectedIds = Array.from(selectedPaperIds);
+
+  function togglePaperSelection(id: string) {
+    setSelectedPaperIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  }
+
+  function toggleVisibleSelection() {
+    setSelectedPaperIds((prev) => {
+      const next = new Set(prev);
+      const allVisibleSelected = visibleIds.length > 0 && visibleIds.every((id) => next.has(id));
+      for (const id of visibleIds) {
+        if (allVisibleSelected) next.delete(id);
+        else next.add(id);
+      }
+      return next;
+    });
+  }
+
+  function startSelectedEnrichment() {
+    props.enrichSelectedPapers(selectedIds);
+    setSelectedPaperIds(new Set());
+  }
+
   return (
     <div className="library-page">
       <section className="page-heading inline">
         <div>
-          <p className="kicker">Archive Catalogue</p>
+          <p className="kicker">文献档案目录</p>
           <h1>文献目录</h1>
           <p>当前显示 {props.filteredPapers.length}/{props.papers.length} 张目录卡</p>
         </div>
         <div className="toolbar">
           <UploadControl busy={props.busy} uploadProgress={props.uploadProgress} uploadPapers={props.uploadPapers} />
-          <button onClick={props.refresh}><RefreshCw size={16} /> 刷新</button>
-          <button onClick={props.enrichAll} disabled={props.busy === "enrich-all"}>
-            <Sparkles size={16} /> 批量整理
+          <button className="icon-button toolbar-icon-button" onClick={props.refresh} aria-label="刷新文献目录" title="刷新文献目录">
+            <RefreshCw size={16} />
           </button>
-          <button onClick={props.openReviewSearch}>
-            <Search size={16} /> 校阅札记搜索
-          </button>
+          <details className="action-menu">
+            <summary aria-label="更多文献操作" title="更多文献操作"><MoreHorizontal size={18} /></summary>
+            <div className="action-menu-popover">
+              <button onClick={props.enrichAll} disabled={props.busy === "enrich-all"}>
+                <Sparkles size={16} /> 批量整理全部文献
+              </button>
+              <button onClick={props.openReviewSearch}>
+                <Search size={16} /> 搜索校阅札记
+              </button>
+            </div>
+          </details>
+        </div>
+      </section>
+      <section className="library-bulk-bar">
+        <label className="bulk-select-toggle">
+          <input
+            type="checkbox"
+            checked={visibleIds.length > 0 && selectedVisibleCount === visibleIds.length}
+            onChange={toggleVisibleSelection}
+          />
+          <span>{selectedIds.length ? `已选择 ${selectedIds.length} 篇` : "多选文献"}</span>
+        </label>
+        <div className="bulk-actions">
+          {selectedIds.length > 0 && (
+            <>
+              <button type="button" onClick={startSelectedEnrichment} disabled={props.busy === "enrich-selected"}>
+                {props.busy === "enrich-selected" ? <Loader2 className="spin" size={15} /> : <Sparkles size={15} />}
+                整理所选
+              </button>
+              <button type="button" className="ghost-button" onClick={() => setSelectedPaperIds(new Set())}>清除选择</button>
+            </>
+          )}
         </div>
       </section>
       <section className="library-controls">
@@ -1323,9 +1493,6 @@ function LibraryPage(props: {
           <select value={props.statusFilter} onChange={(e) => props.setStatusFilter(e.target.value)}>
             <option value="all">全部状态</option>
             <option value="review">待校阅</option>
-            <option value="unread">未读</option>
-            <option value="reading">阅读中</option>
-            <option value="read">已读</option>
             <option value="profiled">已建档</option>
           </select>
         </label>
@@ -1347,9 +1514,17 @@ function LibraryPage(props: {
       <section className="catalogue-grid">
         {props.filteredPapers.map((p, index) => {
           const job = props.paperJobs.get(p.id);
-          const jobRunning = job && ["queued", "running"].includes(job.status);
+          const jobRunning = job && ["queued", "running", "paused"].includes(job.status);
           return (
             <article className="paper-card" key={p.id} style={{ animationDelay: `${Math.min(index * 18, 180)}ms` }}>
+              <label className="paper-select-check" title="选择文献">
+                <input
+                  type="checkbox"
+                  checked={selectedPaperIds.has(p.id)}
+                  onChange={() => togglePaperSelection(p.id)}
+                  onClick={(event) => event.stopPropagation()}
+                />
+              </label>
               <button className="paper-card-main" onClick={() => props.openProfile(p.id)}>
                 <span className="paper-year">{p.year ?? "n.d."}</span>
                 <strong>{p.title || p.id}</strong>
@@ -1357,14 +1532,12 @@ function LibraryPage(props: {
                 <p>{p.one_sentence || p.abstract || "摘要尚未整理。打开文献卡片后可补充摘要、笔记与标签。"}</p>
               </button>
               <div className="paper-card-meta">
-                <span className={p.needs_review ? "pill warn" : "pill"}>
-                  {p.needs_review ? "待校阅" : statusLabel(p.reading_status ?? "unread")}
-                </span>
+                {p.needs_review && <span className="pill warn">待校阅</span>}
                 {jobRunning
                   ? <span className="pill running" title={`${job.stage} ${job.progress}%`}>{job.progress}%</span>
                   : job?.status === "completed"
                     ? <span className="pill"><CheckCircle2 size={12} /> 已整理</span>
-                    : <span className="pill muted"><Clock3 size={12} /> 静置</span>}
+                    : null}
                 <span className="pill muted">{shortDate(p.updated_at)}</span>
               </div>
               <TagLine tags={p.tags ?? []} />
@@ -1405,7 +1578,7 @@ function ReviewNotesSearchPage({ papers, openProfile, goBack }: {
           <ArrowLeft size={15} /> 返回文献档案
         </button>
         <div className="review-search-brand">
-          <p className="kicker">Review Notes Search</p>
+          <p className="kicker">校阅札记检索</p>
           <h1>校阅札记搜索</h1>
           <p>在 {papers.length} 篇论文的 {noteCount} 条校阅札记中检索。</p>
         </div>
@@ -1537,12 +1710,6 @@ function TagLine({ tags }: { tags: string[] }) {
 function shortDate(value?: string) {
   if (!value) return "-";
   return value.slice(0, 10);
-}
-
-function statusLabel(value: string) {
-  if (value === "reading") return "阅读中";
-  if (value === "read") return "已读";
-  return "未读";
 }
 
 function EmptyState({ title, body }: { title: string; body: string }) {
@@ -1896,7 +2063,7 @@ function ProfilePage(props: {
   }, [paper?.id, paper?.core_concepts?.length, paper?.key_figures?.length, paper?.translations?.core_concepts, paper?.translations?.key_figures, paper?.translation_meta?.engine, showChinese, props.translationEngine]);
 
   if (!paper || props.busy === "profile") {
-    return <div className="loading-state"><Loader2 className="spin" size={20} /> Loading paper...</div>;
+    return <div className="loading-state"><Loader2 className="spin" size={20} /> 正在调取文献档案...</div>;
   }
 
   const hasZh = Boolean(paper.translations && Object.keys(paper.translations).length > 0);
@@ -1926,27 +2093,33 @@ function ProfilePage(props: {
     <div className="profile-page">
       <section className="page-heading">
         <div className="page-heading-bar">
-          <button className="ghost-button" onClick={props.goBack}><ArrowLeft size={16} /> Back</button>
+          <button className="ghost-button back-button" onClick={props.goBack}><ArrowLeft size={16} /> 返回来源页</button>
           <div className="profile-actions">
             <button className="chat-launch-button" onClick={() => props.openChat(paper)}>
-              <MessageCircle size={15} /> 论文 Chat
+              <MessageCircle size={15} /> 论文对话
             </button>
             <button className="action-button" onClick={() => props.openPdf(paper)}><ExternalLink size={15} /> 打开 PDF</button>
-            <button className="action-button" onClick={() => props.enrichPaper(paper.id)} disabled={jobRunning}>
-              {jobRunning ? <Loader2 className="spin" size={15} /> : <RefreshCw size={15} />}
-              {jobRunning ? `整理中 ${props.paperJob?.progress ?? 0}%` : "重新整理"}
-            </button>
-            <button className="action-button" onClick={handleTranslate} disabled={props.busy === "translate"}>
-              {props.busy === "translate" ? <Loader2 className="spin" size={15} /> : null}
-              {effectiveChinese ? "English" : "中文"}
-            </button>
-            <button className="danger-button" onClick={() => props.deletePaper(paper.id)} disabled={props.busy === "delete"}>
-              {props.busy === "delete" ? <Loader2 className="spin" size={15} /> : <Trash2 size={15} />} 删除
-            </button>
+            <details className="action-menu profile-action-menu">
+              <summary aria-label="更多论文操作" title="更多论文操作"><MoreHorizontal size={18} /></summary>
+              <div className="action-menu-popover">
+                <button onClick={() => props.enrichPaper(paper.id)} disabled={jobRunning}>
+                  {jobRunning ? <Loader2 className="spin" size={15} /> : <RefreshCw size={15} />}
+                  {jobRunning ? `整理中 ${props.paperJob?.progress ?? 0}%` : "重新整理"}
+                </button>
+                <button onClick={handleTranslate} disabled={props.busy === "translate"}>
+                  {props.busy === "translate" ? <Loader2 className="spin" size={15} /> : <Languages size={15} />}
+                  {effectiveChinese ? "显示英文" : "翻译为中文"}
+                </button>
+                <div className="action-menu-separator" />
+                <button className="menu-danger" onClick={() => props.deletePaper(paper.id)} disabled={props.busy === "delete"}>
+                  {props.busy === "delete" ? <Loader2 className="spin" size={15} /> : <Trash2 size={15} />} 删除文献
+                </button>
+              </div>
+            </details>
           </div>
         </div>
         <div>
-          <p className="kicker">Journal Article Folio</p>
+          <p className="kicker">论文档案册</p>
           <h1>{paper.title || paper.id}</h1>
           <p>{paper.id} · {paper.pages ?? "?"} pages · {paper.status}</p>
         </div>
@@ -2040,7 +2213,7 @@ function ListField({ label, values }: { label: string; values: string[] }) {
   return (
     <section className="field-block">
       <h3>{label}</h3>
-      {values.length ? <ul>{values.map((v, i) => <li key={`${label}-${i}`}>{v}</li>)}</ul> : <p>Not extracted yet.</p>}
+      {values.length ? <ul>{values.map((v, i) => <li key={`${label}-${i}`}>{v}</li>)}</ul> : <p>尚未整理此项内容。</p>}
     </section>
   );
 }
@@ -2092,7 +2265,7 @@ function KeyFigures({ figures, translatedFigures, paperId, kbRoot, cacheKey }: {
             })}
           </div>
         </div>
-      ) : <p>Not extracted yet.</p>)}
+      ) : <p>尚未整理此项内容。</p>)}
     </section>
   );
 }
@@ -2136,7 +2309,7 @@ function ConceptTable({ concepts, translatedConcepts }: {
             </tbody>
           </table>
         </div>
-      ) : <p>Not extracted yet.</p>)}
+      ) : <p>尚未整理此项内容。</p>)}
     </section>
   );
 }
@@ -2371,7 +2544,7 @@ function ChatPage(props: {
       <aside className="chat-history-panel">
         <div className="chat-history-head">
           <div>
-            <p className="kicker">Chat Logs</p>
+            <p className="kicker">对话存档</p>
             <h2>历史对话</h2>
           </div>
           <button type="button" className="icon-button" onClick={props.newChat} aria-label="新对话" title="新对话">
@@ -2409,7 +2582,7 @@ function ChatPage(props: {
       <section className="chat-main-panel">
         <section className="chat-topbar">
           <div className="chat-title">
-            <p className="kicker">NeuNote Chat</p>
+            <p className="kicker">纽记对话</p>
             <h1>和文献库对话</h1>
             <p>{mentionedPapers.length ? `${mentionedPapers.length} 篇论文已 mention` : "未指定论文，可直接询问整个文献库"}</p>
           </div>
@@ -2661,12 +2834,35 @@ function stringifyToolPayload(value: unknown): string {
 
 // ── Jobs ─────────────────────────────────────────────────────────────
 
-function JobsPage({ jobs, refresh, cancelJob, cancelAllJobs, deleteJob, cleanupJobs, busy }: {
-  jobs: Job[]; refresh: () => void;
-  cancelJob: (id: string) => void; cancelAllJobs: () => void; deleteJob: (id: string) => void;
-  cleanupJobs: () => void; busy: string;
+function JobsPage({ jobs, queueStatus, refresh, cancelJob, cancelAllJobs, pauseJob, resumeJob, retryJob, setQueuePaused, batchJobAction, deleteJob, cleanupJobs, busy }: {
+  jobs: Job[];
+  queueStatus: QueueStatus;
+  refresh: () => void;
+  cancelJob: (id: string) => void;
+  cancelAllJobs: () => void;
+  pauseJob: (id: string) => void;
+  resumeJob: (id: string) => void;
+  retryJob: (id: string) => void;
+  setQueuePaused: (paused: boolean) => void;
+  batchJobAction: (ids: string[], action: "pause" | "resume" | "retry" | "cancel") => void;
+  deleteJob: (id: string) => void;
+  cleanupJobs: () => void;
+  busy: string;
 }) {
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
+  const [selectedJobIds, setSelectedJobIds] = useState<Set<string>>(new Set());
+  const finishedCount = jobs.filter((j) => ["completed", "failed", "cancelled"].includes(j.status)).length;
+  const activeCount = jobs.filter((j) => ["queued", "running", "paused"].includes(j.status)).length;
+  const selectedIds = Array.from(selectedJobIds);
+  const counts = {
+    queued: jobs.filter((j) => j.status === "queued").length,
+    running: jobs.filter((j) => j.status === "running").length,
+    paused: jobs.filter((j) => j.status === "paused").length,
+    completed: jobs.filter((j) => j.status === "completed").length,
+    failed: jobs.filter((j) => j.status === "failed").length,
+    cancelled: jobs.filter((j) => j.status === "cancelled").length,
+  };
+  const total = Math.max(jobs.length, 1);
 
   function toggle(id: string) {
     setExpanded((prev) => {
@@ -2676,18 +2872,42 @@ function JobsPage({ jobs, refresh, cancelJob, cancelAllJobs, deleteJob, cleanupJ
     });
   }
 
-  const finishedCount = jobs.filter((j) => ["completed", "failed", "cancelled"].includes(j.status)).length;
-  const activeCount = jobs.filter((j) => ["queued", "running"].includes(j.status)).length;
+  function toggleJobSelection(id: string) {
+    setSelectedJobIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  }
+
+  function toggleAllJobs() {
+    setSelectedJobIds((prev) => {
+      const next = new Set(prev);
+      const allSelected = jobs.length > 0 && jobs.every((job) => next.has(job.id));
+      if (allSelected) jobs.forEach((job) => next.delete(job.id));
+      else jobs.forEach((job) => next.add(job.id));
+      return next;
+    });
+  }
+
+  function runBatch(action: "pause" | "resume" | "retry" | "cancel") {
+    batchJobAction(selectedIds, action);
+    setSelectedJobIds(new Set());
+  }
 
   return (
     <div className="jobs-page">
       <section className="page-heading inline">
         <div>
-          <p className="kicker">Typesetting Queue</p>
+          <p className="kicker">整理队列</p>
           <h1>整理队列</h1>
           <p>后台文献整理任务，并发数量可在设置中调整。</p>
         </div>
         <div className="toolbar">
+          <button onClick={() => setQueuePaused(!queueStatus.paused)} disabled={busy === "pause-queue" || busy === "resume-queue"}>
+            {busy === "pause-queue" || busy === "resume-queue" ? <Loader2 className="spin" size={16} /> : queueStatus.paused ? <Play size={16} /> : <Square size={16} />}
+            {queueStatus.paused ? "恢复队列" : "暂停队列"}
+          </button>
           {activeCount > 0 && (
             <button onClick={cancelAllJobs} disabled={busy === "cancel-all"}>
               {busy === "cancel-all" ? <Loader2 className="spin" size={16} /> : <XCircle size={16} />}
@@ -2703,19 +2923,81 @@ function JobsPage({ jobs, refresh, cancelJob, cancelAllJobs, deleteJob, cleanupJ
           <button onClick={refresh}><RefreshCw size={16} /> 刷新</button>
         </div>
       </section>
+
+      <section className="queue-overview">
+        <div className="queue-card queue-card-primary">
+          <span>{queueStatus.paused ? "已暂停" : counts.running ? "运行中" : counts.queued ? "待执行" : "空闲"}</span>
+          <strong>{activeCount}</strong>
+          <small>活跃任务</small>
+        </div>
+        <div className="queue-card">
+          <span>运行</span>
+          <strong>{counts.running}</strong>
+          <small>当前执行</small>
+        </div>
+        <div className="queue-card">
+          <span>等待</span>
+          <strong>{counts.queued}</strong>
+          <small>排队任务</small>
+        </div>
+        <div className="queue-card">
+          <span>失败</span>
+          <strong>{counts.failed}</strong>
+          <small>可重试</small>
+        </div>
+        <div className="queue-state-chart" aria-label="任务状态分布">
+          <span className="chart-segment running" style={{ width: `${counts.running / total * 100}%` }} />
+          <span className="chart-segment queued" style={{ width: `${counts.queued / total * 100}%` }} />
+          <span className="chart-segment paused" style={{ width: `${counts.paused / total * 100}%` }} />
+          <span className="chart-segment completed" style={{ width: `${counts.completed / total * 100}%` }} />
+          <span className="chart-segment failed" style={{ width: `${counts.failed / total * 100}%` }} />
+          <span className="chart-segment cancelled" style={{ width: `${counts.cancelled / total * 100}%` }} />
+        </div>
+      </section>
+
+      <section className="job-bulk-panel">
+        <label className="bulk-select-toggle">
+          <input
+            type="checkbox"
+            checked={jobs.length > 0 && selectedIds.length === jobs.length}
+            onChange={toggleAllJobs}
+          />
+          <span>{selectedIds.length ? `已选择 ${selectedIds.length} 项任务` : "多选任务"}</span>
+        </label>
+        {selectedIds.length > 0 && (
+          <div className="bulk-actions">
+            <button onClick={() => runBatch("pause")} disabled={busy === "batch-pause"}><Square size={15} /> 暂停</button>
+            <button onClick={() => runBatch("resume")} disabled={busy === "batch-resume"}><Play size={15} /> 恢复</button>
+            <button onClick={() => runBatch("retry")} disabled={busy === "batch-retry"}><RefreshCw size={15} /> 重试</button>
+            <button className="danger-button" onClick={() => runBatch("cancel")} disabled={busy === "batch-cancel"}><XCircle size={15} /> 停止</button>
+          </div>
+        )}
+      </section>
+
       <section className="jobs-list">
         {jobs.length === 0 && <EmptyState title="排字台暂时空闲" body="归档 PDF 或批量整理后，任务进度会在这里显示。" />}
         {jobs.map((job) => {
           const isExpanded = expanded.has(job.id);
           const hasEvents = (job.events ?? []).length > 0;
+          const selected = selectedJobIds.has(job.id);
+          const canPause = ["queued", "running"].includes(job.status);
+          const canResume = job.status === "paused";
+          const canRetry = ["failed", "cancelled"].includes(job.status);
           return (
-            <article className={`job-card ${job.status}`} key={job.id}>
+            <article className={`job-card ${job.status} ${selected ? "selected" : ""}`} key={job.id}>
               <div className="job-card-header">
+                <label className="job-select-check" title="选择任务">
+                  <input
+                    type="checkbox"
+                    checked={selected}
+                    onChange={() => toggleJobSelection(job.id)}
+                  />
+                </label>
                 <div>
                   <h2>{job.title}</h2>
-                  <p>{job.paper_id} · {job.stage}</p>
+                  <p>{job.paper_id} · {job.stage} · 第 {job.attempts ?? 0} 次</p>
                 </div>
-                <span className="job-status">{job.status}</span>
+                <span className={`job-status ${job.status}`}>{jobStatusLabel(job.status)}</span>
               </div>
               <div className="job-progress-row">
                 <div className="progress-track">
@@ -2728,14 +3010,18 @@ function JobsPage({ jobs, refresh, cancelJob, cancelAllJobs, deleteJob, cleanupJ
                       {isExpanded ? "▲" : "▼"}
                     </button>
                   )}
+                  {canPause && <button onClick={() => pauseJob(job.id)} disabled={busy === `pause-${job.id}`}><Square size={15} /> 暂停</button>}
+                  {canResume && <button onClick={() => resumeJob(job.id)} disabled={busy === `resume-${job.id}`}><Play size={15} /> 恢复</button>}
+                  {canRetry && <button onClick={() => retryJob(job.id)} disabled={busy === `retry-${job.id}`}><RefreshCw size={15} /> 重试</button>}
                   <button onClick={() => cancelJob(job.id)} disabled={["completed", "failed", "cancelled"].includes(job.status) || busy === `cancel-${job.id}`}>
-                    {busy === `cancel-${job.id}` ? <Loader2 className="spin" size={15} /> : <XCircle size={15} />} 取消
+                    {busy === `cancel-${job.id}` ? <Loader2 className="spin" size={15} /> : <XCircle size={15} />} 停止
                   </button>
                   <button className="danger-button" onClick={() => deleteJob(job.id)} disabled={busy === `delete-${job.id}`}>
                     {busy === `delete-${job.id}` ? <Loader2 className="spin" size={15} /> : <Trash2 size={15} />} 删除
                   </button>
                 </div>
               </div>
+              {job.last_error && <p className="job-error-text">{job.last_error}</p>}
               {isExpanded && hasEvents && (
                 <ul className="job-events">
                   {(job.events ?? []).map((ev, i) => (
@@ -2749,6 +3035,16 @@ function JobsPage({ jobs, refresh, cancelJob, cancelAllJobs, deleteJob, cleanupJ
       </section>
     </div>
   );
+}
+
+function jobStatusLabel(status: string): string {
+  if (status === "queued") return "等待";
+  if (status === "running") return "运行";
+  if (status === "paused") return "暂停";
+  if (status === "completed") return "完成";
+  if (status === "failed") return "失败";
+  if (status === "cancelled") return "停止";
+  return status;
 }
 
 // ── Settings ─────────────────────────────────────────────────────────
@@ -2783,7 +3079,7 @@ function SettingsPage(props: {
   return (
     <div className="settings-page">
       <section className="page-heading">
-        <p className="kicker">Press Settings</p>
+        <p className="kicker">系统设置</p>
         <h1>设置</h1>
         <p>配置文献库根目录与自动整理服务。</p>
       </section>
@@ -2842,11 +3138,11 @@ function SettingsPage(props: {
               </label>
               <label className="sync-check-row">
                 <input type="checkbox" checked={props.gitSyncChats} onChange={(e) => props.setGitSyncChats(e.target.checked)} />
-                <span><strong>同步聊天记录</strong><small>包含提问、回答和工具调用上下文，可能含私人研究信息。</small></span>
+                <span><strong>同步聊天记录</strong><small>包含私人研究信息；关闭后，下次同步会从远端撤回并保留本地副本。</small></span>
               </label>
               <label className="sync-check-row">
                 <input type="checkbox" checked={props.gitSyncPdfs} onChange={(e) => props.setGitSyncPdfs(e.target.checked)} />
-                <span><strong>同步原始 PDF</strong><small>文件通常很大且可能受版权约束，仅建议用于私有仓库。</small></span>
+                <span><strong>同步原始 PDF</strong><small>仅建议用于私有仓库；关闭后，下次同步会从远端撤回并保留本地文件。</small></span>
               </label>
               <label className="sync-check-row">
                 <input type="checkbox" checked={props.gitAutoSync} onChange={(e) => props.setGitAutoSync(e.target.checked)} />
@@ -2867,6 +3163,12 @@ function SettingsPage(props: {
                   <strong>{props.syncStatus?.detail ?? "保存设置后可查看 Git 状态。"}</strong>
                   {props.syncStatus?.last_commit && <small>最近提交：{props.syncStatus.last_commit}</small>}
                   {typeof props.syncStatus?.pending_files === "number" && <small>待同步项：{props.syncStatus.pending_files}</small>}
+                  {props.syncStatus?.inventory && (
+                    <small className={props.syncStatus.inventory.complete ? "" : "sync-error"}>
+                      完整性：{props.syncStatus.inventory.paper_records} 份档案 · {props.syncStatus.inventory.pdf_files} 份 PDF · {props.syncStatus.inventory.figure_files} 张配图 · {props.syncStatus.inventory.chat_sessions} 个对话
+                      {!props.syncStatus.inventory.complete && ` · 发现 ${props.syncStatus.inventory.invalid_papers.length + props.syncStatus.inventory.missing_pdf_references.length + props.syncStatus.inventory.missing_figure_references.length} 项异常`}
+                    </small>
+                  )}
                   {props.syncStatus?.auto_sync?.running && <small>定时同步正在运行…</small>}
                   {props.syncStatus?.auto_sync?.next_sync_at && (
                     <small>下次检查：{new Date(props.syncStatus.auto_sync.next_sync_at).toLocaleString("zh-CN")}</small>
@@ -2883,7 +3185,7 @@ function SettingsPage(props: {
         </div>
 
         <div className="panel settings-panel">
-          <label className="label"><KeyRound size={15} /> Agent API</label>
+          <label className="label"><KeyRound size={15} /> 智能代理接口</label>
           <input
             value={props.claudeEndpoint}
             onChange={(e) => props.setClaudeEndpoint(e.target.value)}

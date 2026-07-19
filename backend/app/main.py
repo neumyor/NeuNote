@@ -41,8 +41,12 @@ from .kb import (
     mark_paper_viewed,
     log,
     now_iso,
+    pause_job,
+    resume_job,
+    retry_job,
     run_enrichment_job,
     save_app_config,
+    save_job,
     save_paper,
     save_session,
     update_job,
@@ -198,10 +202,14 @@ def _on_shutdown() -> None:
     _auto_sync_stop.set()
     _auto_sync_wake.set()
 
-# ── parallel job executor ─────────────────────────────────────────────
+# ── enrichment job scheduler ──────────────────────────────────────────
 
 _executor: concurrent.futures.ThreadPoolExecutor | None = None
 _executor_lock = threading.Lock()
+_scheduler_lock = threading.Lock()
+_scheduler_roots: dict[str, dict[str, Any]] = {}
+_running_futures: dict[str, concurrent.futures.Future[Any]] = {}
+_future_roots: dict[str, str] = {}
 
 
 def _get_executor(max_workers: int = 4) -> concurrent.futures.ThreadPoolExecutor:
@@ -212,6 +220,102 @@ def _get_executor(max_workers: int = 4) -> concurrent.futures.ThreadPoolExecutor
                 _executor.shutdown(wait=False)
             _executor = concurrent.futures.ThreadPoolExecutor(max_workers=max_workers)
         return _executor
+
+
+def _queue_state_path(root: Path) -> Path:
+    return root / "logs/job_queue_state.json"
+
+
+def _load_queue_state(root: Path) -> dict[str, Any]:
+    path = _queue_state_path(root)
+    if not path.exists():
+        return {"paused": False, "updated_at": now_iso()}
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+    except json.JSONDecodeError:
+        return {"paused": False, "updated_at": now_iso()}
+    return {"paused": bool(data.get("paused", False)), "updated_at": data.get("updated_at") or now_iso()}
+
+
+def _save_queue_state(root: Path, state: dict[str, Any]) -> dict[str, Any]:
+    state = {"paused": bool(state.get("paused", False)), "updated_at": now_iso()}
+    path = _queue_state_path(root)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(state, ensure_ascii=False, indent=2), encoding="utf-8")
+    return state
+
+
+def _schedule_enrichment(root: Path, config: dict[str, Any]) -> None:
+    ensure_kb(root)
+    root_key = str(root.resolve())
+    with _scheduler_lock:
+        _scheduler_roots[root_key] = {"root": root, "config": config}
+    _drain_enrichment_queue(root)
+
+
+def _drain_enrichment_queue(root: Path) -> None:
+    root_key = str(root.resolve())
+    with _scheduler_lock:
+        entry = _scheduler_roots.get(root_key)
+        if not entry:
+            entry = {"root": root, "config": load_app_config(root)}
+            _scheduler_roots[root_key] = entry
+        config = dict(entry["config"])
+        max_workers = max(1, int(config.get("max_concurrency", 4) or 4))
+        for job_id, future in list(_running_futures.items()):
+            if future.done():
+                _running_futures.pop(job_id, None)
+                _future_roots.pop(job_id, None)
+                continue
+        active = sum(
+            1 for job_id, future in _running_futures.items()
+            if not future.done() and _future_roots.get(job_id) == root_key
+        )
+        if _load_queue_state(root).get("paused"):
+            return
+        slots = max(0, max_workers - active)
+        if slots <= 0:
+            return
+        queued = [job for job in list_jobs(root) if job.get("status") == "queued"]
+        queued.sort(key=lambda item: item.get("created_at") or "")
+        executor = _get_executor(max_workers)
+        for job in queued[:slots]:
+            job_id = str(job["id"])
+            if job_id in _running_futures and not _running_futures[job_id].done():
+                continue
+            job["attempts"] = int(job.get("attempts") or 0) + 1
+            job.setdefault("events", []).append({"time": now_iso(), "message": "Scheduled for execution."})
+            save_job(root, job)
+            future = executor.submit(_run_scheduled_enrichment_job, root, str(job["paper_id"]), job_id, config)
+            _running_futures[job_id] = future
+            _future_roots[job_id] = root_key
+
+
+def _run_scheduled_enrichment_job(root: Path, paper_id: str, job_id: str, config: dict[str, Any]) -> None:
+    try:
+        run_enrichment_job(root, paper_id, job_id, config)
+    finally:
+        with _scheduler_lock:
+            _running_futures.pop(job_id, None)
+            _future_roots.pop(job_id, None)
+        _drain_enrichment_queue(root)
+
+
+def _queue_status(root: Path) -> dict[str, Any]:
+    jobs = list_jobs(root)
+    counts: dict[str, int] = {}
+    for job in jobs:
+        status = str(job.get("status") or "unknown")
+        counts[status] = counts.get(status, 0) + 1
+    running_ids = [
+        job_id for job_id, future in _running_futures.items()
+        if not future.done() and _future_roots.get(job_id) == str(root.resolve())
+    ]
+    return {
+        **_load_queue_state(root),
+        "counts": counts,
+        "running_job_ids": running_ids,
+    }
 
 
 # ── helpers ───────────────────────────────────────────────────────────
@@ -242,6 +346,14 @@ class RootConfig(BaseModel):
     git_sync_chats: bool | None = None
     git_auto_sync: bool | None = None
     git_sync_interval_minutes: int | None = Field(default=None, ge=1, le=1440)
+
+
+class PaperBatchRequest(RootConfig):
+    paper_ids: list[str] = Field(default_factory=list)
+
+
+class JobBatchRequest(RootConfig):
+    job_ids: list[str] = Field(default_factory=list)
 
 
 @app.get("/api/config")
@@ -455,8 +567,7 @@ async def api_upload_paper(
     if auto_enrich:
         cfg = load_app_config(kb_root)
         job = create_job(kb_root, paper["id"], paper["title"])
-        executor = _get_executor(cfg.get("max_concurrency", 4))
-        executor.submit(run_enrichment_job, kb_root, paper["id"], job["id"], cfg)
+        _schedule_enrichment(kb_root, cfg)
 
     return {"root": str(kb_root), "paper": paper, "job": job}
 
@@ -473,15 +584,14 @@ def api_enrich_paper(paper_id: str, config: RootConfig) -> dict[str, Any]:
         raise HTTPException(status_code=404, detail=str(exc))
 
     cfg = load_app_config(kb_root)
-    # Skip if already has a running/queued job
+    # Skip if already has an active job
     existing = [j for j in list_jobs(kb_root)
-                if j.get("paper_id") == paper_id and j.get("status") in {"queued", "running"}]
+                if j.get("paper_id") == paper_id and j.get("status") in {"queued", "running", "paused"}]
     if existing:
         return {"root": str(kb_root), "paper": paper, "job": existing[0]}
 
     job = create_job(kb_root, paper_id, paper.get("title", paper_id))
-    executor = _get_executor(cfg.get("max_concurrency", 4))
-    executor.submit(run_enrichment_job, kb_root, paper_id, job["id"], cfg)
+    _schedule_enrichment(kb_root, cfg)
     return {"root": str(kb_root), "paper": paper, "job": job}
 
 
@@ -490,19 +600,39 @@ def api_enrich_all(background_tasks: BackgroundTasks, config: RootConfig) -> dic
     kb_root = resolve_root(config.root)
     cfg = load_app_config(kb_root)
     papers = list_papers(kb_root)
-    executor = _get_executor(cfg.get("max_concurrency", 4))
     jobs = []
     for paper in papers:
         pid = paper["id"]
-        # Skip if already has a running/queued job
+        # Skip if already has an active job
         existing = [j for j in list_jobs(kb_root)
-                    if j.get("paper_id") == pid and j.get("status") in {"queued", "running"}]
+                    if j.get("paper_id") == pid and j.get("status") in {"queued", "running", "paused"}]
         if existing:
             jobs.append(existing[0])
             continue
         job = create_job(kb_root, pid, paper.get("title", pid))
-        executor.submit(run_enrichment_job, kb_root, pid, job["id"], cfg)
         jobs.append(job)
+    _schedule_enrichment(kb_root, cfg)
+    return {"root": str(kb_root), "jobs": jobs, "queued": len(jobs)}
+
+
+@app.post("/api/papers/enrich-batch")
+def api_enrich_batch(config: PaperBatchRequest) -> dict[str, Any]:
+    kb_root = resolve_root(config.root)
+    cfg = load_app_config(kb_root)
+    paper_ids = [paper_id for paper_id in config.paper_ids if paper_id]
+    jobs = []
+    for paper_id in paper_ids:
+        try:
+            paper = load_paper(kb_root, paper_id)
+        except FileNotFoundError:
+            continue
+        existing = [j for j in list_jobs(kb_root)
+                    if j.get("paper_id") == paper_id and j.get("status") in {"queued", "running", "paused"}]
+        if existing:
+            jobs.append(existing[0])
+            continue
+        jobs.append(create_job(kb_root, paper_id, paper.get("title", paper_id)))
+    _schedule_enrichment(kb_root, cfg)
     return {"root": str(kb_root), "jobs": jobs, "queued": len(jobs)}
 
 
@@ -511,7 +641,29 @@ def api_enrich_all(background_tasks: BackgroundTasks, config: RootConfig) -> dic
 @app.get("/api/jobs")
 def api_list_jobs(root: str | None = None) -> dict[str, Any]:
     kb_root = resolve_root(root)
-    return {"root": str(kb_root), "jobs": list_jobs(kb_root)}
+    _drain_enrichment_queue(kb_root)
+    return {"root": str(kb_root), "jobs": list_jobs(kb_root), "queue": _queue_status(kb_root)}
+
+
+@app.post("/api/jobs/pause")
+def api_pause_queue(config: RootConfig) -> dict[str, Any]:
+    kb_root = resolve_root(config.root)
+    state = _save_queue_state(kb_root, {"paused": True})
+    for job in list_jobs(kb_root):
+        if job.get("status") in {"queued", "running"}:
+            pause_job(kb_root, job["id"], reason="queue")
+    return {"root": str(kb_root), "queue": {**_queue_status(kb_root), **state}, "jobs": list_jobs(kb_root)}
+
+
+@app.post("/api/jobs/resume")
+def api_resume_queue(config: RootConfig) -> dict[str, Any]:
+    kb_root = resolve_root(config.root)
+    state = _save_queue_state(kb_root, {"paused": False})
+    for job in list_jobs(kb_root):
+        if job.get("status") == "paused" and job.get("pause_reason") == "queue":
+            resume_job(kb_root, job["id"], reason="queue")
+    _schedule_enrichment(kb_root, load_app_config(kb_root))
+    return {"root": str(kb_root), "queue": {**_queue_status(kb_root), **state}, "jobs": list_jobs(kb_root)}
 
 
 @app.post("/api/jobs/cancel-all")
@@ -519,10 +671,60 @@ def api_cancel_all_jobs(config: RootConfig) -> dict[str, Any]:
     kb_root = resolve_root(config.root)
     cancelled = []
     for job in list_jobs(kb_root):
-        if job.get("status") in {"queued", "running"}:
+        if job.get("status") in {"queued", "running", "paused"}:
             cancel_job(kb_root, job["id"])
             cancelled.append(job["id"])
     return {"root": str(kb_root), "cancelled": len(cancelled), "jobs": list_jobs(kb_root)}
+
+
+@app.post("/api/jobs/batch/cancel")
+def api_cancel_jobs_batch(config: JobBatchRequest) -> dict[str, Any]:
+    kb_root = resolve_root(config.root)
+    changed = []
+    for job_id in config.job_ids:
+        try:
+            changed.append(cancel_job(kb_root, job_id)["id"])
+        except FileNotFoundError:
+            continue
+    return {"root": str(kb_root), "changed": changed, "jobs": list_jobs(kb_root), "queue": _queue_status(kb_root)}
+
+
+@app.post("/api/jobs/batch/pause")
+def api_pause_jobs_batch(config: JobBatchRequest) -> dict[str, Any]:
+    kb_root = resolve_root(config.root)
+    changed = []
+    for job_id in config.job_ids:
+        try:
+            changed.append(pause_job(kb_root, job_id)["id"])
+        except FileNotFoundError:
+            continue
+    return {"root": str(kb_root), "changed": changed, "jobs": list_jobs(kb_root), "queue": _queue_status(kb_root)}
+
+
+@app.post("/api/jobs/batch/resume")
+def api_resume_jobs_batch(config: JobBatchRequest) -> dict[str, Any]:
+    kb_root = resolve_root(config.root)
+    changed = []
+    for job_id in config.job_ids:
+        try:
+            changed.append(resume_job(kb_root, job_id)["id"])
+        except FileNotFoundError:
+            continue
+    _schedule_enrichment(kb_root, load_app_config(kb_root))
+    return {"root": str(kb_root), "changed": changed, "jobs": list_jobs(kb_root), "queue": _queue_status(kb_root)}
+
+
+@app.post("/api/jobs/batch/retry")
+def api_retry_jobs_batch(config: JobBatchRequest) -> dict[str, Any]:
+    kb_root = resolve_root(config.root)
+    changed = []
+    for job_id in config.job_ids:
+        try:
+            changed.append(retry_job(kb_root, job_id)["id"])
+        except FileNotFoundError:
+            continue
+    _schedule_enrichment(kb_root, load_app_config(kb_root))
+    return {"root": str(kb_root), "changed": changed, "jobs": list_jobs(kb_root), "queue": _queue_status(kb_root)}
 
 
 @app.get("/api/jobs/{job_id}")
@@ -542,6 +744,38 @@ def api_cancel_job(job_id: str, config: RootConfig) -> dict[str, Any]:
         job = cancel_job(kb_root, job_id)
     except FileNotFoundError as exc:
         raise HTTPException(status_code=404, detail=str(exc))
+    return {"root": str(kb_root), "job": job}
+
+
+@app.post("/api/jobs/{job_id}/pause")
+def api_pause_job(job_id: str, config: RootConfig) -> dict[str, Any]:
+    kb_root = resolve_root(config.root)
+    try:
+        job = pause_job(kb_root, job_id)
+    except FileNotFoundError as exc:
+        raise HTTPException(status_code=404, detail=str(exc))
+    return {"root": str(kb_root), "job": job}
+
+
+@app.post("/api/jobs/{job_id}/resume")
+def api_resume_job(job_id: str, config: RootConfig) -> dict[str, Any]:
+    kb_root = resolve_root(config.root)
+    try:
+        job = resume_job(kb_root, job_id)
+    except FileNotFoundError as exc:
+        raise HTTPException(status_code=404, detail=str(exc))
+    _schedule_enrichment(kb_root, load_app_config(kb_root))
+    return {"root": str(kb_root), "job": job}
+
+
+@app.post("/api/jobs/{job_id}/retry")
+def api_retry_job(job_id: str, config: RootConfig) -> dict[str, Any]:
+    kb_root = resolve_root(config.root)
+    try:
+        job = retry_job(kb_root, job_id)
+    except FileNotFoundError as exc:
+        raise HTTPException(status_code=404, detail=str(exc))
+    _schedule_enrichment(kb_root, load_app_config(kb_root))
     return {"root": str(kb_root), "job": job}
 
 

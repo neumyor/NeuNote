@@ -198,17 +198,35 @@ def _parse_json_block(text: str) -> dict[str, Any] | None:
     return None
 
 
-def translate_paper_summary_llm(
-    paper: dict[str, Any],
+def _translation_max_tokens(payload: dict[str, Any], config: dict[str, Any]) -> int:
+    configured = config.get("translation_max_tokens")
+    if configured:
+        try:
+            return max(1024, min(16000, int(configured)))
+        except (TypeError, ValueError):
+            pass
+    payload_chars = len(json.dumps(payload, ensure_ascii=False))
+    return max(4096, min(12000, int(payload_chars * 0.9) + 1536))
+
+
+def _build_translation_prompt(context: dict[str, Any], payload: dict[str, Any]) -> str:
+    return (
+        "Translate the following English paper-summary fields into Simplified "
+        "Chinese. Return a strict JSON object with the same keys.\n\n"
+        "Use this paper context only to choose accurate domain terminology; "
+        "do not translate fields that are not present in Input.\n\n"
+        f"Paper context:\n```json\n{json.dumps(context, ensure_ascii=False, indent=2)}\n```\n\n"
+        f"Input:\n```json\n{json.dumps(payload, ensure_ascii=False, indent=2)}\n```"
+    )
+
+
+def _request_llm_translation(
+    payload: dict[str, Any],
+    context: dict[str, Any],
     config: dict[str, Any],
     *,
-    timeout: float = 120.0,
+    timeout: float,
 ) -> dict[str, Any]:
-    """Translate summary fields via the configured Claude-compatible LLM.
-
-    Returns a dict with the same shape as :func:`translate_paper_summary`.
-    Raises on missing config or unrecoverable API error.
-    """
     import httpx
 
     api_key = (config.get("claude_api_key") or "").strip()
@@ -218,33 +236,12 @@ def translate_paper_summary_llm(
     endpoint = (config.get("claude_endpoint") or "").strip()
     model = (config.get("claude_model") or "sonnet").strip() or "sonnet"
     base_url = endpoint.rstrip("/") if endpoint else "https://api.anthropic.com"
-
-    payload = _extract_translatable(paper)
-    if not payload:
-        return {}
-
-    context = {
-        "title": paper.get("title") or "",
-        "authors": paper.get("authors") or [],
-        "venue": paper.get("venue") or "",
-        "abstract": paper.get("abstract") or "",
-        "tags": paper.get("tags") or [],
-    }
-    user_prompt = (
-        "Translate the following English paper-summary fields into Simplified "
-        "Chinese. Return a strict JSON object with the same keys.\n\n"
-        "Use this paper context only to choose accurate domain terminology; "
-        "do not translate fields that are not present in Input.\n\n"
-        f"Paper context:\n```json\n{json.dumps(context, ensure_ascii=False, indent=2)}\n```\n\n"
-        f"Input:\n```json\n{json.dumps(payload, ensure_ascii=False, indent=2)}\n```"
-    )
-
     body = {
         "model": model,
-        "max_tokens": 4096,
+        "max_tokens": _translation_max_tokens(payload, config),
         "temperature": 0.1,
         "system": PAPER_TRANSLATE_SYSTEM_PROMPT,
-        "messages": [{"role": "user", "content": user_prompt}],
+        "messages": [{"role": "user", "content": _build_translation_prompt(context, payload)}],
     }
     headers = {
         "Content-Type": "application/json",
@@ -266,9 +263,16 @@ def translate_paper_summary_llm(
 
     parsed = _parse_json_block(text_output)
     if not isinstance(parsed, dict):
-        raise RuntimeError(f"could not parse JSON from LLM response: {text_output[:200]}")
+        stop_reason = data.get("stop_reason") or "unknown"
+        raise RuntimeError(
+            "could not parse JSON from LLM response "
+            f"(stop_reason={stop_reason}, chars={len(text_output)}): {text_output[:200]}"
+        )
+    return parsed
 
-    # Normalize: keep only known fields, coerce types, drop empties.
+
+def _normalize_translation_response(parsed: dict[str, Any]) -> dict[str, Any]:
+    """Normalize model JSON into the translation schema used by papers."""
     result: dict[str, Any] = {}
     for key in _TRANSLATABLE_FIELDS:
         if key not in parsed:
@@ -329,6 +333,60 @@ def translate_paper_summary_llm(
                          for s in _split_lines(value) if s.strip()]
                 if items:
                     result[key] = items
+    return result
+
+
+def translate_paper_summary_llm(
+    paper: dict[str, Any],
+    config: dict[str, Any],
+    *,
+    timeout: float = 120.0,
+) -> dict[str, Any]:
+    """Translate summary fields via the configured Claude-compatible LLM.
+
+    Returns a dict with the same shape as :func:`translate_paper_summary`.
+    Raises on missing config or unrecoverable API error.
+    """
+    api_key = (config.get("claude_api_key") or "").strip()
+    if not api_key:
+        raise RuntimeError("translation_engine='llm' requires claude_api_key to be set")
+
+    payload = _extract_translatable(paper)
+    if not payload:
+        return {}
+
+    context = {
+        "title": paper.get("title") or "",
+        "authors": paper.get("authors") or [],
+        "venue": paper.get("venue") or "",
+        "abstract": paper.get("abstract") or "",
+        "tags": paper.get("tags") or [],
+    }
+
+    errors: list[str] = []
+    try:
+        result = _normalize_translation_response(
+            _request_llm_translation(payload, context, config, timeout=timeout)
+        )
+    except RuntimeError as exc:
+        errors.append(str(exc))
+        result = {}
+
+    missing_keys = [key for key in payload if key not in result]
+    for key in missing_keys:
+        try:
+            field_result = _normalize_translation_response(
+                _request_llm_translation({key: payload[key]}, context, config, timeout=timeout)
+            )
+            if key in field_result:
+                result[key] = field_result[key]
+        except RuntimeError as exc:
+            errors.append(f"{key}: {exc}")
+
+    still_missing = [key for key in payload if key not in result]
+    if still_missing:
+        detail = "; ".join(errors[-3:]) if errors else "LLM returned incomplete translations"
+        raise RuntimeError(f"LLM translation missing fields {still_missing}: {detail}")
 
     return result
 
