@@ -28,6 +28,10 @@ venue: "Conference Name"
 doi: ""
 arxiv_id: ""
 source_pdf: originals/papers/paper.pdf
+paper_url: ""
+pdf_url: ""
+download_status: downloaded
+index_status: not_indexed
 pages: 12
 tags: [anomaly_detection, time_series]
 status: profiled

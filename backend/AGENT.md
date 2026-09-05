@@ -2,6 +2,8 @@
 
 One YAML file per paper under `papers/`.  Source PDFs live in `originals/papers/`.
 
+Paper records may be metadata-only. `pdf_url` is remote metadata; only a validated local `source_pdf` may use `download_status: downloaded`. Full-text retrieval requires `index_status: indexed`.
+
 ## Read path
 
 1. List papers: scan `papers/` directory.

@@ -12,11 +12,11 @@ The project is intentionally small:
 
 - Local PDF ingestion and YAML-backed paper records.
 - Structured enrichment: bibliography metadata, author teams, core concepts, one-sentence summary, problem, contributions, method, experiments, limitations, and key figures.
-- Configurable key-figure extraction: fast Pillow region detection or slower agent-guided PyMuPDF cropping.
+- MinerU-backed PDF parsing before enrichment, with structured Markdown, layout-aware text, and extracted image assets.
 - Bilingual detail pages with LLM-backed translation support and English reference text for technical terms.
 - Review notes and a dedicated review-note search page.
 - Background enrichment queue with per-paper status and one-click cancel-all.
-- Agent chat over the literature library with persisted sessions and constrained knowledge-base tools.
+- A paper librarian that preserves scoped paper chat while discovering conference papers, importing metadata with confirmation, downloading requested PDFs, and searching indexed full text.
 - Optional Git sync for user data, with API keys and machine-local logs excluded.
 
 ## Requirements
@@ -28,6 +28,7 @@ The project is intentionally small:
   - macOS: `brew install poppler`
   - Debian/Ubuntu: `sudo apt-get install poppler-utils`
 - Optional: an Anthropic-compatible API key for enrichment, chat, and higher-quality translation
+- MinerU CLI: `npm install -g mineru-open-api` (already installed by the bundled MinerU skill); a MinerU token enables precision parsing for large or complex papers.
 
 ## Quick Start
 
@@ -78,6 +79,8 @@ bun run dev -- --host 127.0.0.1 --port 5173
 ## Privacy Model
 
 NeuNote is local-first. Your papers, notes, chat history, and enrichment outputs are ordinary files in your knowledge-base folder.
+
+Network discovery aggregates DBLP conference catalogues with OpenAlex, Crossref, and arXiv metadata. Search and venue lists are previews only. Metadata import and every PDF download require explicit UI confirmation. If one provider is unavailable, NeuNote returns results from the remaining providers and exposes a warning instead of silently reporting an empty result.
 
 The source repository ignores runtime user data:
 

@@ -92,7 +92,7 @@ The knowledge base contains personal data. Keep it separate from the app source 
 
 ## 5. Configure Enrichment and Translation
 
-NeuNote can run without an API key, but agent enrichment and LLM translation need an Anthropic-compatible endpoint.
+NeuNote sends source PDFs to MinerU for document parsing during enrichment. Agent enrichment and LLM translation additionally need an Anthropic-compatible endpoint.
 
 In Settings, configure:
 
@@ -100,9 +100,7 @@ In Settings, configure:
 - API key: stored only in `metadata/app_config.yaml` under your knowledge-base root
 - Model: for example `sonnet` or the model name supported by your compatible endpoint
 - Translation engine: `LLM service` for best technical translations, `local model` for offline Argos translation
-- Figure extraction mode:
-  - `Fast recognition`: faster Pillow-based region detection; agent selects candidates and writes captions
-  - `Agent precise crop`: slower PyMuPDF tool flow for difficult layouts
+- MinerU document parsing: enabled by default. `Auto` uses precision parsing when a MinerU token is configured and MinerU's no-token mode otherwise. `Precision` preserves structured Markdown, tables, formulas, and extracted images; it requires a MinerU API token.
 
 ## 6. Upload and Enrich Papers
 
@@ -112,7 +110,7 @@ In Settings, configure:
 4. Open a paper detail page and click `重新整理`, or use `批量整理` from the literature archive.
 5. Track progress in `整理队列`.
 
-Generated enrichment is stored in each paper YAML. Extracted key-figure images are stored in `assets/paper_figures/`.
+MinerU's parsed Markdown and JSON are retained under `logs/mineru/`; selected extracted images are copied to `assets/paper_figures/` and referenced from the paper YAML.
 
 ## 7. Optional Git Sync
 

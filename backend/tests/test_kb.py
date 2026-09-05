@@ -5,8 +5,9 @@ import unittest
 from pathlib import Path
 from unittest.mock import patch
 
-from app.agent_chat import _merge_review_patch
+from app.agent_chat import _merge_review_patch, _review_string_list, run_agent_paper_review_sync
 from app.kb import (
+    anthropic_request_options,
     create_job,
     ensure_kb,
     fail_job,
@@ -22,6 +23,14 @@ from app.kb import (
 
 
 class KnowledgeBaseTests(unittest.TestCase):
+    def test_deepseek_anthropic_requests_disable_thinking(self) -> None:
+        self.assertEqual(
+            anthropic_request_options("https://api.deepseek.com/anthropic"),
+            {"thinking": {"type": "disabled"}},
+        )
+        self.assertEqual(anthropic_request_options("https://api.anthropic.com"), {})
+        self.assertEqual(anthropic_request_options("https://deepseek.com.example.org"), {})
+
     def test_list_papers_ignores_atomic_write_temp_files(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
@@ -117,6 +126,34 @@ class KnowledgeBaseTests(unittest.TestCase):
         self.assertEqual(merged["key_figures"][0]["crop"], {"x0": 0.1, "y0": 0.2, "x1": 0.7, "y1": 0.8})
         self.assertEqual(merged["key_figures"][0]["crop_method"], "agent_pymupdf")
         self.assertEqual(merged["key_figures"][0]["caption"], "New caption")
+
+    def test_enrichment_merge_tolerates_malformed_model_list_fields(self) -> None:
+        paper = {"id": "paper", "title": "Paper", "tags": ["existing"]}
+        patch_data = {
+            "contributions": "A single contribution returned as a string.",
+            "method": {"unexpected": "object"},
+            "tags": ["agent", {"unexpected": "object"}, ""],
+        }
+
+        merged, _ = _merge_review_patch(paper, patch_data)
+
+        self.assertEqual(merged["contributions"], ["A single contribution returned as a string."])
+        self.assertNotIn("method", merged)
+        self.assertEqual(merged["tags"], ["agent"])
+        self.assertEqual(_review_string_list("One note"), ["One note"])
+        self.assertEqual(_review_string_list(["Good", None, {"bad": True}]), ["Good"])
+
+    def test_agent_review_sync_reports_worker_exception(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            with patch(
+                "app.agent_chat.run_agent_paper_review",
+                side_effect=RuntimeError("malformed review payload"),
+            ):
+                result = run_agent_paper_review_sync(root, "paper")
+
+        self.assertEqual(result["status"], "error")
+        self.assertEqual(result["detail"], "RuntimeError: malformed review payload")
 
     def test_job_pause_reason_prevents_queue_resume_from_manual_pause(self) -> None:
         with tempfile.TemporaryDirectory() as directory:

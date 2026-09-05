@@ -16,6 +16,7 @@ from typing import Any, Iterable
 from pypdf import PdfReader
 
 from .kb import (
+    anthropic_request_options,
     append_session_message,
     list_papers,
     load_paper,
@@ -23,6 +24,7 @@ from .kb import (
     now_iso,
     save_paper,
 )
+from .librarian import create_action, search_fulltext, search_papers_aggregated
 
 READ_PREFIXES = (
     "AGENT.md",
@@ -253,7 +255,8 @@ async def run_agent_answer(root: Path, question: str,
         input_schema={
             "type": "object",
             "properties": {
-                "paper_id": {"type": "string"},
+                "paper_id": {"type": "string", "description": "Existing paper ID, or empty for a new URL-only paper."},
+                "title": {"type": "string", "description": "Title for a URL-only paper record."},
                 "intend": _intend_schema("Explain why you are checking PDF metadata for the user."),
             },
             "required": ["paper_id", "intend"],
@@ -380,10 +383,102 @@ async def run_agent_answer(root: Path, question: str,
         except Exception as exc:
             return _tool_error(str(exc))
 
+    @tool(
+        name="librarian_search_papers",
+        description="Search aggregated academic sources (DBLP, OpenAlex, Crossref, arXiv). Conferences and years may narrow the search. Results require confirmation before import.",
+        input_schema={
+            "type": "object",
+            "properties": {
+                "conferences": {"type": "array", "items": {"type": "string"}},
+                "years": {"type": "array", "items": {"type": "integer"}},
+                "query": {"type": "string"},
+                "intend": _intend_schema("Explain what paper metadata you are searching for."),
+            },
+            "required": ["query", "intend"],
+        },
+    )
+    async def librarian_search_papers(args: dict) -> dict:
+        try:
+            candidates, warnings = await asyncio.to_thread(
+                search_papers_aggregated, list(args.get("conferences") or []),
+                [int(year) for year in args.get("years") or []], str(args.get("query") or "*"),
+            )
+            action = create_action(root, "metadata_import", candidates, session_id=session_id)
+            result = {"action_id": action["id"], "requires_confirmation": True, "candidate_count": len(candidates), "candidates": candidates[:100], "warnings": warnings}
+            return {"content": [{"type": "text", "text": json.dumps(result, ensure_ascii=False)}]}
+        except Exception as exc:
+            return _tool_error(str(exc))
+
+    @tool(
+        name="librarian_list_venue_papers",
+        description="Fetch a conference/year paper list from DBLP. Never downloads PDFs and requires confirmation before import.",
+        input_schema={
+            "type": "object",
+            "properties": {
+                "conferences": {"type": "array", "items": {"type": "string"}, "minItems": 1},
+                "years": {"type": "array", "items": {"type": "integer"}, "minItems": 1},
+                "intend": _intend_schema("Explain which venue paper list you are fetching."),
+            },
+            "required": ["conferences", "years", "intend"],
+        },
+    )
+    async def librarian_list_venue_papers(args: dict) -> dict:
+        return await librarian_search_papers({**args, "query": "*"})
+
+    @tool(
+        name="librarian_download_pdf_url",
+        description="Prepare a PDF download from a specified public URL. This never downloads immediately; it creates an action that the user must confirm in the UI.",
+        input_schema={
+            "type": "object",
+            "properties": {
+                "paper_id": {"type": "string"},
+                "url": {"type": "string"},
+                "intend": _intend_schema("Explain which paper download is being prepared."),
+            },
+            "required": ["url", "intend"],
+        },
+    )
+    async def librarian_download_pdf_url(args: dict) -> dict:
+        try:
+            paper_id = str(args.get("paper_id") or "").strip()
+            if paper_id:
+                paper = load_paper(root, paper_id)
+                item = {"paper_id": paper["id"], "title": paper.get("title"), "url": str(args["url"])}
+            else:
+                item = {"title": str(args.get("title") or "Downloaded paper"), "url": str(args["url"])}
+            action = create_action(root, "pdf_download", [item], session_id=session_id)
+            result = {"action_id": action["id"], "requires_confirmation": True, "kind": "pdf_download", "items": action["items"]}
+            return {"content": [{"type": "text", "text": json.dumps(result, ensure_ascii=False)}]}
+        except Exception as exc:
+            return _tool_error(str(exc))
+
+    @tool(
+        name="librarian_search_fulltext",
+        description="Search indexed local PDF text. Metadata-only and unindexed papers are excluded.",
+        input_schema={
+            "type": "object",
+            "properties": {
+                "query": {"type": "string"},
+                "paper_ids": {"type": "array", "items": {"type": "string"}},
+                "limit": {"type": "integer", "minimum": 1, "maximum": 30},
+                "intend": _intend_schema("Explain what evidence you are searching in indexed PDFs."),
+            },
+            "required": ["query", "paper_ids", "intend"],
+        },
+    )
+    async def librarian_search_fulltext(args: dict) -> dict:
+        try:
+            results = search_fulltext(root, str(args["query"]), list(args.get("paper_ids") or []), int(args.get("limit") or 12))
+            return {"content": [{"type": "text", "text": json.dumps(results, ensure_ascii=False)}]}
+        except Exception as exc:
+            return _tool_error(str(exc))
+
     server = create_sdk_mcp_server(
         name="neunote",
         version="1.0.0",
-        tools=[kb_list, kb_read, kb_write, kb_pdf_info, kb_read_pdf_pages, kb_render_pdf_pages],
+        tools=[kb_list, kb_read, kb_write, kb_pdf_info, kb_read_pdf_pages, kb_render_pdf_pages,
+               librarian_search_papers, librarian_list_venue_papers, librarian_download_pdf_url,
+               librarian_search_fulltext],
     )
 
     session = load_session(root, session_id)
@@ -421,7 +516,7 @@ Workflow:
 2. If papers are mentioned, read each mentioned paper YAML first. Otherwise list papers/ only when the question requires discovering relevant papers.
 3. If critical evidence is missing from a mentioned or discovered paper YAML, use kb_pdf_info and then kb_read_pdf_pages with precise pages or page ranges.
 4. Use kb_render_pdf_pages for figures, tables, equations, screenshots, or layout-sensitive claims that text extraction cannot verify.
-5. Answer strictly from paper YAML content and verified PDF evidence. Do not add outside knowledge.
+5. For library questions, answer strictly from paper YAML and verified PDF evidence. For discovery requests, use librarian tools and label results as network metadata, not full-paper evidence.
 6. Separate evidence from inference: if a claim is explicitly stated by the paper, say so with the paper ID; if you infer it from paper content, label it as your inference; if the paper does not provide enough evidence, say that the paper does not explicitly state it.
 7. Answer with citations to paper IDs and mention when PDF text or visual verification was used.
 8. Only write paper updates when correcting verified errors.
@@ -453,15 +548,19 @@ Tool UI:
             "mcp__neunote__kb_pdf_info",
             "mcp__neunote__kb_read_pdf_pages",
             "mcp__neunote__kb_render_pdf_pages",
+            "mcp__neunote__librarian_search_papers",
+            "mcp__neunote__librarian_list_venue_papers",
+            "mcp__neunote__librarian_download_pdf_url",
+            "mcp__neunote__librarian_search_fulltext",
         ],
         disallowed_tools=["Read", "Write", "Edit", "MultiEdit", "Bash", "Grep", "Glob", "LS", "WebFetch", "WebSearch"],
         mcp_servers={"neunote": server},
         extra_args={"debug-to-stderr": None},
         debug_stderr=stderr_temp,
         system_prompt=(
-            "You are a paper knowledge-base agent. Use only the neunote tools. "
+            "You are NeuNote's paper librarian. Use only the neunote tools. "
             "Answer strictly according to the paper YAML files and source PDF evidence available through those tools. "
-            "Do not use outside knowledge, guesses, or unstated background facts as if they came from the paper. "
+            "Network discovery metadata may be used only when returned by librarian tools; do not present it as full-paper evidence. "
             "When the original paper explicitly states something, attribute it to the paper ID. "
             "When you make a necessary inference from paper content, clearly label it as inference. "
             "When the paper does not explicitly state the answer or evidence is insufficient, say so directly. "
@@ -471,6 +570,7 @@ Tool UI:
             "When using PDFs, choose specific 1-based pages or page ranges rather than broad reads. "
             "Every tool call must include a short user-facing `intend` field explaining the immediate action. "
             "Only write paper updates when correcting verified errors; never modify originals/papers."
+            " Never import metadata or download a PDF without returning a confirmation action for the user."
         ),
     )
 
@@ -489,8 +589,8 @@ Tool UI:
 
     start_step = {
         "kind": "progress",
-        "title": "Scanning paper YAML files",
-        "detail": "The agent starts by reading AGENT.md and listing papers/ directory.",
+        "title": "Preparing the paper librarian",
+        "detail": "The librarian checks local evidence and chooses the required library tool.",
     }
     agent_steps.append(start_step)
     segments.append({"type": "progress", **start_step})
@@ -609,27 +709,14 @@ Rules:
   paper. Each explanation must be plain, accessible, and specific to how the
   paper uses the concept.
 - key_figures should identify the 1-3 most important figures/pages for
-  understanding the paper. Use the page markers in the PDF text to find
-  candidate figures, then use the available PDF figure tools to visually inspect
-  the page and save a readable crop of the actual figure area. Do not output a
-  key_figure unless you have either reused an existing image_path or saved a new
-  crop with save_figure_crop. Include the exact figure label when visible, for
-  example "Figure 2" or "Fig. 3".
-- In fast_pillow mode, figure candidates are already provided in the prompt.
-  Do not call visual tools; choose from those candidates and copy image_path,
-  crop, and crop_method exactly. In agent_pymupdf mode, use the figure tools.
-- During re-enrichment, prefer newly extracted figure assets over existing
-  image_path values. Reuse old image_path only when the prompt explicitly says
-  no new figure extraction was performed.
-- Figure crops must tightly cover the figure graphic and optional caption only.
-  Do not save whole pages, page headers, author blocks, unrelated body text, or
-  neighboring tables. Use normalized top-left page coordinates from the rendered
-  page. After save_figure_crop returns, copy its image_path, crop, and crop_method
-  fields into the matching key_figures item in your final JSON.
-- Prefer list_figure_candidates and save_figure_candidate when available. These
-  tools use PDF drawing geometry near the caption and usually produce tighter
-  crops than manual coordinates. Use preview_figure_crop before saving a manual
-  crop. Use manual save_figure_crop only when no suitable candidate exists.
+  understanding the paper from the MinerU-parsed Markdown and the MinerU image
+  assets supplied in the prompt. Do not invent image paths or use assets that
+  are not in that candidate list. Include the exact figure label when visible,
+  for example "Figure 2" or "Fig. 3". Only include a figure when its page is
+  explicit in the parsed result; otherwise leave key_figures as null.
+- During re-enrichment, use newly extracted MinerU assets rather than old image
+  paths. Set crop_method to "mineru" and omit crop because MinerU provides the
+  extracted asset directly rather than a page-coordinate crop.
 - Write one_sentence, problem, contributions, method, experiments, and
   limitations in a readable, self-contained style. Avoid vague fragments:
   include the key object, action, mechanism, evidence, or tradeoff needed for a
@@ -657,7 +744,7 @@ Output ONLY a valid JSON object with this schema:
   "arxiv_id": "string" | null,
   "abstract": "string" | null,
   "core_concepts": [{"concept": "string", "explanation": "string"}] | null,
-  "key_figures": [{"label": "string", "title": "string", "page": number, "caption": "string", "reason": "string", "image_path": "string", "crop": {"x0": number, "y0": number, "x1": number, "y1": number}, "crop_method": "string"}] | null,
+  "key_figures": [{"label": "string", "title": "string", "page": number, "caption": "string", "reason": "string", "image_path": "string", "crop_method": "mineru"}] | null,
   "one_sentence": "string" | null,
   "problem": "string" | null,
   "contributions": ["string"] | null,
@@ -675,10 +762,9 @@ Include review_notes explaining what you changed and what remains unknown.
 
 def _build_review_prompt(
     paper: dict[str, Any],
-    pdf_text: str,
+    mineru_markdown: str,
     known_tags: list[str] | None = None,
-    figure_candidates: list[dict[str, Any]] | None = None,
-    figure_mode: str = "agent_pymupdf",
+    mineru_assets: list[dict[str, Any]] | None = None,
 ) -> str:
     identity = f"""\
 Current paper metadata:
@@ -713,29 +799,26 @@ Known tags across the library (avoid duplicates/synonyms):
 {json.dumps(sorted(known_tags))}
 
 """
-    figure_info = ""
-    if figure_mode == "fast_pillow":
-        figure_info = f"""\
-Fast figure extraction candidates:
-{json.dumps(figure_candidates or [], ensure_ascii=False, indent=2)}
+    asset_info = f"""\
+MinerU extracted image candidates:
+{json.dumps(mineru_assets or [], ensure_ascii=False, indent=2)}
 
-For key_figures, choose the most important 1-3 items from this candidate list.
-Do not call visual figure tools in fast_pillow mode. Copy image_path, crop, and
-crop_method exactly from the selected candidate. You may improve title, caption,
-and reason using the PDF text.
+For key_figures, select only a candidate whose image_path and page are supplied
+above. Copy its image_path exactly and set crop_method to "mineru". Do not add a
+crop field.
 
 """
-    pdf_snippet = pdf_text[:16000]
+    markdown_snippet = mineru_markdown[:50000]
     return f"""\
-Review this paper's metadata against the source PDF text and output corrections.
+Review this paper's metadata against the MinerU-parsed source document and output corrections.
 
 {identity}
 
 {summary}
 
-{tags_info}{figure_info}Source PDF text (first pages with 1-based page markers):
+{tags_info}{asset_info}MinerU parsed Markdown:
 ---
-{pdf_snippet}
+{markdown_snippet}
 ---
 
 Output ONLY the JSON patch object as specified.
@@ -800,12 +883,15 @@ def _merge_review_patch(
     patch: dict[str, Any],
     *,
     preserve_existing_figures: bool = True,
+    allowed_figure_paths: set[str] | None = None,
 ) -> tuple[dict[str, Any], list[str]]:
     """Merge agent corrections into paper. Returns (paper, notes)."""
     notes: list[str] = []
 
     # ── title: only correct if current looks bad OR substantially different ──
     title = patch.get("title")
+    if not isinstance(title, str):
+        title = ""
     if title and title != paper.get("title", ""):
         current = paper.get("title", "")
         if _title_looks_bad(current) or _titles_differ_substantially(current, title):
@@ -815,6 +901,15 @@ def _merge_review_patch(
     # ── identity fields: if agent provides a value, apply it ──
     for key in ("authors", "author_affiliations", "year", "venue", "doi", "arxiv_id"):
         value = patch.get(key)
+        if key in {"authors", "author_affiliations"}:
+            value = _review_string_list(value)
+        elif key == "year":
+            if isinstance(value, str) and value.strip().isdigit():
+                value = int(value.strip())
+            elif not isinstance(value, int) or isinstance(value, bool):
+                value = None
+        elif not isinstance(value, str):
+            value = None
         if value is not None and value != "" and value != []:
             old = paper.get(key)
             paper[key] = value
@@ -823,6 +918,8 @@ def _merge_review_patch(
     # ── text fields: if agent provides a value, apply it ──
     for key in ("abstract", "one_sentence", "problem"):
         value = patch.get(key)
+        if not isinstance(value, str):
+            value = ""
         if value and value != paper.get(key, ""):
             old = str(paper.get(key, ""))[:60]
             paper[key] = value
@@ -881,6 +978,9 @@ def _merge_review_patch(
             label = str(item.get("label") or "").strip()
             caption = str(item.get("caption") or "").strip()
             reason = str(item.get("reason") or "").strip()
+            supplied_path = str(item.get("image_path") or "").strip()
+            if allowed_figure_paths is not None and supplied_path not in allowed_figure_paths:
+                continue
             if page >= 1 and (label or title or caption):
                 normalized = {
                     "label": label,
@@ -903,8 +1003,8 @@ def _merge_review_patch(
 
     # ── list fields: if agent provides a list, apply it ──
     for key in ("contributions", "method", "experiments", "limitations"):
-        value = patch.get(key)
-        if value and len(value) > 0:
+        value = _review_string_list(patch.get(key))
+        if value:
             current = paper.get(key) or []
             paper[key] = value
             notes.append(f"{key}: replaced {len(current)} items → {len(value)} items")
@@ -912,8 +1012,8 @@ def _merge_review_patch(
     # ── tags: if agent provides tags, use them (agent decides keep/remove/add) ──
     new_tags = patch.get("tags")
     if new_tags is not None and isinstance(new_tags, list):
-        old_tags = set(paper.get("tags", []))
-        new_set = set(new_tags)
+        old_tags = {tag for tag in (paper.get("tags") or []) if isinstance(tag, str)}
+        new_set = {tag.strip() for tag in new_tags if isinstance(tag, str) and tag.strip()}
         added = new_set - old_tags
         removed = old_tags - new_set
         paper["tags"] = sorted(new_set)
@@ -923,6 +1023,18 @@ def _merge_review_patch(
             notes.append(f"tags: removed {sorted(removed)}")
 
     return paper, notes
+
+
+def _review_string_list(value: Any) -> list[str] | None:
+    """Normalize occasionally malformed model list fields without leaking bad YAML."""
+    if value is None:
+        return None
+    if isinstance(value, str):
+        text = value.strip()
+        return [text] if text else []
+    if not isinstance(value, list):
+        return None
+    return [item.strip() for item in value if isinstance(item, str) and item.strip()]
 
 
 def _brief(value: Any) -> str:
@@ -1138,7 +1250,8 @@ async def run_agent_paper_review(root: Path, paper_id: str,
                                   config: dict[str, Any] | None = None,
                                   job_id: str | None = None) -> dict[str, Any]:
     """Run a Claude agent to review and correct paper metadata."""
-    from .kb import _known_tags, extract_pdf_text, job_debug_log, load_paper, now_iso, save_paper
+    from .kb import _known_tags, job_debug_log, load_paper, now_iso, save_paper
+    from .mineru import MinerUExtractionError, extract_paper_with_mineru
 
     def _dbg(msg: str) -> None:
         if job_id:
@@ -1150,35 +1263,36 @@ async def run_agent_paper_review(root: Path, paper_id: str,
         _dbg("agent_review: no source PDF, skipping")
         return {"status": "skipped", "reason": "no source pdf"}
 
-    _dbg(f"agent_review: reading PDF '{source}' (max 12 pages)")
-    pdf_text = extract_pdf_text(root / source, max_pages=12, include_page_markers=True)
-    if not pdf_text.strip():
-        _dbg("agent_review: empty PDF text, skipping")
-        return {"status": "skipped", "reason": "empty pdf text"}
-    _dbg(f"agent_review: PDF text {len(pdf_text)} chars")
-
     config = config or {}
     api_key = config.get("claude_api_key", "")
     endpoint = config.get("claude_endpoint", "")
     model = config.get("claude_model", "sonnet")
-    figure_mode = config.get("figure_extraction_mode") or "fast_pillow"
-    reextract_figures = bool(config.get("figure_reextract_on_enrich", True))
+    try:
+        mineru_result = extract_paper_with_mineru(
+            root, paper_id, root / source, config, debug=_dbg,
+        )
+    except MinerUExtractionError as exc:
+        _dbg(f"agent_review: MinerU extraction failed: {exc}")
+        return {"status": "error", "detail": str(exc)}
 
     if not api_key:
-        _dbg("agent_review: no API key, skipping")
-        return {"status": "skipped", "reason": "no api key configured"}
-
-    figure_candidates: list[dict[str, Any]] = []
-    if figure_mode == "fast_pillow" and reextract_figures:
-        try:
-            from .figure_tools import extract_fast_pillow_figures
-            figure_candidates = extract_fast_pillow_figures(root, paper_id, max_pages=12)
-            _dbg(f"agent_review: fast_pillow extracted {len(figure_candidates)} figure candidates")
-        except Exception as exc:
-            _dbg(f"agent_review: fast_pillow figure extraction failed: {exc}")
+        paper["mineru"] = {
+            "mode": mineru_result["mode"],
+            "markdown_path": mineru_result["markdown_path"],
+            "json_path": mineru_result["json_path"],
+            "asset_count": len(mineru_result["assets"]),
+            "updated_at": now_iso(),
+        }
+        paper["status"] = "parsed"
+        paper["needs_review"] = True
+        save_paper(root, paper)
+        _dbg("agent_review: MinerU parsed document; no Claude API key for profile filling")
+        return {"status": "parsed", "reason": "no Claude API key configured"}
 
     known_tags = _known_tags(root)
-    prompt = _build_review_prompt(paper, pdf_text, known_tags, figure_candidates, figure_mode)
+    prompt = _build_review_prompt(
+        paper, mineru_result["markdown"], known_tags, mineru_result["assets"],
+    )
     _dbg(f"agent_review: calling {model} at {endpoint or 'default'}, prompt {len(prompt)} chars")
 
     import httpx
@@ -1193,14 +1307,12 @@ async def run_agent_paper_review(root: Path, paper_id: str,
 
     body = {
         "model": model,
-        "max_tokens": 8192,
+        "max_tokens": 20000,
         "temperature": 0.1,
         "system": PAPER_REVIEW_SYSTEM_PROMPT,
         "messages": [{"role": "user", "content": prompt}],
     }
-    if figure_mode == "agent_pymupdf":
-        body["tools"] = PAPER_REVIEW_TOOLS
-
+    body.update(anthropic_request_options(base_url))
     async with httpx.AsyncClient(timeout=120) as client:
         t0 = datetime.now(timezone.utc)
         data: dict[str, Any] = {}
@@ -1215,66 +1327,59 @@ async def run_agent_paper_review(root: Path, paper_id: str,
             data = resp.json()
             content = data.get("content", [])
             tool_uses = [block for block in content if isinstance(block, dict) and block.get("type") == "tool_use"]
-            if not tool_uses:
-                break
-
-            body["messages"].append({"role": "assistant", "content": content})
-            tool_results = []
-            for tool_use in tool_uses:
-                _dbg(f"agent_review: tool {tool_use.get('name')} input={_compact_json(tool_use.get('input'), 500)}")
-                result_block = _execute_paper_review_tool(root, tool_use)
-                tool_results.append(result_block)
-                result_text = result_block.get("content", [{}])[0].get("text", "")
-                _dbg(f"agent_review: tool {tool_use.get('name')} result={_compact(str(result_text), 500)}")
-            body["messages"].append({"role": "user", "content": tool_results})
-
-            if turn == max_tool_turns:
-                _dbg("agent_review: tool turn limit reached; requesting final JSON without further tool use")
-                final_body = dict(body)
-                final_body.pop("tools", None)
-                final_body["messages"] = [
-                    *body["messages"],
-                    {
-                        "role": "user",
-                        "content": (
-                            "Tool-use budget is exhausted. Do not call any more tools. "
-                            "Return the final JSON patch now, reusing the image_path, crop, "
-                            "and crop_method values already returned by save_figure_crop."
-                        ),
-                    },
-                ]
-                resp = await client.post(url, headers=headers, json=final_body)
-                elapsed = (datetime.now(timezone.utc) - t0).total_seconds()
-                _dbg(f"agent_review: final JSON response {resp.status_code} in {elapsed:.1f}s")
-                if resp.status_code != 200:
-                    _dbg(f"agent_review: final JSON API error body: {resp.text[:300]}")
-                    return {"status": "error", "detail": f"API error {resp.status_code}: {resp.text[:500]}"}
-                data = resp.json()
-                break
+            if tool_uses:
+                return {"status": "error", "detail": "MinerU review does not permit model tool calls."}
+            break
         else:
             return {"status": "error", "detail": "agent review exceeded tool-use turn limit"}
 
     content = data.get("content", [])
+    if not isinstance(content, list):
+        content = []
     text_output = ""
+    content_types: list[str] = []
     for block in content:
-        if block.get("type") == "text":
-            text_output += block.get("text", "")
-    _dbg(f"agent_review: response {len(text_output)} chars, usage={data.get('usage', {})}")
+        if not isinstance(block, dict):
+            continue
+        block_type = str(block.get("type") or "unknown")
+        content_types.append(block_type)
+        if block_type == "text":
+            block_text = block.get("text")
+            if isinstance(block_text, str):
+                text_output += block_text
+    stop_reason = str(data.get("stop_reason") or "unknown")
+    _dbg(
+        f"agent_review: response {len(text_output)} chars, stop_reason={stop_reason}, "
+        f"content_types={content_types}, usage={data.get('usage', {})}"
+    )
+
+    if not text_output.strip():
+        detail = (
+            "agent response contained no final text "
+            f"(stop_reason={stop_reason}, content_types={content_types or ['none']})"
+        )
+        _dbg(f"agent_review: {detail}")
+        return {"status": "error", "detail": detail}
 
     # Parse JSON from response
     patch = _parse_json_block(text_output)
     if not patch:
         _dbg(f"agent_review: failed to parse JSON, raw: {text_output[:200]}")
-        return {"status": "error", "detail": "could not parse JSON from agent response", "raw": text_output[:500]}
+        return {
+            "status": "error",
+            "detail": f"could not parse JSON from agent response (stop_reason={stop_reason})",
+            "raw": text_output[:500],
+        }
 
     _dbg(f"agent_review: parsed patch keys={list(patch.keys())}")
 
     # Merge corrections
-    review_notes = patch.get("review_notes", [])
+    review_notes = _review_string_list(patch.get("review_notes")) or []
     paper, merge_notes = _merge_review_patch(
         paper,
         patch,
-        preserve_existing_figures=not reextract_figures,
+        preserve_existing_figures=False,
+        allowed_figure_paths={str(item["image_path"]) for item in mineru_result["assets"]},
     )
     all_notes = merge_notes + review_notes
     _dbg(f"agent_review: merge produced {len(all_notes)} notes")
@@ -1289,6 +1394,13 @@ async def run_agent_paper_review(root: Path, paper_id: str,
     })
     paper["agent_reviewed_at"] = now_iso()
     paper["needs_review"] = False
+    paper["mineru"] = {
+        "mode": mineru_result["mode"],
+        "markdown_path": mineru_result["markdown_path"],
+        "json_path": mineru_result["json_path"],
+        "asset_count": len(mineru_result["assets"]),
+        "updated_at": now_iso(),
+    }
 
     save_paper(root, paper)
     return {"status": "ok", "notes": all_notes}
@@ -1322,17 +1434,27 @@ def run_agent_paper_review_sync(root: Path, paper_id: str,
                                  config: dict[str, Any] | None = None) -> dict[str, Any]:
     """Sync wrapper for ThreadPoolExecutor usage."""
     result: dict[str, Any] = {"status": "error", "detail": "review did not complete"}
+    config = config or {}
 
     def worker() -> None:
         nonlocal result
-        async def run() -> None:
-            nonlocal result
-            result = await run_agent_paper_review(root, paper_id, config, job_id)
-        asyncio.run(run())
+        try:
+            async def run() -> None:
+                nonlocal result
+                result = await run_agent_paper_review(root, paper_id, config, job_id)
+            asyncio.run(run())
+        except Exception as exc:
+            detail = f"{type(exc).__name__}: {exc}"
+            result = {"status": "error", "detail": detail}
+            if job_id:
+                from .kb import job_debug_log
+                job_debug_log(root, job_id, f"agent_review: worker exception: {detail}")
+                job_debug_log(root, job_id, traceback.format_exc())
 
     thread = threading.Thread(target=worker, daemon=True)
     thread.start()
-    thread.join(timeout=180)  # 3-minute timeout to prevent infinite blocking
+    mineru_timeout = max(60, min(int(config.get("mineru_timeout_seconds") or 900), 1800))
+    thread.join(timeout=mineru_timeout + 90)
     if thread.is_alive():
-        return {"status": "error", "detail": "agent review timed out after 180s"}
+        return {"status": "error", "detail": f"agent review timed out after {mineru_timeout + 90}s"}
     return result

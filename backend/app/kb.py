@@ -7,6 +7,7 @@ import shutil
 import subprocess
 import tempfile as tempfile_mod
 import time
+import urllib.parse
 import uuid
 from datetime import datetime, timezone
 from pathlib import Path
@@ -21,6 +22,17 @@ from pypdf import PdfReader
 
 def now_iso() -> str:
     return datetime.now(timezone.utc).isoformat()
+
+
+def anthropic_request_options(base_url: str) -> dict[str, Any]:
+    """Return provider-specific options for Anthropic-compatible endpoints."""
+    hostname = (urllib.parse.urlparse(base_url).hostname or "").casefold()
+    if hostname == "deepseek.com" or hostname.endswith(".deepseek.com"):
+        # DeepSeek V4 defaults to thinking mode. Structured extraction and
+        # translation need the final JSON, not a reasoning block that can use
+        # the entire output budget before the answer is emitted.
+        return {"thinking": {"type": "disabled"}}
+    return {}
 
 
 def job_debug_log(root: Path, job_id: str, message: str) -> None:
@@ -78,6 +90,16 @@ PAPER_SCHEMA_DEFAULTS: dict[str, Any] = {
     "author_affiliations": [],
     "core_concepts": [],
     "key_figures": [],
+    "paper_url": "",
+    "pdf_url": "",
+    "download_status": "not_downloaded",
+    "download_error": "",
+    "downloaded_at": None,
+    "index_status": "not_indexed",
+    "index_error": "",
+    "indexed_at": None,
+    "index_version": None,
+    "metadata_sources": [],
 }
 
 
@@ -92,6 +114,10 @@ def normalize_paper_schema(paper: dict[str, Any]) -> dict[str, Any]:
     for key, value in PAPER_SCHEMA_DEFAULTS.items():
         if key not in normalized or normalized[key] is None:
             normalized[key] = list(value) if isinstance(value, list) else value
+    # Legacy records predate explicit download state. A source path denotes a
+    # downloaded file; existence is reconciled by the migration/index service.
+    if paper.get("source_pdf") and "download_status" not in paper:
+        normalized["download_status"] = "downloaded"
     return normalized
 
 
@@ -102,6 +128,35 @@ def ensure_kb(root: Path) -> None:
     _ensure_text(root / "AGENT.md", AGENT_MD)
     _ensure_text(root / "logs/ingest_log.md", "# Ingest Log\n")
     _ensure_text(root / "logs/update_log.md", "# Update Log\n")
+    _migrate_v12_papers(root)
+
+
+def _migrate_v12_papers(root: Path) -> None:
+    """Idempotently persist the record/PDF split for pre-v1.2 YAML files."""
+    marker = root / "metadata/schema_version"
+    if marker.exists() and marker.read_text(encoding="utf-8").strip() == "1.2":
+        return
+    for path in (root / "papers").glob("*.yaml"):
+        if path.name.startswith("."):
+            continue
+        try:
+            paper = yaml.safe_load(path.read_text(encoding="utf-8")) or {}
+        except (OSError, yaml.YAMLError):
+            continue
+        source = paper.get("source_pdf")
+        local_exists = bool(source and (root / str(source)).is_file())
+        paper.setdefault("paper_url", "")
+        paper.setdefault("pdf_url", "")
+        paper.setdefault("download_status", "downloaded" if local_exists else "not_downloaded")
+        paper.setdefault("download_error", "")
+        paper.setdefault("downloaded_at", paper.get("created_at") if local_exists else None)
+        paper.setdefault("index_status", "not_indexed")
+        paper.setdefault("index_error", "")
+        paper.setdefault("indexed_at", None)
+        paper.setdefault("index_version", None)
+        paper.setdefault("metadata_sources", [])
+        path.write_text(yaml.safe_dump(paper, sort_keys=False, allow_unicode=True), encoding="utf-8")
+    marker.write_text("1.2\n", encoding="utf-8")
 
 
 AGENT_MD = """\
@@ -1049,12 +1104,15 @@ def job_path(root: Path, job_id: str) -> Path:
     return root / "logs/jobs" / f"{job_id}.json"
 
 
-def create_job(root: Path, paper_id: str, title: str) -> dict[str, Any]:
+def create_job(root: Path, paper_id: str, title: str, *, kind: str = "enrichment",
+               payload: dict[str, Any] | None = None) -> dict[str, Any]:
     created = now_iso()
     job = {
         "id": uuid.uuid4().hex,
         "paper_id": paper_id,
         "title": title,
+        "kind": kind,
+        "payload": payload or {},
         "status": "queued",
         "stage": "queued",
         "progress": 0,
@@ -1210,7 +1268,7 @@ def delete_job(root: Path, job_id: str) -> None:
 
 
 def run_enrichment_job(root: Path, paper_id: str, job_id: str, config: dict[str, Any] | None = None) -> None:
-    """Background enrichment job: regex extraction + optional agent review."""
+    """Background enrichment job: MinerU parsing followed by structured AI review."""
     job_debug_log(root, job_id, f"=== Job started: paper_id={paper_id} ===")
     try:
         job = load_job(root, job_id)
@@ -1221,69 +1279,51 @@ def run_enrichment_job(root: Path, paper_id: str, job_id: str, config: dict[str,
         paper = load_paper(root, paper_id)
         job_debug_log(root, job_id, f"Paper: '{paper.get('title')}', source={paper.get('source_pdf')}, pages={paper.get('pages')}")
 
+        config = config or load_app_config(root)
         update_job(root, job_id, status="running", stage="extracting",
-                   progress=15, message="Extracting text from PDF.")
-        job_debug_log(root, job_id, "Stage: extracting")
+                   progress=15, message="Parsing PDF with MinerU.")
+        job_debug_log(root, job_id, "Stage: extracting (MinerU)")
         if not _job_should_continue(root, job_id):
             job_debug_log(root, job_id, "Cancelled during extracting")
             return
 
-        update_job(root, job_id, stage="enriching",
-                   progress=35, message="Running keyword extraction.")
-        job_debug_log(root, job_id, "Stage: enriching (regex)")
+        update_job(root, job_id, stage="agent_review",
+                   progress=35, message="MinerU parsed document; filling paper profile.")
+        job_debug_log(root, job_id, f"Stage: agent_review (model={config.get('claude_model', 'sonnet')})")
         if not _job_should_continue(root, job_id):
-            job_debug_log(root, job_id, "Cancelled during enriching")
+            job_debug_log(root, job_id, "Cancelled before agent review")
             return
 
-        enrich_paper(root, paper_id, job_id=job_id)
-        if not _job_should_continue(root, job_id):
-            job_debug_log(root, job_id, "Cancelled after enrichment extraction")
-            return
-
-        # ── Agent review (if API key configured) ──
-        config = config or load_app_config(root)
-        if config.get("claude_api_key"):
-            update_job(root, job_id, stage="agent_review",
-                       progress=60, message="AI agent reviewing metadata.")
-            job_debug_log(root, job_id, f"Stage: agent_review (model={config.get('claude_model', 'sonnet')})")
+        try:
+            from .agent_chat import run_agent_paper_review_sync
+            t0 = datetime.now(timezone.utc)
+            result = run_agent_paper_review_sync(root, paper_id, job_id, config)
+            elapsed = (datetime.now(timezone.utc) - t0).total_seconds()
+            job_debug_log(root, job_id, f"Agent review completed in {elapsed:.1f}s, status={result.get('status')}")
             if not _job_should_continue(root, job_id):
-                job_debug_log(root, job_id, "Cancelled before agent review")
+                job_debug_log(root, job_id, "Cancelled after agent review returned")
                 return
-
-            try:
-                from .agent_chat import run_agent_paper_review_sync
-                t0 = datetime.now(timezone.utc)
-                result = run_agent_paper_review_sync(root, paper_id, job_id, config)
-                elapsed = (datetime.now(timezone.utc) - t0).total_seconds()
-                job_debug_log(root, job_id, f"Agent review completed in {elapsed:.1f}s, status={result.get('status')}")
-                if not _job_should_continue(root, job_id):
-                    job_debug_log(root, job_id, "Cancelled after agent review returned")
-                    return
-                if result.get("status") == "ok":
-                    notes_count = len(result.get("notes", []))
-                    job_debug_log(root, job_id, f"Agent corrections ({notes_count}):")
-                    for note in result.get("notes", []):
-                        job_debug_log(root, job_id, f"  - {note}")
-                    update_job(root, job_id, stage="agent_review", progress=90,
-                               message=f"Agent reviewed: {notes_count} corrections.")
-                elif result.get("status") == "error":
-                    reason = result.get("detail", "unknown")
-                    job_debug_log(root, job_id, f"Agent review failed: {reason}")
-                    raise RuntimeError(f"Agent review failed: {reason}")
-                else:
-                    reason = result.get('reason', result.get('detail', 'unknown'))
-                    job_debug_log(root, job_id, f"Agent review skipped/failed: {reason}")
-                    update_job(root, job_id, stage="agent_review", progress=90,
-                               message=f"Agent review skipped: {reason}")
-            except Exception as exc:
-                job_debug_log(root, job_id, f"Agent review exception: {exc}")
-                import traceback as _tb
-                job_debug_log(root, job_id, _tb.format_exc())
-                raise
-        else:
-            job_debug_log(root, job_id, "Agent review skipped: no API key")
-            update_job(root, job_id, stage="agent_review", progress=85,
-                       message="Agent review skipped: no API key configured.")
+            if result.get("status") == "ok":
+                notes_count = len(result.get("notes", []))
+                job_debug_log(root, job_id, f"Agent corrections ({notes_count}):")
+                for note in result.get("notes", []):
+                    job_debug_log(root, job_id, f"  - {note}")
+                update_job(root, job_id, stage="agent_review", progress=90,
+                           message=f"MinerU profile completed: {notes_count} corrections.")
+            elif result.get("status") == "error":
+                reason = result.get("detail", "unknown")
+                job_debug_log(root, job_id, f"Agent review failed: {reason}")
+                raise RuntimeError(f"Agent review failed: {reason}")
+            else:
+                reason = result.get('reason', result.get('detail', 'Claude API key is not configured'))
+                job_debug_log(root, job_id, f"Agent review incomplete: {reason}")
+                update_job(root, job_id, stage="agent_review", progress=90,
+                           message=f"MinerU parsed; profile not filled: {reason}")
+        except Exception as exc:
+            job_debug_log(root, job_id, f"Agent review exception: {exc}")
+            import traceback as _tb
+            job_debug_log(root, job_id, _tb.format_exc())
+            raise
 
         # ── Translation (after enrichment, if paper is in English) ──
         from .translate import translate_paper_summary, translate_paper_summary_llm
@@ -1478,8 +1518,11 @@ def load_app_config(root: Path) -> dict[str, Any]:
             "max_concurrency": 4,
             "translation_engine": "llm",
             "default_summary_language": "en",
-            "figure_extraction_mode": "fast_pillow",
-            "figure_reextract_on_enrich": True,
+            "mineru_api_token": "",
+            "mineru_extraction_mode": "auto",
+            "mineru_model": "vlm",
+            "mineru_timeout_seconds": 900,
+            "mineru_allow_remote": True,
             "sync_mode": "local",
             "git_remote": "origin",
             "git_remote_url": "",
@@ -1499,8 +1542,11 @@ def load_app_config(root: Path) -> dict[str, Any]:
         "max_concurrency": data.get("max_concurrency", 4),
         "translation_engine": data.get("translation_engine") or "llm",
         "default_summary_language": data.get("default_summary_language") if data.get("default_summary_language") in {"en", "zh"} else "en",
-        "figure_extraction_mode": data.get("figure_extraction_mode") if data.get("figure_extraction_mode") in {"fast_pillow", "agent_pymupdf"} else "fast_pillow",
-        "figure_reextract_on_enrich": bool(data.get("figure_reextract_on_enrich", True)),
+        "mineru_api_token": data.get("mineru_api_token") or "",
+        "mineru_extraction_mode": data.get("mineru_extraction_mode") if data.get("mineru_extraction_mode") in {"auto", "precision", "flash"} else "auto",
+        "mineru_model": data.get("mineru_model") if data.get("mineru_model") in {"vlm", "pipeline"} else "vlm",
+        "mineru_timeout_seconds": max(60, min(1800, int(data.get("mineru_timeout_seconds", 900)))),
+        "mineru_allow_remote": bool(data.get("mineru_allow_remote", True)),
         "sync_mode": data.get("sync_mode") or "local",
         "git_remote": data.get("git_remote") or "origin",
         "git_remote_url": data.get("git_remote_url") or "",
@@ -1517,7 +1563,8 @@ def save_app_config(root: Path, config: dict[str, Any]) -> dict[str, Any]:
     current = load_app_config(root)
     for key in ("claude_api_key", "claude_endpoint", "claude_model",
                 "max_concurrency", "translation_engine", "sync_mode",
-                "default_summary_language", "figure_extraction_mode", "figure_reextract_on_enrich",
+                "default_summary_language", "mineru_api_token", "mineru_extraction_mode",
+                "mineru_model", "mineru_timeout_seconds", "mineru_allow_remote",
                 "git_remote", "git_remote_url", "git_branch",
                 "git_sync_pdfs", "git_sync_chats", "git_auto_sync",
                 "git_sync_interval_minutes"):

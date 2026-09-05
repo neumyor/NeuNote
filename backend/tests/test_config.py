@@ -15,22 +15,25 @@ class ConfigTests(unittest.TestCase):
             self.assertFalse(config["git_auto_sync"])
             self.assertEqual(config["git_sync_interval_minutes"], 10)
             self.assertEqual(config["default_summary_language"], "en")
-            self.assertEqual(config["figure_extraction_mode"], "fast_pillow")
-            self.assertTrue(config["figure_reextract_on_enrich"])
+            self.assertEqual(config["mineru_extraction_mode"], "auto")
+            self.assertEqual(config["mineru_model"], "vlm")
+            self.assertTrue(config["mineru_allow_remote"])
 
             updated = save_app_config(root, {
                 "sync_mode": "git",
                 "git_auto_sync": True,
                 "git_sync_interval_minutes": 25,
                 "default_summary_language": "zh",
-                "figure_extraction_mode": "agent_pymupdf",
-                "figure_reextract_on_enrich": False,
+                "mineru_extraction_mode": "precision",
+                "mineru_model": "pipeline",
+                "mineru_allow_remote": False,
             })
             self.assertTrue(updated["git_auto_sync"])
             self.assertEqual(updated["git_sync_interval_minutes"], 25)
             self.assertEqual(updated["default_summary_language"], "zh")
-            self.assertEqual(updated["figure_extraction_mode"], "agent_pymupdf")
-            self.assertFalse(updated["figure_reextract_on_enrich"])
+            self.assertEqual(updated["mineru_extraction_mode"], "precision")
+            self.assertEqual(updated["mineru_model"], "pipeline")
+            self.assertFalse(updated["mineru_allow_remote"])
 
 
 if __name__ == "__main__":

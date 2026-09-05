@@ -54,7 +54,7 @@ import "./styles.css";
 
 type Page = "dashboard" | "library" | "review-search" | "profile" | "chat" | "jobs" | "settings";
 type SummaryLanguage = "en" | "zh";
-type FigureExtractionMode = "fast_pillow" | "agent_pymupdf";
+type MinerUExtractionMode = "auto" | "precision" | "flash";
 type CoreConcept = { concept: string; explanation: string };
 type TranslatedCoreConcept = { concept_en: string; concept_zh?: string; explanation_zh: string };
 type KeyFigure = {
@@ -83,6 +83,14 @@ type Paper = {
   doi: string;
   arxiv_id: string;
   source_pdf: string;
+  paper_url?: string;
+  pdf_url?: string;
+  download_status?: "not_downloaded" | "downloading" | "downloaded" | "failed";
+  download_error?: string;
+  downloaded_at?: string | null;
+  index_status?: "not_indexed" | "indexing" | "indexed" | "failed";
+  index_error?: string;
+  indexed_at?: string | null;
   pages: number | null;
   tags: string[];
   status: string;
@@ -128,6 +136,7 @@ type Job = {
   id: string;
   paper_id: string;
   title: string;
+  kind?: "enrichment" | "metadata_search" | "metadata_import" | "pdf_download" | "fulltext_index";
   status: string;
   stage: string;
   progress: number;
@@ -226,8 +235,10 @@ function App() {
   const [claudeModel, setClaudeModel] = useState("sonnet");
   const [translationEngine, setTranslationEngine] = useState<"local" | "llm">("llm");
   const [defaultSummaryLanguage, setDefaultSummaryLanguage] = useState<SummaryLanguage>("en");
-  const [figureExtractionMode, setFigureExtractionMode] = useState<FigureExtractionMode>("fast_pillow");
-  const [figureReextractOnEnrich, setFigureReextractOnEnrich] = useState(true);
+  const [mineruApiToken, setMineruApiToken] = useState("");
+  const [mineruExtractionMode, setMineruExtractionMode] = useState<MinerUExtractionMode>("auto");
+  const [mineruModel, setMineruModel] = useState<"vlm" | "pipeline">("vlm");
+  const [mineruAllowRemote, setMineruAllowRemote] = useState(true);
   const [maxConcurrency, setMaxConcurrency] = useState(4);
   const [syncMode, setSyncMode] = useState<"local" | "git">("local");
   const [gitRemote, setGitRemote] = useState("origin");
@@ -391,8 +402,10 @@ function App() {
       max_concurrency?: number;
       translation_engine?: "local" | "llm";
       default_summary_language?: SummaryLanguage;
-      figure_extraction_mode?: FigureExtractionMode;
-      figure_reextract_on_enrich?: boolean;
+      mineru_api_token?: string;
+      mineru_extraction_mode?: MinerUExtractionMode;
+      mineru_model?: "vlm" | "pipeline";
+      mineru_allow_remote?: boolean;
       sync_mode?: "local" | "git";
       git_remote?: string;
       git_remote_url?: string;
@@ -410,8 +423,10 @@ function App() {
     setMaxConcurrency(data.max_concurrency ?? 4);
     setTranslationEngine(data.translation_engine ?? "local");
     setDefaultSummaryLanguage(data.default_summary_language ?? "en");
-    setFigureExtractionMode(data.figure_extraction_mode ?? "fast_pillow");
-    setFigureReextractOnEnrich(data.figure_reextract_on_enrich ?? true);
+    setMineruApiToken(data.mineru_api_token ?? "");
+    setMineruExtractionMode(data.mineru_extraction_mode ?? "auto");
+    setMineruModel(data.mineru_model ?? "vlm");
+    setMineruAllowRemote(data.mineru_allow_remote ?? true);
     setSyncMode(data.sync_mode ?? "local");
     setGitRemote(data.git_remote ?? "origin");
     setGitRemoteUrl(data.git_remote_url ?? "");
@@ -496,8 +511,9 @@ function App() {
         root: string;
         translation_engine?: "local" | "llm";
         default_summary_language?: SummaryLanguage;
-        figure_extraction_mode?: FigureExtractionMode;
-        figure_reextract_on_enrich?: boolean;
+        mineru_extraction_mode?: MinerUExtractionMode;
+        mineru_model?: "vlm" | "pipeline";
+        mineru_allow_remote?: boolean;
       }>("/api/config", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -509,8 +525,10 @@ function App() {
           max_concurrency: maxConcurrency,
           translation_engine: translationEngine,
           default_summary_language: defaultSummaryLanguage,
-          figure_extraction_mode: figureExtractionMode,
-          figure_reextract_on_enrich: figureReextractOnEnrich,
+          mineru_api_token: mineruApiToken,
+          mineru_extraction_mode: mineruExtractionMode,
+          mineru_model: mineruModel,
+          mineru_allow_remote: mineruAllowRemote,
           sync_mode: syncMode,
           git_remote: gitRemote,
           git_remote_url: gitRemoteUrl,
@@ -525,8 +543,9 @@ function App() {
       setRoot(data.root);
       if (data.translation_engine) setTranslationEngine(data.translation_engine);
       if (data.default_summary_language) setDefaultSummaryLanguage(data.default_summary_language);
-      if (data.figure_extraction_mode) setFigureExtractionMode(data.figure_extraction_mode);
-      if (typeof data.figure_reextract_on_enrich === "boolean") setFigureReextractOnEnrich(data.figure_reextract_on_enrich);
+      if (data.mineru_extraction_mode) setMineruExtractionMode(data.mineru_extraction_mode);
+      if (data.mineru_model) setMineruModel(data.mineru_model);
+      if (typeof data.mineru_allow_remote === "boolean") setMineruAllowRemote(data.mineru_allow_remote);
       await loadPapers(data.root);
       await loadJobs(data.root);
       await loadSessions(data.root);
@@ -550,8 +569,10 @@ function App() {
           claude_model: claudeModel, max_concurrency: maxConcurrency,
           translation_engine: translationEngine,
           default_summary_language: defaultSummaryLanguage,
-          figure_extraction_mode: figureExtractionMode,
-          figure_reextract_on_enrich: figureReextractOnEnrich,
+          mineru_api_token: mineruApiToken,
+          mineru_extraction_mode: mineruExtractionMode,
+          mineru_model: mineruModel,
+          mineru_allow_remote: mineruAllowRemote,
           sync_mode: syncMode,
           git_remote: gitRemote, git_remote_url: gitRemoteUrl,
           git_branch: gitBranch, git_sync_pdfs: gitSyncPdfs,
@@ -647,6 +668,47 @@ function App() {
     } catch (err) {
       setError(String((err as Error).message ?? err));
     }
+  }
+
+  async function downloadPaper(paper: Paper) {
+    const url = paper.pdf_url?.trim();
+    if (!url) { setError("这篇论文没有可用的 PDF 链接。"); return; }
+    setError("");
+    try {
+      const proposed = await request<{ action: { id: string } }>("/api/librarian/download/propose", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ root: savedRoot, paper_ids: [paper.id] }),
+      });
+      if (!window.confirm(`确认下载《${paper.title || paper.id}》的 PDF？`)) return;
+      await request(`/api/librarian/actions/${encodeURIComponent(proposed.action.id)}/confirm-download`, {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ root: savedRoot }),
+      });
+      await loadJobs(); await loadPapers(); setPage("jobs");
+    } catch (err) { setError(String((err as Error).message ?? err)); }
+  }
+
+  async function indexPaper(paper: Paper) {
+    setError("");
+    try {
+      await request(`/api/papers/${encodeURIComponent(paper.id)}/index`, {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ root: savedRoot }),
+      });
+      await loadJobs(); setPage("jobs");
+    } catch (err) { setError(String((err as Error).message ?? err)); }
+  }
+
+  async function confirmLibrarianAction(action: { action_id: string; kind?: string; candidate_count?: number }) {
+    const isDownload = action.kind === "pdf_download";
+    const label = isDownload ? "下载所列 PDF" : `将 ${action.candidate_count ?? "这些"} 篇论文元信息加入馆藏`;
+    if (!window.confirm(`图书管理员请求确认：${label}？`)) return;
+    const endpoint = isDownload ? "confirm-download" : "confirm-import";
+    await request(`/api/librarian/actions/${encodeURIComponent(action.action_id)}/${endpoint}`, {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ root: savedRoot }),
+    });
+    await loadPapers(); await loadJobs();
   }
 
   async function translatePaper(paperId: string) {
@@ -1030,6 +1092,8 @@ function App() {
                   }
                 : m
             )));
+            const action = extractLibrarianAction(payload.result);
+            if (action) void confirmLibrarianAction(action).catch((err) => setError(String((err as Error).message ?? err)));
           } else if (payload.type === "done") {
             if (payload.session?.id) setChatSessionId(payload.session.id);
             void loadSessions();
@@ -1099,6 +1163,7 @@ function App() {
             enrichPaper={enrichPaper} translatePaper={translatePaper}
             updatePaper={updatePaper}
             deletePaper={deletePaper} openPdf={openPdf}
+            downloadPaper={downloadPaper} indexPaper={indexPaper}
             paperJob={selectedPaperId ? paperJobs.get(selectedPaperId) : undefined}
             tagCounts={tagCounts}
             defaultSummaryLanguage={defaultSummaryLanguage}
@@ -1151,8 +1216,10 @@ function App() {
             maxConcurrency={maxConcurrency} setMaxConcurrency={setMaxConcurrency}
             translationEngine={translationEngine} setTranslationEngine={setTranslationEngine}
             defaultSummaryLanguage={defaultSummaryLanguage} setDefaultSummaryLanguage={setDefaultSummaryLanguage}
-            figureExtractionMode={figureExtractionMode} setFigureExtractionMode={setFigureExtractionMode}
-            figureReextractOnEnrich={figureReextractOnEnrich} setFigureReextractOnEnrich={setFigureReextractOnEnrich}
+            mineruApiToken={mineruApiToken} setMineruApiToken={setMineruApiToken}
+            mineruExtractionMode={mineruExtractionMode} setMineruExtractionMode={setMineruExtractionMode}
+            mineruModel={mineruModel} setMineruModel={setMineruModel}
+            mineruAllowRemote={mineruAllowRemote} setMineruAllowRemote={setMineruAllowRemote}
             syncMode={syncMode} setSyncMode={setSyncMode}
             gitRemote={gitRemote} setGitRemote={setGitRemote}
             gitRemoteUrl={gitRemoteUrl} setGitRemoteUrl={setGitRemoteUrl}
@@ -1188,7 +1255,7 @@ function AppNav({ page, setPage, openChat, paperCount, jobCount }: {
       <nav>
         <button className={page === "dashboard" ? "active" : ""} onClick={() => setPage("dashboard")}><Gauge size={16} /> 档案总览</button>
         <button className={["library", "review-search", "profile"].includes(page) ? "active" : ""} onClick={() => setPage("library")}><Library size={16} /> 文献档案</button>
-        <button className={page === "chat" ? "active" : ""} onClick={openChat}><MessageCircle size={16} /> 对话</button>
+        <button className={page === "chat" ? "active" : ""} onClick={openChat}><MessageCircle size={16} /> 图书管理员</button>
         <button className={page === "jobs" ? "active" : ""} onClick={() => setPage("jobs")}>
           <Play size={16} /> 整理队列
           {jobCount > 0 && <span className="nav-count">{jobCount}</span>}
@@ -1533,6 +1600,8 @@ function LibraryPage(props: {
               </button>
               <div className="paper-card-meta">
                 {p.needs_review && <span className="pill warn">待校阅</span>}
+                <span className={`pill ${p.download_status === "failed" ? "warn" : "muted"}`}>{downloadStatusLabel(p.download_status)}</span>
+                {p.download_status === "downloaded" && <span className={`pill ${p.index_status === "failed" ? "warn" : "muted"}`}>{indexStatusLabel(p.index_status)}</span>}
                 {jobRunning
                   ? <span className="pill running" title={`${job.stage} ${job.progress}%`}>{job.progress}%</span>
                   : job?.status === "completed"
@@ -1710,6 +1779,18 @@ function TagLine({ tags }: { tags: string[] }) {
 function shortDate(value?: string) {
   if (!value) return "-";
   return value.slice(0, 10);
+}
+
+function downloadStatusLabel(status?: Paper["download_status"]) {
+  return ({ not_downloaded: "仅元信息", downloading: "下载中", downloaded: "已下载", failed: "下载失败" } as Record<string, string>)[status ?? "not_downloaded"];
+}
+
+function indexStatusLabel(status?: Paper["index_status"]) {
+  return ({ not_indexed: "未索引", indexing: "索引中", indexed: "可全文检索", failed: "索引失败" } as Record<string, string>)[status ?? "not_indexed"];
+}
+
+function jobKindLabel(kind?: Job["kind"]) {
+  return ({ enrichment: "论文整理", metadata_search: "网络检索", metadata_import: "元信息入馆", pdf_download: "PDF 下载", fulltext_index: "全文索引" } as Record<string, string>)[kind ?? "enrichment"];
 }
 
 function EmptyState({ title, body }: { title: string; body: string }) {
@@ -2032,6 +2113,7 @@ function ProfilePage(props: {
   translatePaper: (id: string) => void;
   updatePaper: (id: string, patch: Record<string, unknown>) => Promise<void> | void;
   deletePaper: (id: string) => void; openPdf: (p: Paper) => void;
+  downloadPaper: (p: Paper) => void; indexPaper: (p: Paper) => void;
   paperJob?: Job;
   tagCounts: [string, number][];
   defaultSummaryLanguage: SummaryLanguage;
@@ -2096,15 +2178,22 @@ function ProfilePage(props: {
           <button className="ghost-button back-button" onClick={props.goBack}><ArrowLeft size={16} /> 返回来源页</button>
           <div className="profile-actions">
             <button className="chat-launch-button" onClick={() => props.openChat(paper)}>
-              <MessageCircle size={15} /> 论文对话
+              <MessageCircle size={15} /> 询问图书管理员
             </button>
-            <button className="action-button" onClick={() => props.openPdf(paper)}><ExternalLink size={15} /> 打开 PDF</button>
+            {paper.download_status === "downloaded" && paper.source_pdf
+              ? <button className="action-button" onClick={() => props.openPdf(paper)}><ExternalLink size={15} /> 打开 PDF</button>
+              : <button className="action-button" onClick={() => props.downloadPaper(paper)} disabled={!paper.pdf_url || paper.download_status === "downloading"}>
+                  <Upload size={15} /> {paper.download_status === "downloading" ? "下载中" : "下载 PDF"}
+                </button>}
             <details className="action-menu profile-action-menu">
               <summary aria-label="更多论文操作" title="更多论文操作"><MoreHorizontal size={18} /></summary>
               <div className="action-menu-popover">
                 <button onClick={() => props.enrichPaper(paper.id)} disabled={jobRunning}>
                   {jobRunning ? <Loader2 className="spin" size={15} /> : <RefreshCw size={15} />}
                   {jobRunning ? `整理中 ${props.paperJob?.progress ?? 0}%` : "重新整理"}
+                </button>
+                <button onClick={() => props.indexPaper(paper)} disabled={paper.download_status !== "downloaded" || paper.index_status === "indexing"}>
+                  <Search size={15} /> {paper.index_status === "indexing" ? "索引中" : "重建全文索引"}
                 </button>
                 <button onClick={handleTranslate} disabled={props.busy === "translate"}>
                   {props.busy === "translate" ? <Loader2 className="spin" size={15} /> : <Languages size={15} />}
@@ -2164,6 +2253,8 @@ function ProfilePage(props: {
             <Info label="来源" value={paper.venue || "-"} />
             <Info label="DOI" value={paper.doi || "-"} />
             <Info label="arXiv" value={paper.arxiv_id || "-"} />
+            <Info label="论文页面" value={paper.paper_url || "-"} />
+            <Info label="远程 PDF" value={paper.pdf_url || "-"} />
           </section>
           <section className="panel">
             <h2>校阅札记</h2>
@@ -2190,6 +2281,10 @@ function ProfilePage(props: {
           <section className="panel">
             <h2>档案信息</h2>
             <Info label="来源文件" value={paper.source_pdf ?? "-"} />
+            <Info label="下载状态" value={downloadStatusLabel(paper.download_status)} />
+            <Info label="索引状态" value={indexStatusLabel(paper.index_status)} />
+            {paper.download_error && <Info label="下载错误" value={paper.download_error} />}
+            {paper.index_error && <Info label="索引错误" value={paper.index_error} />}
             <Info label="置信度" value={paper.confidence ?? "medium"} />
             <Info label="创建" value={paper.created_at ?? "-"} />
             <Info label="更新" value={paper.updated_at ?? "-"} />
@@ -2368,6 +2463,18 @@ function sessionMessageToChatMessage(message: any, index: number): ChatMessage {
   };
 }
 
+function extractLibrarianAction(result: unknown): { action_id: string; kind?: string; candidate_count?: number } | null {
+  if (!Array.isArray(result)) return null;
+  for (const block of result) {
+    if (!block || typeof block !== "object" || (block as any).type !== "text") continue;
+    try {
+      const parsed = JSON.parse(String((block as any).text ?? ""));
+      if (parsed?.requires_confirmation && parsed?.action_id) return parsed;
+    } catch { /* ordinary tool text */ }
+  }
+  return null;
+}
+
 function extractSessionPaperIds(session: any): string[] {
   if (Array.isArray(session?.paper_ids)) return session.paper_ids.filter(Boolean);
   const messages = Array.isArray(session?.messages) ? session.messages : [];
@@ -2536,7 +2643,7 @@ function ChatPage(props: {
   const suggestions = [
     "总结已 mention 论文的核心贡献和局限。",
     "比较这些论文的方法差异和实验设计。",
-    "帮我找出库里和 agent harness 相关的论文。",
+    "帮我检索 2025 年 ICLR 中和 agent harness 相关的论文。",
   ];
 
   return (
@@ -2582,8 +2689,8 @@ function ChatPage(props: {
       <section className="chat-main-panel">
         <section className="chat-topbar">
           <div className="chat-title">
-            <p className="kicker">纽记对话</p>
-            <h1>和文献库对话</h1>
+            <p className="kicker">纽记图书管理员</p>
+            <h1>检索、收藏并研读论文</h1>
             <p>{mentionedPapers.length ? `${mentionedPapers.length} 篇论文已 mention` : "未指定论文，可直接询问整个文献库"}</p>
           </div>
         </section>
@@ -2995,7 +3102,7 @@ function JobsPage({ jobs, queueStatus, refresh, cancelJob, cancelAllJobs, pauseJ
                 </label>
                 <div>
                   <h2>{job.title}</h2>
-                  <p>{job.paper_id} · {job.stage} · 第 {job.attempts ?? 0} 次</p>
+                  <p>{jobKindLabel(job.kind)}{job.paper_id ? ` · ${job.paper_id}` : ""} · {job.stage} · 第 {job.attempts ?? 0} 次</p>
                 </div>
                 <span className={`job-status ${job.status}`}>{jobStatusLabel(job.status)}</span>
               </div>
@@ -3059,10 +3166,11 @@ function SettingsPage(props: {
   setTranslationEngine: (v: "local" | "llm") => void;
   defaultSummaryLanguage: SummaryLanguage;
   setDefaultSummaryLanguage: (v: SummaryLanguage) => void;
-  figureExtractionMode: FigureExtractionMode;
-  setFigureExtractionMode: (v: FigureExtractionMode) => void;
-  figureReextractOnEnrich: boolean;
-  setFigureReextractOnEnrich: (v: boolean) => void;
+  mineruApiToken: string; setMineruApiToken: (v: string) => void;
+  mineruExtractionMode: MinerUExtractionMode;
+  setMineruExtractionMode: (v: MinerUExtractionMode) => void;
+  mineruModel: "vlm" | "pipeline"; setMineruModel: (v: "vlm" | "pipeline") => void;
+  mineruAllowRemote: boolean; setMineruAllowRemote: (v: boolean) => void;
   syncMode: "local" | "git"; setSyncMode: (v: "local" | "git") => void;
   gitRemote: string; setGitRemote: (v: string) => void;
   gitRemoteUrl: string; setGitRemoteUrl: (v: string) => void;
@@ -3267,43 +3375,59 @@ function SettingsPage(props: {
         </div>
 
         <div className="panel settings-panel">
-          <label className="label"><Sparkles size={15} /> 配图提取方式</label>
+          <label className="label"><Sparkles size={15} /> MinerU 文档解析</label>
           <div
             className="ios-segmented"
             role="radiogroup"
-            aria-label="配图提取方式"
+            aria-label="MinerU 解析方式"
           >
             <button
               type="button"
-              className={props.figureExtractionMode === "fast_pillow" ? "active" : ""}
+              className={props.mineruExtractionMode === "auto" ? "active" : ""}
               role="radio"
-              aria-checked={props.figureExtractionMode === "fast_pillow"}
-              onClick={() => props.setFigureExtractionMode("fast_pillow")}
+              aria-checked={props.mineruExtractionMode === "auto"}
+              onClick={() => props.setMineruExtractionMode("auto")}
             >
-              快速识别
+              自动
             </button>
             <button
               type="button"
-              className={props.figureExtractionMode === "agent_pymupdf" ? "active" : ""}
+              className={props.mineruExtractionMode === "precision" ? "active" : ""}
               role="radio"
-              aria-checked={props.figureExtractionMode === "agent_pymupdf"}
-              onClick={() => props.setFigureExtractionMode("agent_pymupdf")}
+              aria-checked={props.mineruExtractionMode === "precision"}
+              onClick={() => props.setMineruExtractionMode("precision")}
             >
-              Agent 精裁
+              精确
+            </button>
+            <button
+              type="button"
+              className={props.mineruExtractionMode === "flash" ? "active" : ""}
+              role="radio"
+              aria-checked={props.mineruExtractionMode === "flash"}
+              onClick={() => props.setMineruExtractionMode("flash")}
+            >
+              快速
             </button>
           </div>
+          <input
+            type="password"
+            value={props.mineruApiToken}
+            onChange={(e) => props.setMineruApiToken(e.target.value)}
+            placeholder="MinerU API Token（精确模式需要）"
+            autoComplete="off"
+          />
           <label className="sync-check-row">
             <input
               type="checkbox"
-              checked={props.figureReextractOnEnrich}
-              onChange={(e) => props.setFigureReextractOnEnrich(e.target.checked)}
+              checked={props.mineruAllowRemote}
+              onChange={(e) => props.setMineruAllowRemote(e.target.checked)}
             />
-            <span><strong>重新整理时重提取配图</strong><small>开启后不会沿用旧图片；快速识别会先用 Pillow 生成候选，再由 agent 补充 caption。</small></span>
+            <span><strong>允许发送文档到 MinerU 服务</strong><small>默认开启。MinerU 会解析 PDF 的正文、版面、表格、公式与图片；关闭后无法执行 AI 整理。</small></span>
           </label>
           <p className="hint">
-            {props.figureExtractionMode === "fast_pillow"
-              ? "快速识别使用 Pillow 扫描彩色区域，速度更快；agent 负责选择候选图并完善标题、caption 与说明。"
-              : "Agent 精裁使用 PyMuPDF 页面工具让 agent 查看页面并保存 crop，通常更慢但适合复杂版式。"}
+            {props.mineruExtractionMode === "precision"
+              ? "精确模式使用 VLM 解析复杂学术版式，并保留结构化 Markdown、图片、表格和公式。"
+              : "自动模式有 Token 时使用精确解析；未配置 Token 时使用 MinerU 免登录解析。快速模式始终使用免登录解析。"}
           </p>
         </div>
 

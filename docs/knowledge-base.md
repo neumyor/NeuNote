@@ -35,6 +35,10 @@ venue: arXiv
 doi: ""
 arxiv_id: ""
 source_pdf: originals/papers/example.pdf
+paper_url: https://example.org/paper
+pdf_url: https://example.org/paper.pdf
+download_status: downloaded # not_downloaded | downloading | downloaded | failed
+index_status: indexed       # not_indexed | indexing | indexed | failed
 pages: 12
 tags:
   - llm
@@ -73,6 +77,8 @@ Fields are intentionally explicit so both humans and agents can review them. Mis
 
 Source PDFs live in `originals/papers/` and are referenced by `source_pdf`. They are ignored by git by default because they are often large and may be copyrighted.
 
+`pdf_url` is remote metadata and never means that a file has been downloaded. Only a validated local `source_pdf` may have `download_status: downloaded`. The rebuildable SQLite FTS5 index lives at `metadata/fulltext.sqlite3` and is never Git-synced.
+
 ## Chat Sessions
 
 Chat sessions are stored as one JSON file per conversation in `logs/chat_sessions/`.
@@ -99,8 +105,11 @@ claude_model: sonnet
 max_concurrency: 4
 translation_engine: llm
 default_summary_language: en
-figure_extraction_mode: fast_pillow
-figure_reextract_on_enrich: true
+mineru_api_token: ""
+mineru_extraction_mode: auto
+mineru_model: vlm
+mineru_timeout_seconds: 900
+mineru_allow_remote: true
 sync_mode: local
 git_remote: origin
 git_remote_url: ""

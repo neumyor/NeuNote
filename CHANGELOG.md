@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.2.0
+
+- Upgrade paper chat to a confirmation-gated paper librarian.
+- Add aggregated DBLP/OpenAlex/Crossref/arXiv discovery, metadata-only records, deterministic merge, safe PDF downloads, typed batch jobs, and local SQLite FTS5 indexing.
+- Add download/index state migration and frontend status/error displays while preserving existing scoped chat.
+
 All notable changes to NeuNote will be documented in this file.
 
 The format is inspired by Keep a Changelog, and this project uses semantic versioning for formal releases.

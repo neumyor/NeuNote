@@ -24,7 +24,9 @@ Backend code lives in `backend/app/`.
 
 - `main.py`: FastAPI routes, request models, streaming chat endpoints, background job entry points.
 - `kb.py`: knowledge-base filesystem operations, paper CRUD, job persistence, session persistence, duplicate detection, enrichment helpers.
-- `agent_chat.py`: Claude Code SDK integration, NeuNote MCP tools, paper chat, and paper review flows.
+- `agent_chat.py`: Claude Code SDK integration, scoped paper chat, librarian tools, and paper review flows.
+- `mineru.py`: MinerU CLI integration for remote PDF parsing, parsed Markdown/JSON retention, and extracted-image asset import.
+- `librarian.py`: DBLP/OpenAlex/Crossref/arXiv aggregation, confirmation actions, metadata merge, safe PDF downloading, and SQLite FTS5 indexing.
 - `figure_tools.py`: PyMuPDF/Pillow helpers for rendering PDF pages and extracting key-figure crops.
 - `translate.py`: local Argos Translate and LLM-backed translation utilities.
 
@@ -49,6 +51,8 @@ The frontend is intentionally a single-page app without a router dependency. Pag
 6. The frontend stores text and tools as ordered segments so tool calls appear inline with the model response.
 7. The backend appends messages to one JSON file per session under `logs/chat_sessions/`.
 
+Discovery and downloads are confirmation-gated. The agent may create an expiring action under `logs/librarian_actions/`; only the confirmation API can import metadata or enqueue PDF downloads. Download jobs validate public URLs and PDFs, save atomically, then build the full-text index. Metadata-only papers remain usable through title and abstract but are excluded from full-text search.
+
 ## Knowledge-Base Boundaries
 
 Chat tools are constrained to:
@@ -58,7 +62,7 @@ Chat tools are constrained to:
 - `logs/`
 - source PDFs under `originals/papers/` through dedicated PDF tools only
 
-The chat agent cannot use arbitrary shell, web, or raw filesystem tools.
+The chat agent cannot use arbitrary shell, web, or raw filesystem tools. Background enrichment is separate: it sends the selected source PDF to MinerU, then asks the review model to fill the YAML profile from MinerU's parsed output.
 
 ## Release Checks
 

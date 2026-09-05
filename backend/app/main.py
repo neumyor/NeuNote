@@ -16,6 +16,15 @@ from fastapi.responses import FileResponse, StreamingResponse
 from pydantic import BaseModel, Field
 
 from .agent_chat import run_agent_answer_sync
+from .librarian import (
+    create_action,
+    import_action,
+    load_action,
+    merge_metadata,
+    normalize_venues,
+    run_librarian_job,
+    search_fulltext,
+)
 from .git_sync import GitSyncError, git_sync_status, sync_with_git
 from .kb import (
     append_session_message,
@@ -286,14 +295,17 @@ def _drain_enrichment_queue(root: Path) -> None:
             job["attempts"] = int(job.get("attempts") or 0) + 1
             job.setdefault("events", []).append({"time": now_iso(), "message": "Scheduled for execution."})
             save_job(root, job)
-            future = executor.submit(_run_scheduled_enrichment_job, root, str(job["paper_id"]), job_id, config)
+            future = executor.submit(_run_scheduled_job, root, job, job_id, config)
             _running_futures[job_id] = future
             _future_roots[job_id] = root_key
 
 
-def _run_scheduled_enrichment_job(root: Path, paper_id: str, job_id: str, config: dict[str, Any]) -> None:
+def _run_scheduled_job(root: Path, job: dict[str, Any], job_id: str, config: dict[str, Any]) -> None:
     try:
-        run_enrichment_job(root, paper_id, job_id, config)
+        if (job.get("kind") or "enrichment") == "enrichment":
+            run_enrichment_job(root, str(job["paper_id"]), job_id, config)
+        else:
+            run_librarian_job(root, job_id, Path(__file__).resolve().parents[2])
     finally:
         with _scheduler_lock:
             _running_futures.pop(job_id, None)
@@ -336,8 +348,11 @@ class RootConfig(BaseModel):
     max_concurrency: int | None = Field(default=None, ge=1, le=20)
     translation_engine: str | None = Field(default=None, pattern=r"^(local|llm)$")
     default_summary_language: str | None = Field(default=None, pattern=r"^(en|zh)$")
-    figure_extraction_mode: str | None = Field(default=None, pattern=r"^(fast_pillow|agent_pymupdf)$")
-    figure_reextract_on_enrich: bool | None = None
+    mineru_api_token: str | None = None
+    mineru_extraction_mode: str | None = Field(default=None, pattern=r"^(auto|precision|flash)$")
+    mineru_model: str | None = Field(default=None, pattern=r"^(vlm|pipeline)$")
+    mineru_timeout_seconds: int | None = Field(default=None, ge=60, le=1800)
+    mineru_allow_remote: bool | None = None
     sync_mode: str | None = Field(default=None, pattern=r"^(local|git)$")
     git_remote: str | None = None
     git_remote_url: str | None = None
@@ -583,6 +598,8 @@ def api_enrich_paper(paper_id: str, config: RootConfig) -> dict[str, Any]:
     except FileNotFoundError as exc:
         raise HTTPException(status_code=404, detail=str(exc))
 
+    if paper.get("download_status") != "downloaded" or not paper.get("source_pdf"):
+        raise HTTPException(status_code=409, detail="Download the PDF before enrichment.")
     cfg = load_app_config(kb_root)
     # Skip if already has an active job
     existing = [j for j in list_jobs(kb_root)
@@ -602,6 +619,8 @@ def api_enrich_all(background_tasks: BackgroundTasks, config: RootConfig) -> dic
     papers = list_papers(kb_root)
     jobs = []
     for paper in papers:
+        if paper.get("download_status") != "downloaded" or not paper.get("source_pdf"):
+            continue
         pid = paper["id"]
         # Skip if already has an active job
         existing = [j for j in list_jobs(kb_root)
@@ -625,6 +644,8 @@ def api_enrich_batch(config: PaperBatchRequest) -> dict[str, Any]:
         try:
             paper = load_paper(kb_root, paper_id)
         except FileNotFoundError:
+            continue
+        if paper.get("download_status") != "downloaded" or not paper.get("source_pdf"):
             continue
         existing = [j for j in list_jobs(kb_root)
                     if j.get("paper_id") == paper_id and j.get("status") in {"queued", "running", "paused"}]
@@ -900,6 +921,149 @@ class AskRequest(BaseModel):
     claude_model: str | None = None
     temperature: float = 0.2
     max_context_files: int = Field(default=8, ge=1, le=20)
+
+
+class MetadataSearchRequest(BaseModel):
+    root: str
+    conferences: list[str] = Field(default_factory=list)
+    years: list[int] = Field(default_factory=list)
+    query: str = "*"
+    session_id: str | None = None
+
+
+class MetadataCandidatesRequest(BaseModel):
+    root: str
+    items: list[dict[str, Any]] = Field(min_length=1, max_length=1000)
+    session_id: str | None = None
+
+
+class ActionConfirmRequest(BaseModel):
+    root: str
+    selected: list[int] | None = None
+
+
+class DownloadProposalRequest(BaseModel):
+    root: str
+    paper_ids: list[str] = Field(min_length=1, max_length=200)
+    urls: dict[str, str] = Field(default_factory=dict)
+    session_id: str | None = None
+
+
+class FulltextSearchRequest(BaseModel):
+    root: str
+    query: str = Field(min_length=1)
+    paper_ids: list[str] = Field(default_factory=list)
+    limit: int = Field(default=12, ge=1, le=50)
+
+
+@app.post("/api/librarian/search")
+def api_librarian_search(request: MetadataSearchRequest) -> dict[str, Any]:
+    root = resolve_root(request.root)
+    try:
+        conferences = normalize_venues(request.conferences) if request.conferences else []
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc))
+    job = create_job(root, "", f"检索 {','.join(request.conferences)}", kind="metadata_search", payload={
+        "conferences": conferences,
+        "years": request.years, "query": request.query or "*", "session_id": request.session_id,
+    })
+    _schedule_enrichment(root, load_app_config(root))
+    return {"root": str(root), "job": job}
+
+
+@app.post("/api/librarian/import/propose")
+def api_librarian_import_propose(request: MetadataCandidatesRequest) -> dict[str, Any]:
+    root = resolve_root(request.root)
+    action = create_action(root, "metadata_import", request.items, session_id=request.session_id)
+    return {"root": str(root), "action": action}
+
+
+@app.get("/api/librarian/actions/{action_id}")
+def api_librarian_action(action_id: str, root: str | None = None) -> dict[str, Any]:
+    kb_root = resolve_root(root)
+    try:
+        action = load_action(kb_root, action_id)
+    except FileNotFoundError as exc:
+        raise HTTPException(status_code=404, detail=str(exc))
+    return {"root": str(kb_root), "action": action}
+
+
+@app.post("/api/librarian/actions/{action_id}/confirm-import")
+def api_librarian_confirm_import(action_id: str, request: ActionConfirmRequest) -> dict[str, Any]:
+    root = resolve_root(request.root)
+    try:
+        action = import_action(root, action_id, request.selected)
+    except FileNotFoundError as exc:
+        raise HTTPException(status_code=404, detail=str(exc))
+    except ValueError as exc:
+        raise HTTPException(status_code=409, detail=str(exc))
+    return {"root": str(root), "action": action, "papers": list_papers(root)}
+
+
+@app.post("/api/librarian/download/propose")
+def api_librarian_download_propose(request: DownloadProposalRequest) -> dict[str, Any]:
+    root = resolve_root(request.root)
+    items = []
+    for paper_id in request.paper_ids:
+        try:
+            paper = load_paper(root, paper_id)
+        except FileNotFoundError:
+            continue
+        url = request.urls.get(paper_id) or paper.get("pdf_url")
+        if url:
+            items.append({"paper_id": paper_id, "title": paper.get("title"), "url": url})
+    if not items:
+        raise HTTPException(status_code=400, detail="No selected paper has a PDF URL.")
+    action = create_action(root, "pdf_download", items, session_id=request.session_id)
+    return {"root": str(root), "action": action}
+
+
+@app.post("/api/librarian/actions/{action_id}/confirm-download")
+def api_librarian_confirm_download(action_id: str, request: ActionConfirmRequest) -> dict[str, Any]:
+    root = resolve_root(request.root)
+    try:
+        action = load_action(root, action_id)
+    except FileNotFoundError as exc:
+        raise HTTPException(status_code=404, detail=str(exc))
+    if action.get("kind") != "pdf_download" or action.get("status") not in {"pending", "completed"}:
+        raise HTTPException(status_code=409, detail="Download action is unavailable.")
+    if action.get("status") == "completed":
+        return {"root": str(root), "action": action, "jobs": action.get("jobs", [])}
+    indexes = request.selected if request.selected is not None else list(range(len(action["items"])))
+    jobs = []
+    for index in indexes:
+        if not 0 <= index < len(action["items"]):
+            continue
+        item = action["items"][index]
+        paper_id = item.get("paper_id")
+        if not paper_id:
+            imported = merge_metadata(root, {"title": item.get("title") or Path(str(item["url"])).stem or "Downloaded paper", "pdf_url": item["url"], "metadata_source": "direct_url"})
+            if imported.get("status") == "conflict":
+                continue
+            paper_id = imported["paper"]["id"]
+        jobs.append(create_job(root, paper_id, item.get("title") or paper_id, kind="pdf_download", payload={"url": item["url"], "paper_id": paper_id}))
+    action.update({"status": "completed", "completed_at": now_iso(), "jobs": jobs})
+    from .librarian import save_action
+    save_action(root, action)
+    _schedule_enrichment(root, load_app_config(root))
+    return {"root": str(root), "action": action, "jobs": jobs}
+
+
+@app.post("/api/librarian/fulltext/search")
+def api_librarian_fulltext_search(request: FulltextSearchRequest) -> dict[str, Any]:
+    root = resolve_root(request.root)
+    return {"root": str(root), "results": search_fulltext(root, request.query, request.paper_ids or None, request.limit)}
+
+
+@app.post("/api/papers/{paper_id}/index")
+def api_index_paper(paper_id: str, config: RootConfig) -> dict[str, Any]:
+    root = resolve_root(config.root)
+    paper = load_paper(root, paper_id)
+    if paper.get("download_status") != "downloaded" or not paper.get("source_pdf"):
+        raise HTTPException(status_code=409, detail="Paper PDF is not downloaded.")
+    job = create_job(root, paper_id, paper.get("title") or paper_id, kind="fulltext_index")
+    _schedule_enrichment(root, load_app_config(root))
+    return {"root": str(root), "job": job}
 
 
 def _paper_ids_for_tags(kb_root: Path, tags: list[str]) -> list[str]:

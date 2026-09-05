@@ -5,6 +5,8 @@ from __future__ import annotations
 import json
 from typing import Any
 
+from .kb import anthropic_request_options
+
 
 # ── Argos (offline) backend ─────────────────────────────────────────
 
@@ -243,6 +245,7 @@ def _request_llm_translation(
         "system": PAPER_TRANSLATE_SYSTEM_PROMPT,
         "messages": [{"role": "user", "content": _build_translation_prompt(context, payload)}],
     }
+    body.update(anthropic_request_options(base_url))
     headers = {
         "Content-Type": "application/json",
         "x-api-key": api_key,

@@ -79,22 +79,9 @@ Jobs run in the background. Open `整理队列` to inspect progress, cancel one 
 
 ## Figure Extraction
 
-Configure the extraction mode in Settings.
+Each enrichment first sends the PDF to MinerU and uses its parsed Markdown, layout-aware text, and extracted image assets to build the paper profile. The model then fills the structured metadata and selects only MinerU-provided image assets as key figures.
 
-`快速识别`:
-
-- uses Pillow to find colored figure regions
-- expands crops with PyMuPDF text and drawing geometry
-- faster and suitable for most papers
-- agent chooses the important candidates and writes captions
-
-`Agent 精裁`:
-
-- gives the agent PyMuPDF tools for page rendering and crop saving
-- slower
-- useful for papers with unusual layouts or mostly monochrome figures
-
-When `重新整理时重提取配图` is enabled, re-enrichment does not reuse old figure images.
+`自动` uses MinerU precision parsing when you configure a MinerU token, otherwise its no-token mode. `精确` requires a token and is recommended for academic papers with tables, formulas, or complex layouts. Parsed artifacts are retained under `logs/mineru/`; selected images are copied to `assets/paper_figures/`.
 
 ## Bilingual Reading
 
@@ -122,9 +109,9 @@ The search page scans:
 
 Results appear as cards with highlighted snippets. Click a card to open the corresponding paper detail page.
 
-## Chat
+## Paper Librarian
 
-Open `对话` from the navigation bar or `论文 Chat` from a paper detail page.
+Open `图书管理员` from the navigation bar or `询问图书管理员` from a paper detail page.
 
 You can:
 
@@ -133,6 +120,11 @@ You can:
 - mention tags with `@`
 - compare multiple papers
 - ask for methods, experiments, limitations, or follow-up reading suggestions
+- retrieve a supported conference or journal paper list by year
+- preview network metadata and explicitly confirm which records enter the library
+- request a PDF download, confirm it, and follow download/index progress in the job queue
+
+Search never downloads PDFs. A remote PDF link is shown as `仅元信息` until a confirmed download succeeds. Only papers marked `可全文检索` participate in SQLite full-text search; mixed-paper answers identify records without full text.
 
 Chat sessions are saved under `logs/chat_sessions/`. They are not synced unless you explicitly enable chat sync.
 
@@ -145,7 +137,7 @@ Important settings:
 - API endpoint, key, and model
 - translation engine
 - default detail-page language
-- figure extraction mode
+- MinerU parsing mode and permission to send PDFs to MinerU
 - enrichment concurrency
 
 Settings are saved under the knowledge-base root in `metadata/app_config.yaml`. This file may contain credentials and should not be committed.
