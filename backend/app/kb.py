@@ -218,6 +218,24 @@ def list_papers(root: Path) -> list[dict[str, Any]]:
     return papers
 
 
+# Fields required by dashboards, cards, filters, and review-note search.  Full
+# enrichment text, translations, figures, and agent traces are loaded only by
+# GET /api/papers/{paper_id} when the reader opens a paper.
+_PAPER_LIST_FIELDS = (
+    "id", "title", "authors", "year", "venue", "doi", "arxiv_id",
+    "source_pdf", "paper_url", "pdf_url", "download_status", "download_error",
+    "downloaded_at", "index_status", "index_error", "indexed_at", "pages",
+    "tags", "status", "confidence", "reading_status", "priority", "needs_review",
+    "abstract", "one_sentence", "review_notes", "created_at", "updated_at",
+    "last_read_at",
+)
+
+
+def list_paper_summaries(root: Path) -> list[dict[str, Any]]:
+    """Return compact records for the library list without detail-only payloads."""
+    return [{key: paper.get(key) for key in _PAPER_LIST_FIELDS} for paper in list_papers(root)]
+
+
 def load_paper(root: Path, paper_id: str) -> dict[str, Any]:
     path = paper_path(root, paper_id)
     if not path.exists():
@@ -1714,8 +1732,8 @@ def cleanup_duplicates(root: Path) -> dict[str, Any]:
 
 # ── stats ─────────────────────────────────────────────────────────────
 
-def library_stats(root: Path) -> dict[str, Any]:
-    papers = list_papers(root)
+def library_stats(root: Path, papers: list[dict[str, Any]] | None = None) -> dict[str, Any]:
+    papers = papers if papers is not None else list_paper_summaries(root)
     tags = set()
     for p in papers:
         for t in p.get("tags", []):

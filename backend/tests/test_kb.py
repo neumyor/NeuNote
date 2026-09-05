@@ -11,6 +11,7 @@ from app.kb import (
     create_job,
     ensure_kb,
     fail_job,
+    list_paper_summaries,
     list_papers,
     load_job,
     load_paper,
@@ -72,6 +73,29 @@ class KnowledgeBaseTests(unittest.TestCase):
             self.assertIn("author_affiliations: []", content)
             self.assertIn("core_concepts: []", content)
             self.assertIn("key_figures: []", content)
+
+    def test_paper_list_summaries_omit_detail_only_enrichment_payloads(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            ensure_kb(root)
+            save_paper(root, {
+                "id": "paper",
+                "title": "Paper",
+                "abstract": "Short abstract",
+                "one_sentence": "Short summary",
+                "tags": ["agents"],
+                "core_concepts": [{"concept": "Long payload", "explanation": "x" * 5000}],
+                "translations": {"abstract": "译文" * 5000},
+                "agent_reviews": [{"notes": ["x" * 5000]}],
+            })
+
+            summary = list_paper_summaries(root)[0]
+
+        self.assertEqual(summary["title"], "Paper")
+        self.assertEqual(summary["tags"], ["agents"])
+        self.assertNotIn("core_concepts", summary)
+        self.assertNotIn("translations", summary)
+        self.assertNotIn("agent_reviews", summary)
 
     def test_list_papers_skips_files_deleted_during_scan(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
@@ -142,6 +166,49 @@ class KnowledgeBaseTests(unittest.TestCase):
         self.assertEqual(merged["tags"], ["agent"])
         self.assertEqual(_review_string_list("One note"), ["One note"])
         self.assertEqual(_review_string_list(["Good", None, {"bad": True}]), ["Good"])
+
+    def test_mineru_document_title_overrides_upload_time_title(self) -> None:
+        paper = {
+            "id": "expel",
+            "title": "ExpeL LLM Agents Are Experiential Learners Andrew Zhao Daniel Huang",
+        }
+
+        merged, notes = _merge_review_patch(
+            paper,
+            {"title": None},
+            mineru_document_title="ExpeL: LLM Agents Are Experiential Learners",
+        )
+
+        self.assertEqual(merged["title"], "ExpeL: LLM Agents Are Experiential Learners")
+        self.assertTrue(any(note.startswith("title (MinerU):") for note in notes))
+
+    def test_mineru_title_is_saved_without_an_agent_api_key(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            ensure_kb(root)
+            source = root / "originals/papers/example.pdf"
+            source.parent.mkdir(parents=True, exist_ok=True)
+            source.write_bytes(b"%PDF-test")
+            save_paper(root, {
+                "id": "example",
+                "title": "example upload filename",
+                "source_pdf": "originals/papers/example.pdf",
+            })
+            mineru_result = {
+                "mode": "precision",
+                "document_title": "A Source-Verified Paper Title",
+                "markdown_path": "logs/mineru/example/parsed.md",
+                "json_path": "logs/mineru/example/layout.json",
+                "assets": [],
+                "markdown": "# A Source-Verified Paper Title",
+            }
+            with patch("app.mineru.extract_paper_with_mineru", return_value=mineru_result):
+                result = run_agent_paper_review_sync(root, "example", config={})
+
+            saved = load_paper(root, "example")
+            self.assertEqual(result["status"], "parsed")
+            self.assertEqual(saved["title"], "A Source-Verified Paper Title")
+            self.assertEqual(saved["mineru"]["document_title"], "A Source-Verified Paper Title")
 
     def test_agent_review_sync_reports_worker_exception(self) -> None:
         with tempfile.TemporaryDirectory() as directory:

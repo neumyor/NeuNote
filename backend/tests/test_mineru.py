@@ -6,7 +6,7 @@ import unittest
 from pathlib import Path
 from unittest.mock import patch
 
-from app.mineru import MinerUExtractionError, extract_paper_with_mineru
+from app.mineru import _extract_document_title, MinerUExtractionError, extract_paper_with_mineru
 
 
 class MinerUExtractionTests(unittest.TestCase):
@@ -44,6 +44,7 @@ class MinerUExtractionTests(unittest.TestCase):
             self.assertIn("md,json", command)
             self.assertIn("--token", command)
             self.assertEqual(result["assets"][0]["page"], 3)
+            self.assertEqual(result["document_title"], "A Paper")
             self.assertEqual(result["assets"][0]["image_path"], "assets/paper_figures/example_mineru_1.png")
             self.assertTrue((root / result["markdown_path"]).exists())
             self.assertTrue((root / result["assets"][0]["image_path"]).exists())
@@ -61,6 +62,13 @@ class MinerUExtractionTests(unittest.TestCase):
             self.assertIn("flash-extract", run.call_args.args[0])
             with self.assertRaisesRegex(MinerUExtractionError, "disabled"):
                 extract_paper_with_mineru(root, "example-disabled", source, {"mineru_allow_remote": False})
+
+    def test_title_extraction_only_accepts_a_document_level_heading(self) -> None:
+        self.assertEqual(
+            _extract_document_title("# ExpeL: LLM Agents Are Experiential Learners\n\n## Abstract\n"),
+            "ExpeL: LLM Agents Are Experiential Learners",
+        )
+        self.assertEqual(_extract_document_title("## Introduction\nBody"), "")
 
 
 if __name__ == "__main__":

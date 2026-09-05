@@ -114,7 +114,7 @@ MinerU's parsed Markdown and JSON are retained under `logs/mineru/`; selected ex
 
 ## 7. Optional Git Sync
 
-Git sync is configured from Settings.
+Git sync is configured from Settings. It first uses the normal network route. If that route cannot reach the remote, the same sync automatically retries through a SOCKS5 proxy at `127.0.0.1:7890`; this fallback is per-sync and does not alter your global Git or SSH configuration.
 
 Modes:
 

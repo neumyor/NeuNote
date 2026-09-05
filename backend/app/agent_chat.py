@@ -724,9 +724,12 @@ Rules:
 - contributions should be specific claims from the paper, not generic descriptions.
 - The one_sentence should be a single sentence summary of the core contribution,
   not just a restatement of the title.
-- For title: only provide it when the current title is clearly wrong (e.g. it looks \
-  like a PDF filename slug, contains garbled text, or is a section heading). \
-  Do NOT change a title that is merely imperfectly formatted.\n  The corrected title must be in Title Case (capitalize first letter of each\n  major word), never ALL CAPS. For example "MY PAPER TITLE" → "My Paper Title".
+- For title: when a MinerU-recognized document title is supplied, you MUST return
+  it exactly as supplied. It is extracted from the paper's first-page heading and
+  takes precedence over the title inferred when the file was uploaded. Preserve
+  its capitalization, punctuation, acronyms, and subtitle rather than converting
+  it to generic Title Case. If no MinerU title is supplied, return null unless
+  the PDF text clearly identifies a corrected title.
 - For tags: review the current tags and the known-tags list provided in the prompt.\
   Keep tags that still apply, remove any that don't, and add NEW tags only when the\
   paper clearly covers a topic not represented by any existing tag. Be conservative:\
@@ -765,6 +768,7 @@ def _build_review_prompt(
     mineru_markdown: str,
     known_tags: list[str] | None = None,
     mineru_assets: list[dict[str, Any]] | None = None,
+    mineru_document_title: str = "",
 ) -> str:
     identity = f"""\
 Current paper metadata:
@@ -808,6 +812,12 @@ above. Copy its image_path exactly and set crop_method to "mineru". Do not add a
 crop field.
 
 """
+    title_info = (
+        "MinerU-recognized document title (first-page heading; authoritative):\n"
+        f"{mineru_document_title}\n\n"
+        if mineru_document_title else
+        "MinerU did not identify a reliable first-page document title.\n\n"
+    )
     markdown_snippet = mineru_markdown[:50000]
     return f"""\
 Review this paper's metadata against the MinerU-parsed source document and output corrections.
@@ -816,7 +826,7 @@ Review this paper's metadata against the MinerU-parsed source document and outpu
 
 {summary}
 
-{tags_info}{asset_info}MinerU parsed Markdown:
+{tags_info}{title_info}{asset_info}MinerU parsed Markdown:
 ---
 {markdown_snippet}
 ---
@@ -884,16 +894,24 @@ def _merge_review_patch(
     *,
     preserve_existing_figures: bool = True,
     allowed_figure_paths: set[str] | None = None,
+    mineru_document_title: str = "",
 ) -> tuple[dict[str, Any], list[str]]:
     """Merge agent corrections into paper. Returns (paper, notes)."""
     notes: list[str] = []
 
-    # ── title: only correct if current looks bad OR substantially different ──
+    # ── title: a first-page MinerU H1 is primary evidence, not upload metadata ──
     title = patch.get("title")
     if not isinstance(title, str):
         title = ""
-    if title and title != paper.get("title", ""):
-        current = paper.get("title", "")
+    recognized_title = mineru_document_title.strip()
+    current = str(paper.get("title") or "")
+    if recognized_title and recognized_title != current:
+        paper["title"] = recognized_title
+        notes.append(f"title (MinerU): '{_brief(current)}' → '{_brief(recognized_title)}'")
+    elif title and title != current:
+        # Fall back to the model only when MinerU could not recover a document
+        # title. Keep the existing conservative guard for this lower-confidence
+        # path.
         if _title_looks_bad(current) or _titles_differ_substantially(current, title):
             paper["title"] = title
             notes.append(f"title: '{_brief(current)}' → '{_brief(title)}'")
@@ -1276,8 +1294,12 @@ async def run_agent_paper_review(root: Path, paper_id: str,
         return {"status": "error", "detail": str(exc)}
 
     if not api_key:
+        paper, title_notes = _merge_review_patch(
+            paper, {}, mineru_document_title=str(mineru_result.get("document_title") or ""),
+        )
         paper["mineru"] = {
             "mode": mineru_result["mode"],
+            "document_title": str(mineru_result.get("document_title") or ""),
             "markdown_path": mineru_result["markdown_path"],
             "json_path": mineru_result["json_path"],
             "asset_count": len(mineru_result["assets"]),
@@ -1287,11 +1309,12 @@ async def run_agent_paper_review(root: Path, paper_id: str,
         paper["needs_review"] = True
         save_paper(root, paper)
         _dbg("agent_review: MinerU parsed document; no Claude API key for profile filling")
-        return {"status": "parsed", "reason": "no Claude API key configured"}
+        return {"status": "parsed", "reason": "no Claude API key configured", "notes": title_notes}
 
     known_tags = _known_tags(root)
     prompt = _build_review_prompt(
         paper, mineru_result["markdown"], known_tags, mineru_result["assets"],
+        str(mineru_result.get("document_title") or ""),
     )
     _dbg(f"agent_review: calling {model} at {endpoint or 'default'}, prompt {len(prompt)} chars")
 
@@ -1380,6 +1403,7 @@ async def run_agent_paper_review(root: Path, paper_id: str,
         patch,
         preserve_existing_figures=False,
         allowed_figure_paths={str(item["image_path"]) for item in mineru_result["assets"]},
+        mineru_document_title=str(mineru_result.get("document_title") or ""),
     )
     all_notes = merge_notes + review_notes
     _dbg(f"agent_review: merge produced {len(all_notes)} notes")
@@ -1396,6 +1420,7 @@ async def run_agent_paper_review(root: Path, paper_id: str,
     paper["needs_review"] = False
     paper["mineru"] = {
         "mode": mineru_result["mode"],
+        "document_title": str(mineru_result.get("document_title") or ""),
         "markdown_path": mineru_result["markdown_path"],
         "json_path": mineru_result["json_path"],
         "asset_count": len(mineru_result["assets"]),

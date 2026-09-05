@@ -6,10 +6,47 @@ import unittest
 from pathlib import Path
 from unittest import mock
 
-from app.git_sync import GitSyncError, git_sync_status, sync_inventory, sync_with_git
+from app.git_sync import (
+    GitSyncError,
+    _run_remote,
+    git_sync_status,
+    sync_inventory,
+    sync_with_git,
+)
 
 
 class GitSyncTests(unittest.TestCase):
+    def test_remote_command_uses_direct_route_when_available(self) -> None:
+        result = subprocess.CompletedProcess(["git"], 0, "ok", "")
+        with tempfile.TemporaryDirectory() as directory:
+            with mock.patch("app.git_sync._run", return_value=result) as run, \
+                    mock.patch("app.git_sync._proxy_env") as proxy_env:
+                transport: dict[str, object] = {}
+                actual = _run_remote(Path(directory), "push", "origin", "main",
+                                     transport=transport)
+
+        self.assertIs(actual, result)
+        run.assert_called_once()
+        proxy_env.assert_not_called()
+        self.assertNotIn("proxy_used", transport)
+
+    def test_remote_command_falls_back_to_local_7890_proxy(self) -> None:
+        direct = subprocess.CompletedProcess(["git"], 1, "", "network unreachable")
+        proxied = subprocess.CompletedProcess(["git"], 0, "", "")
+        proxy = {"ALL_PROXY": "socks5h://127.0.0.1:7890"}
+        with tempfile.TemporaryDirectory() as directory:
+            with mock.patch("app.git_sync._run", side_effect=[direct, proxied]) as run, \
+                    mock.patch("app.git_sync._proxy_env", return_value=proxy):
+                transport: dict[str, object] = {}
+                actual = _run_remote(Path(directory), "push", "origin", "main",
+                                     transport=transport)
+
+        self.assertIs(actual, proxied)
+        self.assertTrue(transport["proxy_used"])
+        self.assertTrue(transport["prefer_proxy"])
+        self.assertEqual(run.call_count, 2)
+        self.assertEqual(run.call_args_list[1].kwargs["env_overrides"], proxy)
+
     def test_local_mode_refuses_network_sync(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             with self.assertRaises(GitSyncError):

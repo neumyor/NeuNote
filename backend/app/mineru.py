@@ -65,6 +65,24 @@ def _referenced_image_names(markdown: str) -> list[str]:
     return names
 
 
+def _extract_document_title(markdown: str) -> str:
+    """Read MinerU's first document-level heading as the source title.
+
+    MinerU emits the paper title as the first level-one Markdown heading for
+    its normal precision and flash outputs.  Restricting this to an H1 avoids
+    confusing section headings, author names, or PDF filenames with a title.
+    """
+    for line in markdown.splitlines()[:120]:
+        match = re.match(r"^\s*#\s+(?!#)(.+?)\s*$", line)
+        if not match:
+            continue
+        title = re.sub(r"\s+", " ", match.group(1)).strip().strip("#").strip()
+        title = re.sub(r"[*_`]+", "", title).strip()
+        if 4 <= len(title) <= 500 and title.lower() not in {"abstract", "introduction"}:
+            return title
+    return ""
+
+
 def extract_paper_with_mineru(
     root: Path,
     paper_id: str,
@@ -122,6 +140,10 @@ def extract_paper_with_mineru(
         markdown_path = output_dir / "parsed.md"
         markdown_path.write_text(markdown, encoding="utf-8")
 
+    document_title = _extract_document_title(markdown)
+    if document_title:
+        log(f"recognized document title: {document_title}")
+
     json_path = _find_largest(list(output_dir.rglob("*.json")))
     parsed_json: Any = None
     if json_path:
@@ -157,6 +179,7 @@ def extract_paper_with_mineru(
     return {
         "mode": mode,
         "markdown": markdown,
+        "document_title": document_title,
         "markdown_path": str(markdown_path.relative_to(root)),
         "json_path": str(json_path.relative_to(root)) if json_path else "",
         "assets": assets,

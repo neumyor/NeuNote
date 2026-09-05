@@ -280,6 +280,7 @@ function App() {
   // Monotonic sequence number for openProfile() calls. A stale fetch that
   // resolves after a newer click must not clobber the newer paper's state.
   const openProfileSeq = useRef(0);
+  const activeJobRefreshInFlight = useRef(false);
   const [query, setQuery] = useState("");
   const [selectedTag, setSelectedTag] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
@@ -367,11 +368,15 @@ function App() {
 
   useEffect(() => {
     if (!savedRoot || activeJobCount === 0) return;
-    const timer = window.setInterval(() => {
-      void loadJobs();
-      void loadPapers();
-      void loadDuplicates();
-    }, 1600);
+    const refreshActiveJobs = () => {
+      if (activeJobRefreshInFlight.current) return;
+      activeJobRefreshInFlight.current = true;
+      void Promise.all([loadJobs(), loadPapers()])
+        .catch((err) => setError(String((err as Error).message ?? err)))
+        .finally(() => { activeJobRefreshInFlight.current = false; });
+    };
+    refreshActiveJobs();
+    const timer = window.setInterval(refreshActiveJobs, 1600);
     return () => window.clearInterval(timer);
   }, [savedRoot, activeJobCount]);
 
@@ -461,9 +466,11 @@ function App() {
     const liveId = selectedPaperIdRef.current;
     if (liveId) {
       const next = data.papers.find((p) => p.id === liveId) ?? null;
-      setSelectedPaper(next);
+      const selected = selectedPaperRef.current;
+      // /api/papers returns compact list records. Keep the full detail record
+      // that is already on screen and only refresh its list-level fields.
+      if (selected && next) setSelectedPaper({ ...selected, ...next });
     }
-    void loadDuplicates(kbRoot);
   }
 
   async function loadJobs(kbRoot = savedRoot) {
@@ -547,6 +554,7 @@ function App() {
       if (data.mineru_model) setMineruModel(data.mineru_model);
       if (typeof data.mineru_allow_remote === "boolean") setMineruAllowRemote(data.mineru_allow_remote);
       await loadPapers(data.root);
+      await loadDuplicates(data.root);
       await loadJobs(data.root);
       await loadSessions(data.root);
       await loadSyncStatus(data.root);
@@ -614,6 +622,7 @@ function App() {
         await request("/api/papers/upload", { method: "POST", body: form });
       }
       await loadPapers();
+      await loadDuplicates();
       await loadJobs();
       setPage("jobs");
     } catch (err) {
@@ -639,14 +648,19 @@ function App() {
       const data = await request<{ paper: Paper }>(`/api/papers/${encodeURIComponent(paperId)}${params}`);
       if (seq !== openProfileSeq.current) return; // stale, newer click won
       setSelectedPaper(data.paper);
-      const viewed = await request<{ paper: Paper }>(`/api/papers/${encodeURIComponent(paperId)}/viewed`, {
+      // Marking a paper as read writes the whole YAML record. It is useful,
+      // but must not keep the detail page in its loading state.
+      void request<{ paper: Paper }>(`/api/papers/${encodeURIComponent(paperId)}/viewed`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ root: savedRoot }),
-      });
-      if (seq !== openProfileSeq.current) return;
-      setSelectedPaper(viewed.paper);
-      setPapers((prev) => prev.map((paper) => paper.id === paperId ? viewed.paper : paper));
+      }).then((viewed) => {
+        if (seq !== openProfileSeq.current) return;
+        setSelectedPaper(viewed.paper);
+        setPapers((prev) => prev.map((paper) => (
+          paper.id === paperId ? { ...paper, ...viewed.paper } : paper
+        )));
+      }).catch(() => undefined);
     } catch (err) {
       if (seq !== openProfileSeq.current) return; // stale, don't surface error
       setError(String((err as Error).message ?? err));
@@ -3222,7 +3236,7 @@ function SettingsPage(props: {
               <GitBranch size={14} /> Git 同步
             </button>
           </div>
-          <p className="hint">论文 YAML 始终是同步内容；API 密钥、本机路径、任务和调试日志永远仅保存在本地。</p>
+          <p className="hint">论文 YAML 始终是同步内容；API 密钥、本机路径、任务和调试日志永远仅保存在本地。远端默认直连失败时，会自动改用本机 127.0.0.1:7890 代理重试。</p>
 
           {props.syncMode === "git" && (
             <div className="git-sync-options">

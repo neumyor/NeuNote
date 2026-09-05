@@ -79,7 +79,7 @@ Jobs run in the background. Open `整理队列` to inspect progress, cancel one 
 
 ## Figure Extraction
 
-Each enrichment first sends the PDF to MinerU and uses its parsed Markdown, layout-aware text, and extracted image assets to build the paper profile. The model then fills the structured metadata and selects only MinerU-provided image assets as key figures.
+Each enrichment first sends the PDF to MinerU and uses its parsed Markdown, layout-aware text, and extracted image assets to build the paper profile. MinerU's first-page document heading is used to correct the title inferred at upload time, so file names, embedded PDF metadata, and author lines do not become the permanent paper title. The model then fills the remaining structured metadata and selects only MinerU-provided image assets as key figures.
 
 `自动` uses MinerU precision parsing when you configure a MinerU token, otherwise its no-token mode. `精确` requires a token and is recommended for academic papers with tables, formulas, or complex layouts. Parsed artifacts are retained under `logs/mineru/`; selected images are copied to `assets/paper_figures/`.
 

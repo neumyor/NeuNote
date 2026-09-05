@@ -29,14 +29,18 @@ originals/
 """
 
 _SYNC_LOCK = threading.Lock()
+_PROXY_FALLBACK_URL = "socks5h://127.0.0.1:7890"
+_DIRECT_REMOTE_TIMEOUT_SECONDS = 30
+_PROXY_REMOTE_TIMEOUT_SECONDS = 90
 
 
-def _run(root: Path, *args: str, check: bool = True) -> subprocess.CompletedProcess[str]:
-    env = {**os.environ, "GIT_TERMINAL_PROMPT": "0"}
+def _run(root: Path, *args: str, check: bool = True, timeout: int = 120,
+         env_overrides: dict[str, str] | None = None) -> subprocess.CompletedProcess[str]:
+    env = {**os.environ, "GIT_TERMINAL_PROMPT": "0", **(env_overrides or {})}
     try:
         result = subprocess.run(
             ["git", "-C", str(root), *args], check=False, capture_output=True,
-            text=True, timeout=120, env=env,
+            text=True, timeout=timeout, env=env,
         )
     except subprocess.TimeoutExpired as exc:
         raise GitSyncError("Git 操作超时。请检查网络或远端认证。") from exc
@@ -44,6 +48,76 @@ def _run(root: Path, *args: str, check: bool = True) -> subprocess.CompletedProc
         detail = (result.stderr or result.stdout).strip()
         raise GitSyncError(detail or f"Git 命令失败：{' '.join(args)}")
     return result
+
+
+def _proxy_env() -> dict[str, str] | None:
+    """Return per-command proxy settings without changing global Git/SSH config."""
+    if shutil.which("nc") is None:
+        return None
+    return {
+        "ALL_PROXY": _PROXY_FALLBACK_URL,
+        "all_proxy": _PROXY_FALLBACK_URL,
+        "GIT_SSH_COMMAND": (
+            'ssh -o BatchMode=yes -o ConnectTimeout=20 '
+            '-o ProxyCommand="nc -x 127.0.0.1:7890 -X 5 %h %p"'
+        ),
+    }
+
+
+def _remote_detail(result: subprocess.CompletedProcess[str] | None, error: str = "") -> str:
+    if error:
+        return error
+    if result is None:
+        return "未知错误"
+    return (result.stderr or result.stdout).strip() or f"exit {result.returncode}"
+
+
+def _run_remote(root: Path, *args: str, check: bool = True,
+                transport: dict[str, Any] | None = None) -> subprocess.CompletedProcess[str]:
+    """Run a network Git command directly, then retry through local SOCKS5.
+
+    Once a sync has successfully fallen back, subsequent remote commands use the
+    proxy directly so a blocked SSH route is not retried for every Git operation.
+    """
+    transport = transport if transport is not None else {}
+    direct_result: subprocess.CompletedProcess[str] | None = None
+    direct_error = ""
+    if not transport.get("prefer_proxy"):
+        try:
+            direct_result = _run(root, *args, check=False, timeout=_DIRECT_REMOTE_TIMEOUT_SECONDS)
+        except GitSyncError as exc:
+            direct_error = str(exc)
+        else:
+            if direct_result.returncode == 0:
+                return direct_result
+
+    proxy = _proxy_env()
+    if proxy is None:
+        if check:
+            raise GitSyncError(f"Git 远端连接失败：{_remote_detail(direct_result, direct_error)}；未找到 nc，无法通过本机 7890 代理重试。")
+        return direct_result or subprocess.CompletedProcess(["git", *args], 1, "", direct_error)
+    try:
+        proxy_result = _run(
+            root, *args, check=False, timeout=_PROXY_REMOTE_TIMEOUT_SECONDS,
+            env_overrides=proxy,
+        )
+    except GitSyncError as exc:
+        if check:
+            raise GitSyncError(
+                f"Git 远端连接失败；直连：{_remote_detail(direct_result, direct_error)}；"
+                f"7890 代理：{exc}"
+            ) from exc
+        return direct_result or subprocess.CompletedProcess(["git", *args], 1, "", str(exc))
+    if proxy_result.returncode == 0:
+        transport["prefer_proxy"] = True
+        transport["proxy_used"] = True
+        return proxy_result
+    if check:
+        raise GitSyncError(
+            f"Git 远端连接失败；直连：{_remote_detail(direct_result, direct_error)}；"
+            f"7890 代理：{_remote_detail(proxy_result)}"
+        )
+    return proxy_result
 
 
 def _validate(remote: str, branch: str) -> None:
@@ -176,8 +250,12 @@ def _remove_disabled_optional_data(root: Path, config: dict[str, Any]) -> None:
             _run(root, "rm", "-r", "--cached", "--ignore-unmatch", "--", path)
 
 
-def _pull_rebase_or_recover(root: Path, remote: str, branch: str) -> None:
-    result = _run(root, "pull", "--rebase", "--autostash", remote, branch, check=False)
+def _pull_rebase_or_recover(root: Path, remote: str, branch: str,
+                            transport: dict[str, Any]) -> None:
+    result = _run_remote(
+        root, "pull", "--rebase", "--autostash", remote, branch,
+        check=False, transport=transport,
+    )
     if result.returncode == 0:
         return
     detail = (result.stderr or result.stdout).strip()
@@ -236,12 +314,17 @@ def _sync_with_git_unlocked(root: Path, config: dict[str, Any]) -> dict[str, Any
     elif remote_url and existing_remote.stdout.strip() != remote_url:
         _run(root, "remote", "set-url", remote, remote_url)
 
+    # Remote Git commands first use the normal system route.  If it is
+    # unavailable, the rest of this sync stays on the local 7890 proxy route.
+    transport: dict[str, Any] = {}
     remote_ref = f"refs/heads/{branch}"
-    remote_has_branch = _run(root, "ls-remote", "--exit-code", "--heads", remote,
-                             remote_ref, check=False).returncode == 0
+    remote_has_branch = _run_remote(
+        root, "ls-remote", "--exit-code", "--heads", remote, remote_ref,
+        check=False, transport=transport,
+    ).returncode == 0
     has_head = _run(root, "rev-parse", "--verify", "HEAD", check=False).returncode == 0
     if remote_has_branch and not has_head:
-        _run(root, "fetch", remote, branch)
+        _run_remote(root, "fetch", remote, branch, transport=transport)
         _run(root, "checkout", "-B", branch, "FETCH_HEAD")
 
     _ensure_data_gitignore(root)
@@ -256,11 +339,16 @@ def _sync_with_git_unlocked(root: Path, config: dict[str, Any]) -> dict[str, Any
         committed = True
 
     if remote_has_branch:
-        _pull_rebase_or_recover(root, remote, branch)
-    _run(root, "push", "-u", remote, branch)
+        _pull_rebase_or_recover(root, remote, branch, transport)
+    _run_remote(root, "push", "-u", remote, branch, transport=transport)
 
     result = git_sync_status(root, config)
     result.update({"ok": True, "initialized": initialized, "committed": committed,
                    "inventory": sync_inventory(root, config),
-                   "message": "用户数据已同步到 Git 远端。"})
+                   "proxy_fallback_used": bool(transport.get("proxy_used")),
+                   "message": (
+                       "用户数据已通过本机 7890 代理同步到 Git 远端。"
+                       if transport.get("proxy_used")
+                       else "用户数据已同步到 Git 远端。"
+                   )})
     return result

@@ -42,6 +42,7 @@ from .kb import (
     library_stats,
     list_jobs,
     list_papers,
+    list_paper_summaries,
     list_sessions,
     load_app_config,
     load_job,
@@ -77,6 +78,8 @@ _auto_sync_state: dict[str, Any] = {
     "last_error": None,
     "next_sync_at": None,
 }
+_translation_preload_lock = threading.Lock()
+_translation_preload_started = False
 
 app = FastAPI(title="NeuNote")
 app.add_middleware(
@@ -93,7 +96,7 @@ app.add_middleware(
 )
 
 
-# ── startup: warm the translation cache so the first /translate doesn't hang ──
+# ── startup: warm the local translation cache only when it is selected ──
 
 def _preload_translation_model() -> None:
     """Download Argos en→zh model in background. Idempotent & best-effort.
@@ -111,6 +114,18 @@ def _preload_translation_model() -> None:
     except Exception as exc:  # noqa: BLE001 — best effort, log and move on
         logging.getLogger("neunote.translate").warning(
             "Translation model preload failed (will retry on first use): %s", exc)
+
+
+def _start_local_translation_preload(config: dict[str, Any]) -> None:
+    """Avoid loading Argos (and monopolizing CPU) for LLM translation users."""
+    global _translation_preload_started
+    if str(config.get("translation_engine") or "llm").lower() != "local":
+        return
+    with _translation_preload_lock:
+        if _translation_preload_started:
+            return
+        _translation_preload_started = True
+    threading.Thread(target=_preload_translation_model, daemon=True).start()
 
 
 def _configured_root() -> Path:
@@ -201,7 +216,7 @@ def _auto_sync_loop() -> None:
 
 @app.on_event("startup")
 def _on_startup() -> None:
-    threading.Thread(target=_preload_translation_model, daemon=True).start()
+    _start_local_translation_preload(load_app_config(_configured_root()))
     _auto_sync_stop.clear()
     threading.Thread(target=_auto_sync_loop, daemon=True, name="neunote-git-auto-sync").start()
 
@@ -388,6 +403,7 @@ def set_config(config: RootConfig) -> dict[str, Any]:
     cfg = save_app_config(root, config.model_dump(exclude={"root"}, exclude_none=True))
     # Recreate executor if concurrency changed
     _get_executor(cfg.get("max_concurrency", 4))
+    _start_local_translation_preload(cfg)
     _reset_auto_sync_schedule()
     return {"root": str(root), **cfg}
 
@@ -419,8 +435,8 @@ def api_sync(request: GitSyncRequest) -> dict[str, Any]:
 @app.get("/api/papers")
 def api_list_papers(root: str | None = None) -> dict[str, Any]:
     kb_root = resolve_root(root)
-    papers = list_papers(kb_root)
-    stats = library_stats(kb_root)
+    papers = list_paper_summaries(kb_root)
+    stats = library_stats(kb_root, papers)
     return {"root": str(kb_root), "papers": papers, "stats": stats}
 
 
