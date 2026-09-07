@@ -3,6 +3,7 @@ from __future__ import annotations
 import tempfile
 import unittest
 import urllib.error
+import zipfile
 from pathlib import Path
 from unittest.mock import patch
 
@@ -12,6 +13,7 @@ from app.kb import ensure_kb, load_paper, save_paper
 from app.librarian import (
     _assert_public_http_url,
     build_fulltext_index,
+    create_pdf_archive,
     create_action,
     import_action,
     merge_metadata,
@@ -19,12 +21,40 @@ from app.librarian import (
     search_dblp_venues,
     search_papers_aggregated,
     search_fulltext,
+    pdf_archive_path,
     _index_connection,
     _http_json,
 )
 
 
 class LibrarianTests(unittest.TestCase):
+    def test_pdf_archive_packages_only_downloaded_local_pdfs(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            ensure_kb(root)
+            for paper_id, title in (("paper-a", "Paper A"), ("paper-b", "Paper B")):
+                source = root / "originals/papers" / f"{paper_id}.pdf"
+                writer = PdfWriter()
+                writer.add_blank_page(width=200, height=200)
+                with source.open("wb") as handle:
+                    writer.write(handle)
+                save_paper(root, {
+                    "id": paper_id, "title": title,
+                    "source_pdf": str(source.relative_to(root)), "download_status": "downloaded",
+                })
+            save_paper(root, {"id": "missing", "title": "Missing PDF", "download_status": "not_downloaded"})
+
+            result = create_pdf_archive(root, ["paper-a", "missing", "paper-b", "paper-a"])
+            archive = pdf_archive_path(root, result["archive_id"])
+
+            self.assertTrue(archive.is_file())
+            self.assertEqual(result["paper_count"], 2)
+            self.assertEqual(result["unavailable"], [{"paper_id": "missing", "reason": "PDF is not downloaded"}])
+            with zipfile.ZipFile(archive) as packaged:
+                names = packaged.namelist()
+                self.assertIn("manifest.json", names)
+                self.assertEqual(len([name for name in names if name.startswith("papers/")]), 2)
+
     def test_v12_migration_preserves_legacy_data_and_marks_existing_pdf_downloaded(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)

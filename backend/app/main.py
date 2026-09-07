@@ -18,6 +18,7 @@ from pydantic import BaseModel, Field
 from .agent_chat import run_agent_answer_sync
 from .librarian import (
     create_action,
+    pdf_archive_path,
     import_action,
     load_action,
     merge_metadata,
@@ -542,6 +543,24 @@ def api_paper_pdf(paper_id: str, root: str | None = None) -> FileResponse:
     safe_name = pdf_path.name.replace('"', "").replace("\r", "").replace("\n", "")
     return FileResponse(pdf_path, media_type="application/pdf",
                         headers={"Content-Disposition": f'inline; filename="{safe_name}"'})
+
+
+@app.get("/api/librarian/archives/{archive_id}/download")
+def api_librarian_archive_download(archive_id: str, root: str | None = None) -> FileResponse:
+    """Download an archive created by the librarian's local PDF packaging tool."""
+    kb_root = resolve_root(root)
+    try:
+        archive = pdf_archive_path(kb_root, archive_id)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    if not archive.is_file():
+        raise HTTPException(status_code=404, detail="PDF archive is unavailable.")
+    filename = f"neunote-papers-{archive_id[:8]}.zip"
+    return FileResponse(
+        archive,
+        media_type="application/zip",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )
 
 
 @app.get("/api/papers/{paper_id}/figures/{figure_index}")

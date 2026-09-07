@@ -123,6 +123,7 @@ You can:
 - retrieve a supported conference or journal paper list by year
 - preview network metadata and explicitly confirm which records enter the library
 - request a PDF download, confirm it, and follow download/index progress in the job queue
+- ask to package selected, already-downloaded papers into a ZIP and download it from the returned file card
 
 Search never downloads PDFs. A remote PDF link is shown as `仅元信息` until a confirmed download succeeds. Only papers marked `可全文检索` participate in SQLite full-text search; mixed-paper answers identify records without full text.
 

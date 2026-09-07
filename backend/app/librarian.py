@@ -3,6 +3,7 @@ from __future__ import annotations
 import concurrent.futures
 import ipaddress
 import json
+import os
 import re
 import socket
 import sqlite3
@@ -12,6 +13,7 @@ import unicodedata
 import urllib.parse
 import urllib.request
 import uuid
+import zipfile
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any, Iterable
@@ -24,6 +26,8 @@ from .kb import create_job, fail_job, load_job, load_paper, list_papers, now_iso
 INDEX_VERSION = 1
 MAX_PDF_BYTES = 100 * 1024 * 1024
 ACTION_TTL_HOURS = 24
+PDF_ARCHIVE_DIR = "logs/exports"
+_ARCHIVE_ID_RE = re.compile(r"^[a-f0-9]{32}$")
 
 SUPPORTED_VENUES = {
     "cvpr", "iccv", "eccv", "aaai", "ijcai", "nips", "iclr", "icml",
@@ -79,6 +83,91 @@ def normalize_arxiv_id(value: Any) -> str:
 def normalize_title(value: Any) -> str:
     text = unicodedata.normalize("NFKC", str(value or "")).casefold()
     return " ".join(re.findall(r"[\w]+", text, flags=re.UNICODE))
+
+
+def pdf_archive_path(root: Path, archive_id: str) -> Path:
+    """Resolve a generated archive without allowing user-controlled paths."""
+    if not _ARCHIVE_ID_RE.fullmatch(archive_id):
+        raise ValueError("Invalid PDF archive ID.")
+    return root / PDF_ARCHIVE_DIR / f"{archive_id}.zip"
+
+
+def create_pdf_archive(root: Path, paper_ids: list[str]) -> dict[str, Any]:
+    """Package downloaded source PDFs into a local, downloadable ZIP archive."""
+    unique_ids: list[str] = []
+    for paper_id in paper_ids:
+        normalized = str(paper_id or "").strip()
+        if normalized and normalized not in unique_ids:
+            unique_ids.append(normalized)
+    if not unique_ids:
+        raise ValueError("Select at least one paper to package.")
+    if len(unique_ids) > 50:
+        raise ValueError("A single PDF archive may contain at most 50 papers.")
+
+    included: list[dict[str, str]] = []
+    unavailable: list[dict[str, str]] = []
+    original_root = (root / "originals" / "papers").resolve()
+    for paper_id in unique_ids:
+        try:
+            paper = load_paper(root, paper_id)
+        except FileNotFoundError:
+            unavailable.append({"paper_id": paper_id, "reason": "paper not found"})
+            continue
+        source = paper.get("source_pdf")
+        if paper.get("download_status") != "downloaded" or not isinstance(source, str) or not source:
+            unavailable.append({"paper_id": paper_id, "reason": "PDF is not downloaded"})
+            continue
+        source_path = (root / source).resolve()
+        try:
+            source_path.relative_to(original_root)
+        except ValueError:
+            unavailable.append({"paper_id": paper_id, "reason": "invalid source PDF path"})
+            continue
+        if not source_path.is_file():
+            unavailable.append({"paper_id": paper_id, "reason": "PDF file is unavailable"})
+            continue
+        included.append({
+            "paper_id": paper_id,
+            "title": str(paper.get("title") or paper_id),
+            "source_path": str(source_path),
+        })
+
+    if not included:
+        raise ValueError("None of the selected papers has a downloadable local PDF.")
+
+    archive_id = uuid.uuid4().hex
+    archive_path = pdf_archive_path(root, archive_id)
+    archive_path.parent.mkdir(parents=True, exist_ok=True)
+    temp_path = archive_path.with_suffix(".tmp")
+    manifest: list[dict[str, str]] = []
+    try:
+        with zipfile.ZipFile(temp_path, "w", compression=zipfile.ZIP_DEFLATED, compresslevel=6) as archive:
+            used_names: set[str] = set()
+            for index, item in enumerate(included, start=1):
+                stem = slugify(item["title"], item["paper_id"])[:100].strip("_") or item["paper_id"]
+                filename = f"{stem}.pdf"
+                if filename in used_names:
+                    filename = f"{stem}_{index}.pdf"
+                used_names.add(filename)
+                member_name = f"papers/{filename}"
+                archive.write(item["source_path"], member_name)
+                manifest.append({"paper_id": item["paper_id"], "title": item["title"], "file": member_name})
+            archive.writestr("manifest.json", json.dumps({"papers": manifest}, ensure_ascii=False, indent=2))
+        os.replace(temp_path, archive_path)
+    except Exception:
+        temp_path.unlink(missing_ok=True)
+        raise
+
+    filename = f"neunote-papers-{archive_id[:8]}.zip"
+    return {
+        "kind": "pdf_archive",
+        "archive_id": archive_id,
+        "filename": filename,
+        "paper_count": len(included),
+        "size_bytes": archive_path.stat().st_size,
+        "papers": manifest,
+        "unavailable": unavailable,
+    }
 
 
 def _nonempty(value: Any) -> bool:

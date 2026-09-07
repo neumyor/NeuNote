@@ -24,7 +24,7 @@ from .kb import (
     now_iso,
     save_paper,
 )
-from .librarian import create_action, search_fulltext, search_papers_aggregated
+from .librarian import create_action, create_pdf_archive, search_fulltext, search_papers_aggregated
 
 READ_PREFIXES = (
     "AGENT.md",
@@ -453,6 +453,25 @@ async def run_agent_answer(root: Path, question: str,
             return _tool_error(str(exc))
 
     @tool(
+        name="librarian_package_paper_pdfs",
+        description="Create a ZIP containing the selected papers' already-downloaded local source PDFs. Never downloads missing PDFs. Returns a downloadable archive card for the user.",
+        input_schema={
+            "type": "object",
+            "properties": {
+                "paper_ids": {"type": "array", "items": {"type": "string"}, "minItems": 1, "maxItems": 50},
+                "intend": _intend_schema("Explain which local papers are being packaged."),
+            },
+            "required": ["paper_ids", "intend"],
+        },
+    )
+    async def librarian_package_paper_pdfs(args: dict) -> dict:
+        try:
+            result = await asyncio.to_thread(create_pdf_archive, root, list(args.get("paper_ids") or []))
+            return {"content": [{"type": "text", "text": json.dumps(result, ensure_ascii=False)}]}
+        except Exception as exc:
+            return _tool_error(str(exc))
+
+    @tool(
         name="librarian_search_fulltext",
         description="Search indexed local PDF text. Metadata-only and unindexed papers are excluded.",
         input_schema={
@@ -478,7 +497,7 @@ async def run_agent_answer(root: Path, question: str,
         version="1.0.0",
         tools=[kb_list, kb_read, kb_write, kb_pdf_info, kb_read_pdf_pages, kb_render_pdf_pages,
                librarian_search_papers, librarian_list_venue_papers, librarian_download_pdf_url,
-               librarian_search_fulltext],
+               librarian_package_paper_pdfs, librarian_search_fulltext],
     )
 
     session = load_session(root, session_id)
@@ -517,9 +536,10 @@ Workflow:
 3. If critical evidence is missing from a mentioned or discovered paper YAML, use kb_pdf_info and then kb_read_pdf_pages with precise pages or page ranges.
 4. Use kb_render_pdf_pages for figures, tables, equations, screenshots, or layout-sensitive claims that text extraction cannot verify.
 5. For library questions, answer strictly from paper YAML and verified PDF evidence. For discovery requests, use librarian tools and label results as network metadata, not full-paper evidence.
-6. Separate evidence from inference: if a claim is explicitly stated by the paper, say so with the paper ID; if you infer it from paper content, label it as your inference; if the paper does not provide enough evidence, say that the paper does not explicitly state it.
-7. Answer with citations to paper IDs and mention when PDF text or visual verification was used.
-8. Only write paper updates when correcting verified errors.
+6. When the user asks to package, bundle, or export selected papers as a ZIP, call librarian_package_paper_pdfs with their paper IDs. It packages only already-downloaded local PDFs and returns a download card; report any unavailable papers.
+7. Separate evidence from inference: if a claim is explicitly stated by the paper, say so with the paper ID; if you infer it from paper content, label it as your inference; if the paper does not provide enough evidence, say that the paper does not explicitly state it.
+8. Answer with citations to paper IDs and mention when PDF text or visual verification was used.
+9. Only write paper updates when correcting verified errors.
 
 Tool UI:
 - Every tool call requires an `intend` field. This string is shown directly to the user as the tool status.
@@ -551,6 +571,7 @@ Tool UI:
             "mcp__neunote__librarian_search_papers",
             "mcp__neunote__librarian_list_venue_papers",
             "mcp__neunote__librarian_download_pdf_url",
+            "mcp__neunote__librarian_package_paper_pdfs",
             "mcp__neunote__librarian_search_fulltext",
         ],
         disallowed_tools=["Read", "Write", "Edit", "MultiEdit", "Bash", "Grep", "Glob", "LS", "WebFetch", "WebSearch"],
@@ -571,6 +592,7 @@ Tool UI:
             "Every tool call must include a short user-facing `intend` field explaining the immediate action. "
             "Only write paper updates when correcting verified errors; never modify originals/papers."
             " Never import metadata or download a PDF without returning a confirmation action for the user."
+            " When the user explicitly asks to package local paper PDFs, use librarian_package_paper_pdfs and return its archive card."
         ),
     )
 
@@ -578,11 +600,17 @@ Tool UI:
     agent_steps: list[dict[str, Any]] = []
     segments: list[dict[str, Any]] = []
 
-    def attach_tool_result(tool_id: str, detail: str, is_error: bool) -> None:
+    def attach_tool_result(tool_id: str, detail: str, is_error: bool,
+                           raw_result: Any = None) -> None:
         for segment in reversed(segments):
             if segment.get("type") == "tool" and segment.get("id") == tool_id:
                 segment["result"] = detail
                 segment["is_error"] = is_error
+                # Keep the compact card payload losslessly in saved sessions.
+                # Other tool results can include rendered page images, so never
+                # persist their raw response wholesale.
+                if "librarian_package_paper_pdfs" in str(segment.get("title") or ""):
+                    segment["archive_result"] = raw_result
                 return
 
     yield {"type": "session", "session": session}
@@ -623,7 +651,7 @@ Tool UI:
                         elif isinstance(block, ToolResultBlock):
                             tool_result = getattr(block, "content", None)
                             detail = _compact_json(tool_result, limit=1400)
-                            attach_tool_result(block.tool_use_id, detail, bool(block.is_error))
+                            attach_tool_result(block.tool_use_id, detail, bool(block.is_error), tool_result)
                             yield {
                                 "type": "tool_result",
                                 "tool_use_id": block.tool_use_id,
@@ -638,7 +666,7 @@ Tool UI:
                             if isinstance(block, ToolResultBlock):
                                 tool_result = getattr(block, "content", None)
                                 detail = _compact_json(tool_result, limit=1400)
-                                attach_tool_result(block.tool_use_id, detail, bool(block.is_error))
+                                attach_tool_result(block.tool_use_id, detail, bool(block.is_error), tool_result)
                                 yield {
                                     "type": "tool_result",
                                     "tool_use_id": block.tool_use_id,

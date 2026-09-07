@@ -2782,6 +2782,73 @@ h1 {
   background: rgba(119,50,47,.07);
 }
 
+.chat-file-card {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  max-width: 480px;
+  margin: 0 0 10px;
+  border: 1px solid rgba(115, 87, 56, .28);
+  border-radius: var(--r-3);
+  background: linear-gradient(135deg, rgba(255,255,255,.78), rgba(242,231,211,.72));
+  box-shadow: 0 3px 12px rgba(79, 52, 32, .08);
+  padding: 11px 12px;
+}
+
+.chat-file-card-icon {
+  display: grid;
+  width: 34px;
+  height: 38px;
+  place-items: center;
+  flex: 0 0 auto;
+  border: 1px solid rgba(139, 95, 58, .24);
+  border-radius: 9px;
+  color: var(--burgundy);
+  background: rgba(255, 249, 239, .76);
+}
+
+.chat-file-card-copy {
+  display: grid;
+  min-width: 0;
+  gap: 3px;
+}
+
+.chat-file-card-copy strong {
+  overflow: hidden;
+  color: var(--ink-1);
+  font-family: var(--ui);
+  font-size: 13px;
+  font-weight: 750;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.chat-file-card-copy small {
+  color: var(--muted);
+  font-family: var(--ui);
+  font-size: 11px;
+}
+
+.chat-file-download {
+  display: grid;
+  width: 34px;
+  height: 34px;
+  place-items: center;
+  margin-left: auto;
+  flex: 0 0 auto;
+  border: 1px solid rgba(115, 87, 56, .3);
+  border-radius: 50%;
+  color: var(--burgundy);
+  background: rgba(255,255,255,.74);
+  transition: transform .16s ease, background .16s ease;
+}
+
+.chat-file-download:hover {
+  transform: translateY(-1px);
+  color: white;
+  background: var(--burgundy);
+}
+
 .tool-call-head {
   width: 100%;
   min-height: 34px;

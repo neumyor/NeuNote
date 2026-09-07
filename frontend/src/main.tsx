@@ -17,6 +17,7 @@ import {
   ChevronRight,
   CloudUpload,
   Copy,
+  Download,
   Bot,
   ExternalLink,
   FileText,
@@ -1195,6 +1196,7 @@ function App() {
             mentionedTags={mentionedTags}
             setMentionedTags={setMentionedTags}
             messages={chatMessages}
+            kbRoot={savedRoot}
             busy={busy}
             newChat={openGeneralChat}
             openSession={loadChatSession}
@@ -2458,6 +2460,7 @@ function sessionMessageToChatMessage(message: any, index: number): ChatMessage {
               id: String(segment.id ?? `session-${index}-tool-${segmentIndex}`),
               name: String(segment.title ?? segment.name ?? "tool"),
               detail: segment.detail,
+              result: segment.archive_result,
               resultDetail: segment.result,
               isError: Boolean(segment.is_error),
               state: segment.result ? "done" : "done",
@@ -2540,6 +2543,7 @@ function ChatPage(props: {
   mentionedTags: string[];
   setMentionedTags: (tags: string[]) => void;
   messages: ChatMessage[];
+  kbRoot: string;
   busy: string;
   newChat: () => void;
   openSession: (sessionId: string) => void;
@@ -2724,7 +2728,7 @@ function ChatPage(props: {
                 </div>
               </div>
             ) : (
-              props.messages.map((message) => <ChatMessageView key={message.id} message={message} paperById={paperById} />)
+              props.messages.map((message) => <ChatMessageView key={message.id} message={message} paperById={paperById} kbRoot={props.kbRoot} />)
             )}
           </div>
           <div className="chat-composer-wrap">
@@ -2820,7 +2824,9 @@ function completeToolCall(tool: ChatToolCall, payload: Record<string, any>): Cha
   };
 }
 
-function ChatMessageView({ message, paperById }: { message: ChatMessage; paperById: Map<string, Paper> }) {
+function ChatMessageView({ message, paperById, kbRoot }: {
+  message: ChatMessage; paperById: Map<string, Paper>; kbRoot: string;
+}) {
   const segments = message.role === "assistant" && message.segments?.length
     ? message.segments
     : null;
@@ -2845,7 +2851,7 @@ function ChatMessageView({ message, paperById }: { message: ChatMessage; paperBy
         {segments ? (
           segments.map((segment) => (
             segment.type === "tool" ? (
-              <ToolCallView key={segment.id} tool={segment.tool} />
+              <ToolCallView key={segment.id} tool={segment.tool} kbRoot={kbRoot} />
             ) : (
               <div className="markdown-body chat-markdown chat-segment" key={segment.id}>
                 <MarkdownView>{segment.content}</MarkdownView>
@@ -2855,7 +2861,7 @@ function ChatMessageView({ message, paperById }: { message: ChatMessage; paperBy
         ) : (
           <>
             {message.role === "assistant" && (message.tools ?? []).map((tool) => (
-              <ToolCallView key={tool.id} tool={tool} />
+              <ToolCallView key={tool.id} tool={tool} kbRoot={kbRoot} />
             ))}
             {message.content ? (
               <div className="markdown-body chat-markdown">
@@ -2872,8 +2878,74 @@ function ChatMessageView({ message, paperById }: { message: ChatMessage; paperBy
   );
 }
 
-function ToolCallView({ tool }: { tool: ChatToolCall }) {
+type PdfArchive = {
+  kind: "pdf_archive";
+  archive_id: string;
+  filename: string;
+  paper_count: number;
+  size_bytes: number;
+  unavailable?: { paper_id: string; reason: string }[];
+};
+
+function findPdfArchive(value: unknown, depth = 0): PdfArchive | null {
+  if (depth > 5 || value == null) return null;
+  if (typeof value === "string") {
+    try { return findPdfArchive(JSON.parse(value), depth + 1); } catch { return null; }
+  }
+  if (Array.isArray(value)) {
+    for (const item of value) {
+      const archive = findPdfArchive(item, depth + 1);
+      if (archive) return archive;
+    }
+    return null;
+  }
+  if (typeof value !== "object") return null;
+  const item = value as Record<string, unknown>;
+  if (item.kind === "pdf_archive" && typeof item.archive_id === "string" && typeof item.filename === "string") {
+    return {
+      kind: "pdf_archive",
+      archive_id: item.archive_id,
+      filename: item.filename,
+      paper_count: Number(item.paper_count) || 0,
+      size_bytes: Number(item.size_bytes) || 0,
+      unavailable: Array.isArray(item.unavailable) ? item.unavailable as PdfArchive["unavailable"] : [],
+    };
+  }
+  return findPdfArchive(item.text ?? item.content ?? item.result, depth + 1);
+}
+
+function archiveDownloadUrl(archiveId: string, kbRoot: string): string {
+  const params = new URLSearchParams();
+  if (kbRoot) params.set("root", kbRoot);
+  const suffix = params.toString();
+  return `${API}/api/librarian/archives/${encodeURIComponent(archiveId)}/download${suffix ? `?${suffix}` : ""}`;
+}
+
+function readableBytes(bytes: number): string {
+  if (bytes < 1024 * 1024) return `${Math.max(1, Math.round(bytes / 1024))} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(bytes >= 10 * 1024 * 1024 ? 0 : 1)} MB`;
+}
+
+function PdfArchiveCard({ archive, kbRoot }: { archive: PdfArchive; kbRoot: string }) {
+  const unavailable = archive.unavailable?.length ?? 0;
+  return (
+    <section className="chat-file-card">
+      <div className="chat-file-card-icon"><FileText size={19} /></div>
+      <div className="chat-file-card-copy">
+        <strong>{archive.filename}</strong>
+        <small>{archive.paper_count} 篇 PDF · {readableBytes(archive.size_bytes)}{unavailable ? ` · ${unavailable} 篇未打包` : ""}</small>
+      </div>
+      <a className="chat-file-download" href={archiveDownloadUrl(archive.archive_id, kbRoot)} download={archive.filename} aria-label={`下载 ${archive.filename}`} title="下载 ZIP 文件">
+        <Download size={18} />
+      </a>
+    </section>
+  );
+}
+
+function ToolCallView({ tool, kbRoot }: { tool: ChatToolCall; kbRoot: string }) {
   const [open, setOpen] = useState(false);
+  const archive = tool.isError ? null : (findPdfArchive(tool.result) ?? findPdfArchive(tool.resultDetail));
+  if (archive) return <PdfArchiveCard archive={archive} kbRoot={kbRoot} />;
   const inputText = stringifyToolPayload(tool.input ?? tool.detail);
   const resultText = stringifyToolPayload(tool.result ?? tool.resultDetail);
   const label = toolIntentLabel(tool);
@@ -2922,6 +2994,7 @@ function fallbackToolIntent(tool: ChatToolCall): string {
   if (tool.name.includes("kb_read")) return path ? `正在读取 ${compactToolPath(path)}` : "正在读取资料";
   if (tool.name.includes("kb_list")) return path ? `正在浏览 ${compactToolPath(path)}` : "正在浏览资料";
   if (tool.name.includes("kb_write")) return path ? `正在保存 ${compactToolPath(path)}` : "正在保存修正";
+  if (tool.name.includes("librarian_package_paper_pdfs")) return "正在打包所选论文 PDF";
   return "正在处理资料";
 }
 
@@ -2934,6 +3007,7 @@ function friendlyToolName(name: string): string {
     kb_pdf_info: "PDF 信息",
     kb_read_pdf_pages: "PDF 文本",
     kb_render_pdf_pages: "PDF 视觉",
+    librarian_package_paper_pdfs: "打包 PDF",
   };
   return labels[normalized] ?? normalized;
 }
