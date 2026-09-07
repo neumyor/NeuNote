@@ -30,8 +30,11 @@ originals/
 
 _SYNC_LOCK = threading.Lock()
 _PROXY_FALLBACK_URL = "socks5h://127.0.0.1:7890"
-_DIRECT_REMOTE_TIMEOUT_SECONDS = 30
-_PROXY_REMOTE_TIMEOUT_SECONDS = 90
+_REMOTE_PROBE_TIMEOUT_SECONDS = 45
+_REMOTE_TRANSFER_TIMEOUT_SECONDS = 3600
+_PROXY_REMOTE_TIMEOUT_SECONDS = 3600
+_GITHUB_SCP_SSH_URL = re.compile(r"^git@github\.com:(?P<path>[^\s]+)$")
+_GITHUB_SSH_URL = re.compile(r"^ssh://git@github\.com(?::\d+)?/(?P<path>[^\s]+)$")
 
 
 def _run(root: Path, *args: str, check: bool = True, timeout: int = 120,
@@ -64,6 +67,22 @@ def _proxy_env() -> dict[str, str] | None:
     }
 
 
+def normalize_remote_url(remote_url: str) -> str:
+    """Use GitHub's SSH-over-443 endpoint when an SSH GitHub URL is supplied."""
+    remote_url = remote_url.strip()
+    scp_match = _GITHUB_SCP_SSH_URL.fullmatch(remote_url)
+    if scp_match:
+        return f"ssh://git@ssh.github.com:443/{scp_match.group('path')}"
+    ssh_match = _GITHUB_SSH_URL.fullmatch(remote_url)
+    if ssh_match:
+        return f"ssh://git@ssh.github.com:443/{ssh_match.group('path')}"
+    return remote_url
+
+
+def _remote_timeout(args: tuple[str, ...]) -> int:
+    return _REMOTE_PROBE_TIMEOUT_SECONDS if args and args[0] == "ls-remote" else _REMOTE_TRANSFER_TIMEOUT_SECONDS
+
+
 def _remote_detail(result: subprocess.CompletedProcess[str] | None, error: str = "") -> str:
     if error:
         return error
@@ -84,7 +103,7 @@ def _run_remote(root: Path, *args: str, check: bool = True,
     direct_error = ""
     if not transport.get("prefer_proxy"):
         try:
-            direct_result = _run(root, *args, check=False, timeout=_DIRECT_REMOTE_TIMEOUT_SECONDS)
+            direct_result = _run(root, *args, check=False, timeout=_remote_timeout(args))
         except GitSyncError as exc:
             direct_error = str(exc)
         else:
@@ -285,7 +304,7 @@ def _sync_with_git_unlocked(root: Path, config: dict[str, Any]) -> dict[str, Any
 
     remote = str(config.get("git_remote") or "origin").strip()
     branch = str(config.get("git_branch") or "main").strip()
-    remote_url = str(config.get("git_remote_url") or "").strip()
+    remote_url = normalize_remote_url(str(config.get("git_remote_url") or ""))
     _validate(remote, branch)
 
     initialized = False
@@ -323,8 +342,11 @@ def _sync_with_git_unlocked(root: Path, config: dict[str, Any]) -> dict[str, Any
         check=False, transport=transport,
     ).returncode == 0
     has_head = _run(root, "rev-parse", "--verify", "HEAD", check=False).returncode == 0
-    if remote_has_branch and not has_head:
-        _run_remote(root, "fetch", remote, branch, transport=transport)
+    bootstrapped_from_remote = remote_has_branch and not has_head
+    if bootstrapped_from_remote:
+        # Knowledge-base sync only needs the current data snapshot. Fetching an
+        # entire PDF-heavy history on a new device can be prohibitively slow.
+        _run_remote(root, "fetch", "--depth=1", remote, branch, transport=transport)
         _run(root, "checkout", "-B", branch, "FETCH_HEAD")
 
     _ensure_data_gitignore(root)
@@ -338,7 +360,7 @@ def _sync_with_git_unlocked(root: Path, config: dict[str, Any]) -> dict[str, Any
         _run(root, "commit", "-m", f"Sync NeuNote user data ({stamp})")
         committed = True
 
-    if remote_has_branch:
+    if remote_has_branch and not bootstrapped_from_remote:
         _pull_rebase_or_recover(root, remote, branch, transport)
     _run_remote(root, "push", "-u", remote, branch, transport=transport)
 

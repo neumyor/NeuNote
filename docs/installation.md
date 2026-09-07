@@ -147,7 +147,7 @@ First sync to a new private remote:
 5. Click `保存设置`.
 6. Click `立即同步`.
 
-Use SSH keys or your system Git credential helper. Do not put access tokens in the remote URL.
+Use SSH keys or your system Git credential helper. Do not put access tokens in the remote URL. GitHub SSH URLs are automatically normalized to GitHub's SSH-over-443 endpoint, so sync continues to work on networks that block SSH port 22. On a new device, NeuNote fetches only the latest remote snapshot instead of the full Git history, avoiding needless downloads of older PDF revisions. Large transfers are allowed a longer window than routine connectivity checks.
 
 ## 8. Production-Like Local Run
 

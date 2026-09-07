@@ -9,13 +9,34 @@ from unittest import mock
 from app.git_sync import (
     GitSyncError,
     _run_remote,
+    _remote_timeout,
     git_sync_status,
+    normalize_remote_url,
     sync_inventory,
     sync_with_git,
 )
 
 
 class GitSyncTests(unittest.TestCase):
+    def test_normalizes_github_ssh_urls_to_port_443(self) -> None:
+        self.assertEqual(
+            normalize_remote_url("git@github.com:owner/library.git"),
+            "ssh://git@ssh.github.com:443/owner/library.git",
+        )
+        self.assertEqual(
+            normalize_remote_url("ssh://git@github.com:22/owner/library.git"),
+            "ssh://git@ssh.github.com:443/owner/library.git",
+        )
+        self.assertEqual(
+            normalize_remote_url("https://github.com/owner/library.git"),
+            "https://github.com/owner/library.git",
+        )
+
+    def test_remote_transfer_timeout_allows_large_initial_sync(self) -> None:
+        self.assertEqual(_remote_timeout(("ls-remote", "origin")), 45)
+        self.assertEqual(_remote_timeout(("fetch", "origin", "main")), 3600)
+        self.assertEqual(_remote_timeout(("push", "origin", "main")), 3600)
+
     def test_remote_command_uses_direct_route_when_available(self) -> None:
         result = subprocess.CompletedProcess(["git"], 0, "ok", "")
         with tempfile.TemporaryDirectory() as directory:

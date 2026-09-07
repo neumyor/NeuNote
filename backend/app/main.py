@@ -26,7 +26,7 @@ from .librarian import (
     run_librarian_job,
     search_fulltext,
 )
-from .git_sync import GitSyncError, git_sync_status, sync_with_git
+from .git_sync import GitSyncError, git_sync_status, normalize_remote_url, sync_with_git
 from .kb import (
     append_session_message,
     cancel_job,
@@ -401,7 +401,10 @@ def set_config(config: RootConfig) -> dict[str, Any]:
     root = Path(config.root).expanduser().resolve()
     ensure_kb(root)
     APP_CONFIG.write_text(yaml.safe_dump({"root": str(root)}, sort_keys=False), encoding="utf-8")
-    cfg = save_app_config(root, config.model_dump(exclude={"root"}, exclude_none=True))
+    updates = config.model_dump(exclude={"root"}, exclude_none=True)
+    if "git_remote_url" in updates:
+        updates["git_remote_url"] = normalize_remote_url(updates["git_remote_url"])
+    cfg = save_app_config(root, updates)
     # Recreate executor if concurrency changed
     _get_executor(cfg.get("max_concurrency", 4))
     _start_local_translation_preload(cfg)
