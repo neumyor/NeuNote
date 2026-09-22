@@ -427,18 +427,25 @@ h1 {
 
 .reader-topbar {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   justify-content: space-between;
   gap: var(--space-4);
-  margin-bottom: 16px;
+  margin-bottom: 10px;
 }
 
 .reader-paper-heading {
   min-width: 0;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 11px;
 }
 
 .reader-paper-heading .back-button {
-  margin-bottom: 12px;
+  min-height: 32px;
+  margin: 0;
+  padding: 4px 0;
+  white-space: nowrap;
 }
 
 .reader-paper-heading h1 {
@@ -446,12 +453,12 @@ h1 {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  font-size: clamp(22px, 2.5vw, 34px);
-  line-height: 1.12;
+  font-size: clamp(18px, 2vw, 26px);
+  line-height: 1.16;
 }
 
 .reader-paper-heading p:not(.kicker) {
-  margin: 6px 0 0;
+  margin: 2px 0 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -474,8 +481,8 @@ h1 {
 }
 
 .reader-workspace {
-  height: calc(100vh - 190px);
-  min-height: calc(100vh - 190px);
+  height: calc(100vh - 152px);
+  min-height: calc(100vh - 152px);
   display: grid;
   grid-template-columns: minmax(0, 1.38fr) minmax(360px, .82fr);
   gap: 14px;
@@ -507,7 +514,12 @@ h1 {
   justify-content: space-between;
   gap: var(--space-3);
   border-bottom: 1px solid rgba(154,128,98,.28);
-  padding: 11px 14px;
+  min-height: 50px;
+  padding: 8px 12px;
+}
+
+.reader-panel-head {
+  background: rgba(255, 250, 241, .58);
 }
 
 .reader-panel-head > span {
@@ -533,9 +545,32 @@ h1 {
 }
 
 .reader-pdf-controls .icon-button {
-  width: 28px;
-  min-height: 28px;
+  width: 30px;
+  height: 30px;
+  min-height: 30px;
   padding: 0;
+}
+
+.reader-pdf-controls button,
+.reader-pdf-controls .reader-fit-width,
+.reader-pdf-controls .reader-zoom-value {
+  border: 1px solid rgba(117, 99, 81, .34);
+  border-bottom-width: 1px;
+  border-radius: 5px;
+  background: rgba(255, 253, 248, .78);
+  box-shadow: none;
+  color: var(--ink-3);
+  text-shadow: none;
+  transform: none;
+}
+
+.reader-pdf-controls button:hover:not(:disabled) {
+  border-color: rgba(119, 50, 47, .52);
+  background: rgba(119, 50, 47, .08);
+  box-shadow: none;
+  color: var(--burgundy);
+  filter: none;
+  transform: none;
 }
 
 .reader-page-jump {
@@ -550,15 +585,21 @@ h1 {
 }
 
 .reader-page-jump input {
-  width: 29px;
-  min-height: 28px;
+  width: 32px;
+  min-height: 30px;
   border: 1px solid rgba(154,128,98,.28);
   border-radius: var(--r-1);
   background: rgba(255,248,237,.66);
   color: var(--ink-2);
-  padding: 2px 3px;
+  padding: 2px 1px;
   font: inherit;
   text-align: center;
+}
+
+.reader-page-jump input::-webkit-inner-spin-button,
+.reader-page-jump input::-webkit-outer-spin-button {
+  margin: 0;
+  appearance: none;
 }
 
 .reader-page-jump input:focus {
@@ -567,12 +608,8 @@ h1 {
 }
 
 .reader-fit-width {
-  min-height: 28px;
-  border: 1px solid rgba(154,128,98,.28);
-  border-radius: var(--r-1);
-  background: rgba(255,248,237,.66);
-  color: var(--ink-3);
-  padding: 3px 7px;
+  min-height: 30px;
+  padding: 3px 8px;
   font-family: var(--ui);
   font-size: 10px;
   font-weight: 700;
@@ -596,11 +633,7 @@ h1 {
 
 .reader-zoom-value {
   min-width: 46px;
-  min-height: 28px;
-  border: 1px solid rgba(154,128,98,.28);
-  border-radius: var(--r-1);
-  background: rgba(255,248,237,.66);
-  color: var(--ink-3);
+  min-height: 30px;
   padding: 3px 6px;
   font-family: var(--mono);
   font-size: 10px;
