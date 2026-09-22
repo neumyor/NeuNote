@@ -7,12 +7,15 @@ from unittest.mock import patch
 
 from app.agent_chat import _merge_review_patch, _review_string_list, run_agent_paper_review_sync
 from app.kb import (
+    append_session_message,
     anthropic_request_options,
+    create_session,
     create_job,
     ensure_kb,
     fail_job,
     list_paper_summaries,
     list_papers,
+    list_sessions,
     load_job,
     load_paper,
     pause_job,
@@ -24,6 +27,17 @@ from app.kb import (
 
 
 class KnowledgeBaseTests(unittest.TestCase):
+    def test_session_summaries_include_paper_scope(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            ensure_kb(root)
+            session = create_session(root)
+            append_session_message(root, session, "user", "Explain this paper", paper_ids=["paper-a"])
+
+            summary = list_sessions(root)[0]
+
+        self.assertEqual(summary["paper_ids"], ["paper-a"])
+
     def test_deepseek_anthropic_requests_disable_thinking(self) -> None:
         self.assertEqual(
             anthropic_request_options("https://api.deepseek.com/anthropic"),
@@ -96,6 +110,19 @@ class KnowledgeBaseTests(unittest.TestCase):
         self.assertNotIn("core_concepts", summary)
         self.assertNotIn("translations", summary)
         self.assertNotIn("agent_reviews", summary)
+
+    def test_paper_list_summary_bounds_abstract_preview(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            ensure_kb(root)
+            abstract = "a" * 2_000
+            save_paper(root, {"id": "paper", "title": "Paper", "abstract": abstract})
+
+            summary = list_paper_summaries(root)[0]
+            detail = load_paper(root, "paper")
+
+        self.assertEqual(summary["abstract"], "a" * 1_200 + "…")
+        self.assertEqual(detail["abstract"], abstract)
 
     def test_list_papers_skips_files_deleted_during_scan(self) -> None:
         with tempfile.TemporaryDirectory() as directory:

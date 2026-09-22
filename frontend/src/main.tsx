@@ -14,6 +14,7 @@ import {
   Bookmark,
   CheckCircle2,
   ChevronDown,
+  ChevronLeft,
   ChevronRight,
   CloudUpload,
   Copy,
@@ -53,7 +54,7 @@ import {
 } from "lucide-react";
 import "./styles.css";
 
-type Page = "dashboard" | "library" | "review-search" | "profile" | "chat" | "jobs" | "settings";
+type Page = "dashboard" | "library" | "review-search" | "profile" | "reader" | "chat" | "jobs" | "settings";
 type SummaryLanguage = "en" | "zh";
 type MinerUExtractionMode = "auto" | "precision" | "flash";
 type CoreConcept = { concept: string; explanation: string };
@@ -164,6 +165,7 @@ type ChatSessionSummary = {
   created_at?: string;
   updated_at?: string;
   message_count: number;
+  paper_ids?: string[];
 };
 
 type SyncStatus = {
@@ -282,6 +284,8 @@ function App() {
   // resolves after a newer click must not clobber the newer paper's state.
   const openProfileSeq = useRef(0);
   const activeJobRefreshInFlight = useRef(false);
+  const activeJobsWereRunning = useRef(false);
+  const lastActivePaperRefreshAt = useRef(0);
   const [query, setQuery] = useState("");
   const [selectedTag, setSelectedTag] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
@@ -368,11 +372,35 @@ function App() {
   useEffect(() => { void loadConfig(); }, []);
 
   useEffect(() => {
-    if (!savedRoot || activeJobCount === 0) return;
+    if (!savedRoot) return;
+
+    // Job status is small and must stay responsive, while a library refresh
+    // reads every paper record. Refreshing both every 1.6 seconds caused a
+    // large upload to repeatedly parse and render the whole library while the
+    // enrichment workers were already under load.
+    if (activeJobCount === 0) {
+      if (activeJobsWereRunning.current) {
+        activeJobsWereRunning.current = false;
+        lastActivePaperRefreshAt.current = 0;
+        void loadPapers().catch((err) => setError(String((err as Error).message ?? err)));
+      }
+      return;
+    }
+
+    activeJobsWereRunning.current = true;
     const refreshActiveJobs = () => {
       if (activeJobRefreshInFlight.current) return;
       activeJobRefreshInFlight.current = true;
-      void Promise.all([loadJobs(), loadPapers()])
+      void loadJobs()
+        .then(async () => {
+          const now = Date.now();
+          // Keep cards up to date during a long batch without turning the
+          // status poll into a continual full-library reload.
+          if (now - lastActivePaperRefreshAt.current >= 8_000) {
+            lastActivePaperRefreshAt.current = now;
+            await loadPapers();
+          }
+        })
         .catch((err) => setError(String((err as Error).message ?? err)))
         .finally(() => { activeJobRefreshInFlight.current = false; });
     };
@@ -482,11 +510,12 @@ function App() {
     if (data.queue) setQueueStatus(data.queue);
   }
 
-  async function loadSessions(kbRoot = savedRoot) {
-    if (!kbRoot) return;
+  async function loadSessions(kbRoot = savedRoot): Promise<ChatSessionSummary[]> {
+    if (!kbRoot) return [];
     const params = `?root=${encodeURIComponent(kbRoot)}`;
     const data = await request<{ sessions: ChatSessionSummary[] }>(`/api/sessions${params}`);
     setChatSessions(data.sessions);
+    return data.sessions;
   }
 
   async function loadDuplicates(kbRoot = savedRoot) {
@@ -951,9 +980,31 @@ function App() {
     }
   }
 
-  function openPdf(paper: Paper) {
+  async function openPdf(paper: Paper) {
+    setSelectedPaperId(paper.id);
+    setSelectedPaper(paper);
+    setPage("reader");
+    newPaperReaderChat(paper.id);
+    try {
+      const sessions = await loadSessions();
+      const recent = sessions.find((session) => session.paper_ids?.length === 1 && session.paper_ids[0] === paper.id);
+      if (recent) await loadChatSession(recent.id, "reader");
+    } catch (err) {
+      setError(String((err as Error).message ?? err));
+    }
+  }
+
+  function openPdfInNewTab(paper: Paper) {
     const params = savedRoot ? `?root=${encodeURIComponent(savedRoot)}` : "";
     window.open(`${API}/api/papers/${encodeURIComponent(paper.id)}/pdf${params}`, "_blank", "noopener,noreferrer");
+  }
+
+  function newPaperReaderChat(paperId: string) {
+    setMentionedPaperIds([paperId]);
+    setMentionedTags([]);
+    setChatMessages([]);
+    setChatSessionId(null);
+    setError("");
   }
 
   function openPaperChat(paper: Paper) {
@@ -974,7 +1025,7 @@ function App() {
     setPage("chat");
   }
 
-  async function loadChatSession(sessionId: string) {
+  async function loadChatSession(sessionId: string, destination: "chat" | "reader" = "chat") {
     setBusy("chat-session");
     setError("");
     try {
@@ -985,7 +1036,7 @@ function App() {
       setChatMessages(messages);
       setMentionedPaperIds(extractSessionPaperIds(data.session));
       setMentionedTags([]);
-      setPage("chat");
+      setPage(destination);
     } catch (err) {
       setError(String((err as Error).message ?? err));
     } finally {
@@ -1186,6 +1237,24 @@ function App() {
             kbRoot={savedRoot}
           />
         )}
+        {page === "reader" && selectedPaper && (
+          <PaperReaderPage
+            paper={selectedPaper}
+            papers={papers}
+            sessions={chatSessions.filter((session) => session.paper_ids?.length === 1 && session.paper_ids[0] === selectedPaper.id)}
+            activeSessionId={chatSessionId}
+            messages={chatMessages}
+            kbRoot={savedRoot}
+            busy={busy}
+            goBack={() => setPage("profile")}
+            openProfile={() => openProfile(selectedPaper.id)}
+            openPdfInNewTab={() => openPdfInNewTab(selectedPaper)}
+            newChat={() => newPaperReaderChat(selectedPaper.id)}
+            openSession={(sessionId) => loadChatSession(sessionId, "reader")}
+            sendMessage={sendChatMessage}
+            stopChat={stopChat}
+          />
+        )}
         {page === "chat" && (
           <ChatPage
             papers={papers}
@@ -1270,7 +1339,7 @@ function AppNav({ page, setPage, openChat, paperCount, jobCount }: {
       </button>
       <nav>
         <button className={page === "dashboard" ? "active" : ""} onClick={() => setPage("dashboard")}><Gauge size={16} /> 档案总览</button>
-        <button className={["library", "review-search", "profile"].includes(page) ? "active" : ""} onClick={() => setPage("library")}><Library size={16} /> 文献档案</button>
+        <button className={["library", "review-search", "profile", "reader"].includes(page) ? "active" : ""} onClick={() => setPage("library")}><Library size={16} /> 文献档案</button>
         <button className={page === "chat" ? "active" : ""} onClick={openChat}><MessageCircle size={16} /> 图书管理员</button>
         <button className={page === "jobs" ? "active" : ""} onClick={() => setPage("jobs")}>
           <Play size={16} /> 整理队列
@@ -2433,6 +2502,21 @@ function figureImageUrl(paperId: string, figureIndex: number, kbRoot: string, ca
   return `${API}/api/papers/${encodeURIComponent(paperId)}/figures/${figureIndex}${suffix ? `?${suffix}` : ""}`;
 }
 
+function paperPdfUrl(paperId: string, kbRoot: string): string {
+  const params = new URLSearchParams();
+  if (kbRoot) params.set("root", kbRoot);
+  const suffix = params.toString();
+  return `${API}/api/papers/${encodeURIComponent(paperId)}/pdf${suffix ? `?${suffix}` : ""}`;
+}
+
+function paperPageImageUrl(paperId: string, page: number, kbRoot: string, dpi = 180): string {
+  const params = new URLSearchParams();
+  if (kbRoot) params.set("root", kbRoot);
+  params.set("dpi", String(dpi));
+  const suffix = params.toString();
+  return `${API}/api/papers/${encodeURIComponent(paperId)}/pages/${page}${suffix ? `?${suffix}` : ""}`;
+}
+
 function Info({ label, value }: { label: string; value: string }) {
   return <div className="info-row"><span>{label}</span><strong>{value}</strong></div>;
 }
@@ -2798,6 +2882,260 @@ function ChatPage(props: {
           </div>
         </section>
       </section>
+    </div>
+  );
+}
+
+function PaperReaderPage(props: {
+  paper: Paper;
+  papers: Paper[];
+  sessions: ChatSessionSummary[];
+  activeSessionId: string | null;
+  messages: ChatMessage[];
+  kbRoot: string;
+  busy: string;
+  goBack: () => void;
+  openProfile: () => void;
+  openPdfInNewTab: () => void;
+  newChat: () => void;
+  openSession: (sessionId: string) => void;
+  sendMessage: (question: string) => Promise<void> | void;
+  stopChat: () => void;
+}) {
+  const [input, setInput] = useState("");
+  const [pdfZoom, setPdfZoom] = useState(100);
+  const [pdfPage, setPdfPage] = useState(1);
+  const [failedPages, setFailedPages] = useState<number[]>([]);
+  const scrollRef = useRef<HTMLDivElement | null>(null);
+  const pdfViewportRef = useRef<HTMLDivElement | null>(null);
+  const pdfPageRefs = useRef(new Map<number, HTMLDivElement>());
+  const inputRef = useRef<HTMLTextAreaElement | null>(null);
+  const composingRef = useRef(false);
+  const justComposedRef = useRef(false);
+  const isStreaming = props.busy === "chat";
+  const paperById = useMemo(() => new Map(props.papers.map((paper) => [paper.id, paper])), [props.papers]);
+  const suggestions = [
+    "用通俗的语言解释这篇论文想解决什么问题。",
+    "这篇论文的方法设计中最有创新的部分是什么？",
+    "按步骤解释它的方法是如何工作的。",
+    "实验结果是否真正支持作者的核心主张？",
+  ];
+
+  useEffect(() => {
+    scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
+  }, [props.messages]);
+
+  useEffect(() => {
+    inputRef.current?.focus();
+    setPdfZoom(100);
+    setPdfPage(1);
+    setFailedPages([]);
+  }, [props.paper.id]);
+
+  function send() {
+    const text = input.trim();
+    if (!text || isStreaming) return;
+    setInput("");
+    void props.sendMessage(text);
+  }
+
+  function onKeyDown(e: React.KeyboardEvent<HTMLTextAreaElement>) {
+    const native = e.nativeEvent as KeyboardEvent;
+    const isComposing = composingRef.current || justComposedRef.current || native.isComposing || native.keyCode === 229;
+    if (e.key === "Enter" && !e.shiftKey && !isComposing) {
+      e.preventDefault();
+      send();
+    }
+  }
+
+  function onCompositionEnd() {
+    composingRef.current = false;
+    justComposedRef.current = true;
+    window.setTimeout(() => { justComposedRef.current = false; }, 80);
+  }
+
+  function adjustPdfZoom(delta: number) {
+    setPdfZoom((current) => Math.max(60, Math.min(240, current + delta)));
+  }
+
+  const pageCount = Math.max(1, props.paper.pages ?? 1);
+  const pageNumbers = useMemo(() => Array.from({ length: pageCount }, (_, index) => index + 1), [pageCount]);
+
+  function goToPdfPage(page: number, behavior: ScrollBehavior = "smooth") {
+    const target = Math.max(1, Math.min(pageCount, Math.round(page) || 1));
+    setPdfPage(target);
+    window.requestAnimationFrame(() => {
+      pdfPageRefs.current.get(target)?.scrollIntoView({ behavior, block: "start", inline: "nearest" });
+    });
+  }
+
+  useEffect(() => {
+    const viewport = pdfViewportRef.current;
+    if (!viewport || !pageNumbers.length || typeof IntersectionObserver === "undefined") return;
+    const observer = new IntersectionObserver((entries) => {
+      const visible = entries
+        .filter((entry) => entry.isIntersecting)
+        .sort((a, b) => b.intersectionRatio - a.intersectionRatio)[0];
+      const page = Number((visible?.target as HTMLElement | undefined)?.dataset.page);
+      if (page) setPdfPage(page);
+    }, { root: viewport, rootMargin: "-12% 0px -62%", threshold: [0.1, 0.45, 0.8] });
+    pdfPageRefs.current.forEach((element) => observer.observe(element));
+    return () => observer.disconnect();
+  }, [pageNumbers]);
+
+  return (
+    <div className="reader-page">
+      <header className="reader-topbar">
+        <div className="reader-paper-heading">
+          <button className="ghost-button back-button" onClick={props.goBack}><ArrowLeft size={16} /> 返回论文详情</button>
+          <div>
+            <p className="kicker">论文阅读</p>
+            <h1 title={props.paper.title || props.paper.id}>{props.paper.title || props.paper.id}</h1>
+            <p>{(props.paper.authors ?? []).join(", ") || "Unknown authors"}{props.paper.year ? ` · ${props.paper.year}` : ""}</p>
+          </div>
+        </div>
+        <div className="reader-actions">
+          <button className="ghost-button" onClick={props.openProfile}><FileText size={15} /> 论文详情</button>
+          <button className="ghost-button" onClick={props.openPdfInNewTab}><ExternalLink size={15} /> 查看 PDF 文件</button>
+        </div>
+      </header>
+
+      <div className="reader-workspace">
+        <section className="reader-pdf-panel" aria-label="论文 PDF">
+          <div className="reader-panel-head">
+            <span><BookOpen size={16} /> 原文 PDF</span>
+            <div className="reader-pdf-controls" aria-label="PDF 缩放">
+              <button type="button" className="icon-button" onClick={() => goToPdfPage(pdfPage - 1)} disabled={pdfPage <= 1} title="上一页" aria-label="上一页"><ChevronLeft size={15} /></button>
+              <label className="reader-page-jump" title="跳转至指定页">
+                <span className="sr-only">页码</span>
+                <input type="number" min={1} max={pageCount} value={pdfPage} onChange={(event) => goToPdfPage(Number(event.target.value), "auto")} aria-label="跳转页码" />
+                <span>/ {pageCount}</span>
+              </label>
+              <button type="button" className="icon-button" onClick={() => goToPdfPage(pdfPage + 1)} disabled={pdfPage >= pageCount} title="下一页" aria-label="下一页"><ChevronRight size={15} /></button>
+              <span className="reader-control-divider" aria-hidden="true" />
+              <button type="button" className="reader-fit-width" onClick={() => setPdfZoom(100)} title="让页面适合当前阅读区域">适合宽度</button>
+              <button type="button" className="icon-button" onClick={() => adjustPdfZoom(-20)} disabled={pdfZoom <= 60} title="缩小" aria-label="缩小 PDF"><Minus size={15} /></button>
+              <button type="button" className="reader-zoom-value" onClick={() => setPdfZoom(100)} title="恢复 100%">{pdfZoom}%</button>
+              <button type="button" className="icon-button" onClick={() => adjustPdfZoom(20)} disabled={pdfZoom >= 240} title="放大" aria-label="放大 PDF"><Plus size={15} /></button>
+            </div>
+          </div>
+          <div className="reader-pdf-content">
+            <nav className="reader-thumbnail-rail" aria-label="PDF 页缩略图">
+              {pageNumbers.map((page) => (
+                <button
+                  key={page}
+                  type="button"
+                  className={page === pdfPage ? "active" : ""}
+                  onClick={() => goToPdfPage(page)}
+                  aria-label={`跳转至第 ${page} 页`}
+                  aria-current={page === pdfPage ? "page" : undefined}
+                >
+                  <img loading="lazy" src={paperPageImageUrl(props.paper.id, page, props.kbRoot, 72)} alt="" />
+                  <span>{page}</span>
+                </button>
+              ))}
+            </nav>
+            <div className="reader-pdf-viewport" ref={pdfViewportRef} tabIndex={0} aria-label="连续 PDF 阅读区域">
+              <div className="reader-pdf-page-stack">
+                {pageNumbers.map((page) => (
+                  <div
+                    key={page}
+                    className="reader-pdf-canvas"
+                    data-page={page}
+                    ref={(element) => {
+                      if (element) pdfPageRefs.current.set(page, element);
+                      else pdfPageRefs.current.delete(page);
+                    }}
+                    style={{ width: `${pdfZoom}%` }}
+                  >
+                    {failedPages.includes(page) ? (
+                      <div className="reader-page-load-error">
+                        <FileText size={20} />
+                        <strong>第 {page} 页暂时无法加载</strong>
+                        <button type="button" onClick={props.openPdfInNewTab}>在新标签页查看原始 PDF</button>
+                      </div>
+                    ) : (
+                      <img
+                        className="reader-pdf-page-image"
+                        loading={page <= 3 ? "eager" : "lazy"}
+                        src={paperPageImageUrl(props.paper.id, page, props.kbRoot)}
+                        alt={`${props.paper.title || props.paper.id}，第 ${page} 页`}
+                        onError={() => setFailedPages((current) => current.includes(page) ? current : [...current, page])}
+                      />
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section className="reader-chat-panel" aria-label="图书管理员对话">
+          <div className="reader-chat-head">
+            <div>
+              <p className="kicker">图书管理员</p>
+              <h2>一起读这篇论文</h2>
+            </div>
+            <div className="reader-chat-actions">
+              <details className="reader-history-menu">
+                <summary title="查看本论文的历史对话"><Archive size={15} /> 历史 {props.sessions.length}</summary>
+                <div className="reader-history-popover">
+                  {props.sessions.length ? props.sessions.map((session) => (
+                    <button
+                      key={session.id}
+                      type="button"
+                      className={session.id === props.activeSessionId ? "active" : ""}
+                      onClick={() => props.openSession(session.id)}
+                    >
+                      <strong>{session.title}</strong>
+                      <span>{session.message_count} 条消息 · {formatDateShort(session.updated_at)}</span>
+                    </button>
+                  )) : <p>这篇论文还没有历史对话。</p>}
+                </div>
+              </details>
+              <button className="icon-button" type="button" onClick={props.newChat} title="开始新的本论文对话" aria-label="开始新的本论文对话" disabled={isStreaming}>
+                <Plus size={16} />
+              </button>
+            </div>
+          </div>
+          <div className="reader-paper-chip"><BookOpen size={13} /><span>{props.paper.title || props.paper.id}</span></div>
+          <div className="reader-chat-scroll" ref={scrollRef}>
+            {props.messages.length === 0 ? (
+              <div className="reader-chat-empty">
+                <div className="chat-emblem"><Bot size={25} /></div>
+                <h3>从原文开始提问</h3>
+                <p>我会优先根据这篇论文的整理档案和 PDF 内容回答。</p>
+                <div className="reader-suggestions">
+                  {suggestions.map((item) => <button key={item} type="button" onClick={() => setInput(item)}>{item}</button>)}
+                </div>
+              </div>
+            ) : (
+              props.messages.map((message) => <ChatMessageView key={message.id} message={message} paperById={paperById} kbRoot={props.kbRoot} />)
+            )}
+          </div>
+          <div className="reader-composer-wrap">
+            <p>当前对话仅围绕这篇论文</p>
+            <div className="chat-composer">
+              <textarea
+                ref={inputRef}
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                onKeyDown={onKeyDown}
+                onCompositionStart={() => { composingRef.current = true; }}
+                onCompositionEnd={onCompositionEnd}
+                placeholder="询问内容、方法、实验或局限…"
+                rows={1}
+                disabled={isStreaming}
+              />
+              {isStreaming ? (
+                <button type="button" className="chat-send-button" onClick={props.stopChat} aria-label="停止生成" title="停止生成"><Square size={15} /></button>
+              ) : (
+                <button type="button" className="chat-send-button" onClick={send} disabled={!input.trim()} aria-label="发送" title="发送"><SendHorizontal size={16} /></button>
+              )}
+            </div>
+          </div>
+        </section>
+      </div>
     </div>
   );
 }
@@ -3566,4 +3904,12 @@ const rootEl = document.getElementById("root");
 if (!rootEl) {
   throw new Error('NeuNote: <div id="root"> missing from index.html — cannot mount.');
 }
-createRoot(rootEl).render(<App />);
+
+// Vite can re-evaluate this module during a hot update. Reusing the root
+// attached to the mount node avoids React's duplicate-root error and keeps the
+// page recoverable while a batch upload is running.
+type MountNode = HTMLElement & { __neunoteReactRoot?: ReturnType<typeof createRoot> };
+const mountNode = rootEl as MountNode;
+const reactRoot = mountNode.__neunoteReactRoot ?? createRoot(mountNode);
+mountNode.__neunoteReactRoot = reactRoot;
+reactRoot.render(<App />);

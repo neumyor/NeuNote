@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import concurrent.futures
+import base64
 import json
 import os
 import tempfile
@@ -12,10 +13,11 @@ from typing import Any
 
 from fastapi import BackgroundTasks, FastAPI, File, Form, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse, StreamingResponse
+from fastapi.responses import FileResponse, Response, StreamingResponse
 from pydantic import BaseModel, Field
 
 from .agent_chat import run_agent_answer_sync
+from .figure_tools import render_pdf_page
 from .librarian import (
     create_action,
     pdf_archive_path,
@@ -546,6 +548,28 @@ def api_paper_pdf(paper_id: str, root: str | None = None) -> FileResponse:
     safe_name = pdf_path.name.replace('"', "").replace("\r", "").replace("\n", "")
     return FileResponse(pdf_path, media_type="application/pdf",
                         headers={"Content-Disposition": f'inline; filename="{safe_name}"'})
+
+
+@app.get("/api/papers/{paper_id}/pages/{page_number}")
+def api_paper_page_image(paper_id: str, page_number: int, root: str | None = None, dpi: int = 180) -> Response:
+    """Render one source-PDF page for the in-app reader at a zoomable DPI."""
+    kb_root = resolve_root(root)
+    try:
+        rendered = render_pdf_page(kb_root, paper_id, page_number, dpi=dpi)
+    except FileNotFoundError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    except RuntimeError as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
+    return Response(
+        content=base64.b64decode(rendered["image_base64"]),
+        media_type="image/png",
+        headers={
+            "Cache-Control": "private, max-age=3600",
+            "X-NeuNote-Page-Count": str(rendered["page_count"]),
+        },
+    )
 
 
 @app.get("/api/librarian/archives/{archive_id}/download")

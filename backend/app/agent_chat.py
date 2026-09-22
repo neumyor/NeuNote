@@ -729,13 +729,20 @@ Rules:
 - If evidence is ambiguous or absent, leave the field as null in your patch.
 - Never invent authors, venues, DOIs, arXiv IDs, or years.
 - Citations in the references section are NOT the paper's own venue.
+- Write for a technically curious reader who has not read the paper. Prioritize
+  the research problem, the key design choice, how that choice works, and why it
+  is novel or useful. Use plain, concrete language before specialized terms;
+  define an essential term in context rather than piling up unexplained jargon.
+  Do not dilute technical accuracy, but omit implementation detail that does not
+  help a reader quickly understand the paper's central idea.
 - Keep method/experiment/limitation entries as concise, factual bullet points.
 - author_affiliations should list the paper authors' teams, labs, companies,
   universities, or institutions when they are explicitly visible in the PDF.
   Prefer team/institution names over postal addresses or email domains.
 - core_concepts should contain 5-8 central concepts needed to understand this
   paper. Each explanation must be plain, accessible, and specific to how the
-  paper uses the concept.
+  paper uses the concept: explain what it is, its role in the design, and why it
+  matters when that can be stated concisely.
 - key_figures should identify the 1-3 most important figures/pages for
   understanding the paper from the MinerU-parsed Markdown and the MinerU image
   assets supplied in the prompt. Do not invent image paths or use assets that
@@ -749,9 +756,18 @@ Rules:
   limitations in a readable, self-contained style. Avoid vague fragments:
   include the key object, action, mechanism, evidence, or tradeoff needed for a
   reader to understand the point without rereading the PDF text.
-- contributions should be specific claims from the paper, not generic descriptions.
-- The one_sentence should be a single sentence summary of the core contribution,
-  not just a restatement of the title.
+- The one_sentence should state the problem, the paper's distinctive design, and
+  the resulting benefit in one readable sentence; it must not merely restate the
+  title.
+- The problem should describe the practical or scientific difficulty in plain
+  language before naming the paper's technical setting.
+- contributions should be specific claims from the paper, not generic
+  descriptions. Make each contribution reveal what is new relative to the
+  conventional or prior approach, and why that difference matters.
+- method entries should make the key design easy to reconstruct: name the
+  component or design choice, explain how it operates, and connect it to the
+  problem it solves. Prefer a short causal explanation over a list of model,
+  dataset, or module names.
 - For title: when a MinerU-recognized document title is supplied, you MUST return
   it exactly as supplied. It is extracted from the paper's first-page heading and
   takes precedence over the title inferred when the file was uploaded. Preserve

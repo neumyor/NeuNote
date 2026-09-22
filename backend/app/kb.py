@@ -230,10 +230,22 @@ _PAPER_LIST_FIELDS = (
     "last_read_at",
 )
 
+# A catalogue card only needs enough abstract text to identify a paper. Full
+# abstracts remain available from the paper-detail endpoint; bounding this
+# preview keeps repeated list refreshes cheap for large libraries.
+_PAPER_LIST_ABSTRACT_MAX_CHARS = 1_200
+
 
 def list_paper_summaries(root: Path) -> list[dict[str, Any]]:
     """Return compact records for the library list without detail-only payloads."""
-    return [{key: paper.get(key) for key in _PAPER_LIST_FIELDS} for paper in list_papers(root)]
+    summaries = []
+    for paper in list_papers(root):
+        summary = {key: paper.get(key) for key in _PAPER_LIST_FIELDS}
+        abstract = summary.get("abstract")
+        if isinstance(abstract, str) and len(abstract) > _PAPER_LIST_ABSTRACT_MAX_CHARS:
+            summary["abstract"] = abstract[:_PAPER_LIST_ABSTRACT_MAX_CHARS].rstrip() + "…"
+        summaries.append(summary)
+    return summaries
 
 
 def load_paper(root: Path, paper_id: str) -> dict[str, Any]:
@@ -1488,12 +1500,21 @@ def list_sessions(root: Path) -> list[dict[str, Any]]:
             data = json.loads(path.read_text(encoding="utf-8"))
         except json.JSONDecodeError:
             continue
+        paper_ids = data.get("paper_ids")
+        if not isinstance(paper_ids, list):
+            paper_ids = []
+            for message in reversed(data.get("messages") or []):
+                if isinstance(message, dict) and isinstance(message.get("paper_ids"), list):
+                    paper_ids = message["paper_ids"]
+                    break
+        paper_ids = [paper_id for paper_id in paper_ids if isinstance(paper_id, str) and paper_id]
         sessions.append({
             "id": data.get("id"),
             "title": data.get("title") or "New chat",
             "created_at": data.get("created_at"),
             "updated_at": data.get("updated_at"),
             "message_count": len(data.get("messages") or []),
+            "paper_ids": paper_ids,
         })
     sessions.sort(key=lambda s: s.get("updated_at") or "", reverse=True)
     return sessions
